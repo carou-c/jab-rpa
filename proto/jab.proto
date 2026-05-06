@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package jab;
+
+service JabService {
+  rpc ListJavaWindows(ListJavaWindowsRequest) returns (ListJavaWindowsResponse);
+  rpc SelectWindowByTitle(SelectWindowByTitleRequest) returns (SelectWindowByTitleResponse);
+  rpc SelectWindowByPid(SelectWindowByPidRequest) returns (SelectWindowByPidResponse);
+  rpc GetElements(GetElementsRequest) returns (GetElementsResponse);
+  rpc ClickElement(ClickElementRequest) returns (ClickElementResponse);
+  rpc TypeText(TypeTextRequest) returns (TypeTextResponse);
+  rpc ReadTable(ReadTableRequest) returns (ReadTableResponse);
+  rpc WaitUntilElementExists(WaitUntilElementExistsRequest) returns (WaitUntilElementExistsResponse);
+  rpc GetVersionInfo(GetVersionInfoRequest) returns (GetVersionInfoResponse);
+  rpc SubscribeCallbacks(SubscribeCallbacksRequest) returns (stream CallbackEvent);
+}
+
+message ListJavaWindowsRequest {}
+
+message WindowInfo {
+  int64 vm_id = 1;
+  uint64 hwnd = 2;
+  string title = 3;
+  string role = 4;
+}
+
+message ListJavaWindowsResponse {
+  repeated WindowInfo windows = 1;
+}
+
+message SelectWindowByTitleRequest {
+  string title = 1;
+  bool partial_match = 2;
+}
+
+message SelectWindowByTitleResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message SelectWindowByPidRequest {
+  int32 pid = 1;
+}
+
+message SelectWindowByPidResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message GetElementsRequest {
+  string locator = 1;
+}
+
+message Element {
+  uint64 handle = 1;
+  string name = 2;
+  string role = 3;
+  string description = 4;
+  int32 x = 5;
+  int32 y = 6;
+  int32 width = 7;
+  int32 height = 8;
+  bool accessible_action = 9;
+  bool accessible_text = 10;
+  bool accessible_selection = 11;
+}
+
+message GetElementsResponse {
+  repeated Element elements = 1;
+  string error_message = 2;
+}
+
+message ClickElementRequest {
+  uint64 handle = 1;
+}
+
+message ClickElementResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message TypeTextRequest {
+  uint64 handle = 1;
+  string text = 2;
+}
+
+message TypeTextResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message ReadTableRequest {
+  string locator = 1;
+}
+
+message TableCell {
+  string value = 1;
+  int32 row = 2;
+  int32 column = 3;
+}
+
+message TableRow {
+  repeated TableCell cells = 1;
+}
+
+message Table {
+  int32 row_count = 1;
+  int32 column_count = 2;
+  repeated TableRow rows = 3;
+  repeated string column_headers = 4;
+}
+
+message ReadTableResponse {
+  Table table = 1;
+  string error_message = 2;
+}
+
+message WaitUntilElementExistsRequest {
+  string locator = 1;
+  int32 timeout_seconds = 2;
+}
+
+message WaitUntilElementExistsResponse {
+  bool exists = 1;
+  string error_message = 2;
+}
+
+message GetVersionInfoRequest {}
+
+message VersionInfo {
+  string vm_version = 1;
+  string bridge_java_class_version = 2;
+  string bridge_java_dll_version = 3;
+  string bridge_win_dll_version = 4;
+}
+
+message GetVersionInfoResponse {
+  VersionInfo version_info = 1;
+  string error_message = 2;
+}
+
+message SubscribeCallbacksRequest {
+  repeated string event_types = 1;
+}
+
+message CallbackEvent {
+  string event_type = 1;
+  int64 vm_id = 2;
+  uint64 context_handle = 3;
+  string message = 4;
+  int64 event_time = 5;
+}

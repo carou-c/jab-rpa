@@ -51,4 +51,11 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    // 5. Compile proto (NEW)
+    tonic_build::configure()
+        .build_server(true)
+        .build_client(false)
+        .compile(&["proto/jab.proto"], &["proto/"])
+        .unwrap();
 }
