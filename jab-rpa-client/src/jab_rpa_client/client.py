@@ -117,6 +117,7 @@ def main():
         print("Selecting first found window")
         client.select_window_by_title(window.title)
 
-        print("Getting elements with empty locator")
-        elements = client.get_elements("")
+        locator = "role:text"
+        print(f"Getting elements with locator {locator!r}")
+        elements = client.get_elements(locator)
         print(f"Elements: {elements}")
