@@ -53,7 +53,6 @@ impl JabWrapper {
         }
 
         // Start Windows message pump in dedicated thread
-        let wrapper_clone = wrapper.clone();
         let pump_handle = std::thread::spawn(move || {
             run_message_pump();
         });
@@ -158,7 +157,7 @@ impl JabWrapper {
 
             extern "system" fn enum_proc(hwnd: HWND, lparam: isize) -> i32 {
                 let hwnds = unsafe { &mut *(lparam as *mut Vec<HWND>) };
-                if IsWindow(hwnd) != 0 {
+                if unsafe { IsWindow(hwnd) } != 0 {
                     hwnds.push(hwnd);
                 }
                 1
@@ -200,7 +199,6 @@ impl JabWrapper {
             use winapi::shared::windef::HWND;
 
             let title_owned = title.to_string();
-            let mut found: Option<(i32, i64)> = None;
 
             extern "system" fn enum_proc(hwnd: HWND, lparam: isize) -> i32 {
                 let (title, found) = unsafe {
@@ -208,14 +206,16 @@ impl JabWrapper {
                 };
                 let mut vm_id: i32 = 0;
                 let mut context: i64 = 0;
-                let result = crate::bindings::GetAccessibleContextFromHWND(
-                    hwnd as *mut _,
-                    &mut vm_id,
-                    &mut context,
-                );
+                let result = unsafe {
+                    crate::bindings::GetAccessibleContextFromHWND(
+                        hwnd as *mut _,
+                        &mut vm_id,
+                        &mut context,
+                    )
+                };
                 if result != 0 && vm_id != 0 {
-                    let mut info: crate::bindings::AccessibleContextInfo = std::mem::zeroed();
-                    if crate::bindings::GetAccessibleContextInfo(vm_id, context, &mut info) != 0 {
+                    let mut info: crate::bindings::AccessibleContextInfo = unsafe { std::mem::zeroed() };
+                    if unsafe { crate::bindings::GetAccessibleContextInfo(vm_id, context, &mut info) } != 0 {
                         let window_title = String::from_utf16_lossy(&info.name);
                         let window_title = window_title.trim_end_matches('\0');
                         if window_title == *title {
@@ -331,7 +331,6 @@ fn send_callback_event(mut event: crate::JabCallbackEvent) {
 fn run_message_pump() {
     unsafe {
         use winapi::um::winuser::{GetMessageW, TranslateMessage, DispatchMessageW};
-        use winapi::shared::windef::HWND;
 
         let mut msg = std::mem::zeroed();
         loop {
@@ -349,7 +348,7 @@ fn run_message_pump() {
     }
 }
 
-extern "C" fn focus_gained_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn focus_gained_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "FocusGained".to_string(),
         vm_id,
@@ -359,7 +358,7 @@ extern "C" fn focus_gained_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn focus_lost_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn focus_lost_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "FocusLost".to_string(),
         vm_id,
@@ -369,7 +368,7 @@ extern "C" fn focus_lost_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn caret_update_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn caret_update_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "CaretUpdate".to_string(),
         vm_id,
@@ -379,7 +378,7 @@ extern "C" fn caret_update_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn mouse_clicked_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn mouse_clicked_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "MouseClicked".to_string(),
         vm_id,
@@ -389,7 +388,7 @@ extern "C" fn mouse_clicked_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn mouse_entered_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn mouse_entered_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "MouseEntered".to_string(),
         vm_id,
@@ -399,7 +398,7 @@ extern "C" fn mouse_entered_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn mouse_exited_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn mouse_exited_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "MouseExited".to_string(),
         vm_id,
@@ -409,7 +408,7 @@ extern "C" fn mouse_exited_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn mouse_pressed_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn mouse_pressed_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "MousePressed".to_string(),
         vm_id,
@@ -419,7 +418,7 @@ extern "C" fn mouse_pressed_cb(vm_id: i32, event: i64, source: i64) {
     });
 }
 
-extern "C" fn mouse_released_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn mouse_released_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "MouseReleased".to_string(),
         vm_id,
@@ -431,7 +430,7 @@ extern "C" fn mouse_released_cb(vm_id: i32, event: i64, source: i64) {
 
 extern "C" fn property_name_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     _old_name: *mut u16,
     _new_name: *mut u16,
@@ -447,7 +446,7 @@ extern "C" fn property_name_change_cb(
 
 extern "C" fn property_description_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     _old_desc: *mut u16,
     _new_desc: *mut u16,
@@ -463,7 +462,7 @@ extern "C" fn property_description_change_cb(
 
 extern "C" fn property_state_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     _old_state: *mut u16,
     _new_state: *mut u16,
@@ -479,7 +478,7 @@ extern "C" fn property_state_change_cb(
 
 extern "C" fn property_value_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     _old_value: *mut u16,
     _new_value: *mut u16,
@@ -493,7 +492,7 @@ extern "C" fn property_value_change_cb(
     });
 }
 
-extern "C" fn property_selection_change_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn property_selection_change_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "PropertySelectionChange".to_string(),
         vm_id,
@@ -503,7 +502,7 @@ extern "C" fn property_selection_change_cb(vm_id: i32, event: i64, source: i64) 
     });
 }
 
-extern "C" fn property_text_change_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn property_text_change_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "PropertyTextChange".to_string(),
         vm_id,
@@ -515,7 +514,7 @@ extern "C" fn property_text_change_cb(vm_id: i32, event: i64, source: i64) {
 
 extern "C" fn property_caret_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     old_pos: i32,
     new_pos: i32,
@@ -529,7 +528,7 @@ extern "C" fn property_caret_change_cb(
     });
 }
 
-extern "C" fn property_visible_data_change_cb(vm_id: i32, event: i64, source: i64) {
+extern "C" fn property_visible_data_change_cb(vm_id: i32, _event: i64, source: i64) {
     send_callback_event(crate::JabCallbackEvent {
         event_type: "PropertyVisibleDataChange".to_string(),
         vm_id,
@@ -541,7 +540,7 @@ extern "C" fn property_visible_data_change_cb(vm_id: i32, event: i64, source: i6
 
 extern "C" fn property_child_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     old_child: i64,
     new_child: i64,
@@ -557,7 +556,7 @@ extern "C" fn property_child_change_cb(
 
 extern "C" fn property_active_descendent_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     old_active: i64,
     new_active: i64,
@@ -573,7 +572,7 @@ extern "C" fn property_active_descendent_change_cb(
 
 extern "C" fn property_table_model_change_cb(
     vm_id: i32,
-    event: i64,
+    _event: i64,
     source: i64,
     _old_model: *mut u16,
     _new_model: *mut u16,
