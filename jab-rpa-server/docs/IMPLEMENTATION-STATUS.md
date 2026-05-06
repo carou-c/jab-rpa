@@ -10,23 +10,21 @@ The JAB-RPA server is a 32-bit Rust gRPC server that bridges 64-bit Python RPA c
 
 ### Phase 1: Foundation (✅ Complete)
 
-#### 1.1 Fix Cargo.toml
-- Changed edition from invalid "2024" to "2021"
-- Added dependencies: `tonic`, `prost`, `tokio`, `winapi`
-- Added build dependencies: `tonic-build`, `bindgen`, `cc`
+#### 1.1 Verify Bindings
 
-#### 1.2 Verify Bindings
 - Confirmed `JOBJECT64 = jlong` (i64 on 32-bit Windows)
 - Confirmed `vmID` type is `i32` (c_long)
 - Verified all callback signatures match `AccessBridgeCallbacks.h`
 
-#### 1.3 Update src/lib.rs
+#### 1.2 Update src/lib.rs
+
 - Added modules: `jab_wrapper`, `jab_service`, `context_tree`
 - Added `JabCallbackEvent` struct for internal event handling
 
 ### Phase 2: Protocol Definition (✅ Complete)
 
 Created `proto/jab.proto` with 9 service methods:
+
 - `ListJavaWindows` - List all Java windows
 - `SelectWindowByTitle` - Select window by title
 - `SelectWindowByPid` - Select window by PID (stubbed)
@@ -41,6 +39,7 @@ Created `proto/jab.proto` with 9 service methods:
 ### Phase 3: JAB Wrapper (✅ Complete)
 
 Implemented `src/jab_wrapper.rs`:
+
 - **Initialization**: Calls `initializeAccessBridge()`, registers all callbacks
 - **Element Management**: `register_element()`, `get_element()`, `release_element()` with handle-based registry
 - **Window Management**: `list_java_windows()`, `select_window_by_title()` using `EnumWindows`
@@ -48,6 +47,7 @@ Implemented `src/jab_wrapper.rs`:
 - **Callback Registration**: All 19 JAB callbacks registered (print to stdout)
 
 Key implementation details:
+
 - Uses `static mut` pointers for `EnumWindows` callbacks (required for `extern "system" fn`)
 - Proper unsafe block usage for JAB binding calls
 - Thread-safe with `Arc<JabWrapper>` pattern
@@ -55,6 +55,7 @@ Key implementation details:
 ### Phase 4: Context Tree (✅ Complete)
 
 Implemented `src/context_tree.rs`:
+
 - **ContextNode**: Node structure with vm_id, context handle, name, role, children
 - **ContextTree**: Build tree from root context recursively
 - **Locator Parsing**: `parse_locator()` ported from Robocorp's pattern
@@ -66,6 +67,7 @@ Implemented `src/context_tree.rs`:
 ### Phase 5: gRPC Service (✅ Complete)
 
 Implemented `src/jab_service.rs`:
+
 - All 9 service methods defined
 - Uses `tokio::task::spawn_blocking` for JAB operations (JAB is synchronous)
 - `SubscribeCallbacks` bridges internal `JabCallbackEvent` to proto `CallbackEvent`
@@ -74,6 +76,7 @@ Implemented `src/jab_service.rs`:
 ### Phase 6: Build Configuration (✅ Complete)
 
 Updated `build.rs`:
+
 - Compiles C code (`AccessBridgeCalls.c`, `AccessBridgeDebug.cpp`)
 - Generates bindings with bindgen
 - Compiles proto with `tonic-build`
@@ -81,6 +84,7 @@ Updated `build.rs`:
 ### Phase 7: Main Entry Point (✅ Complete)
 
 Updated `src/bin/jab-rpa-server.rs`:
+
 - Creates `JabWrapper::new()`
 - Waits 2 seconds for JAB initialization
 - Starts gRPC server on `127.0.0.1:50051`
@@ -93,6 +97,7 @@ Updated `src/bin/jab-rpa-server.rs`:
    - JAB callbacks require a Windows message loop
    - Current implementation prints callbacks but doesn't run `GetMessage` loop
    - Need to spawn thread with:
+
      ```rust
      std::thread::spawn(|| {
          let mut msg;
@@ -113,6 +118,7 @@ Updated `src/bin/jab-rpa-server.rs`:
    - Currently callbacks print to stdout
    - Need to send `JabCallbackEvent` via `event_tx` channel
    - Example:
+
      ```rust
      extern "C" fn focus_gained_cb(vm_id: i32, event: i64, source: i64) {
          if let Some(tx) = /* get event_tx */ {
@@ -129,35 +135,35 @@ Updated `src/bin/jab-rpa-server.rs`:
 
 ### Medium Priority
 
-4. **Test Against Real Java Application**
+1. **Test Against Real Java Application**
    - Deploy to Windows machine
    - Enable JAB: `jabswitch -enable`
    - Run 32-bit Java app (JRE 1.8.0_481)
    - Test each gRPC method
 
-5. **Handle Management Improvements**
+2. **Handle Management Improvements**
    - Currently element handles never released except on `release_element()`
    - Consider cleanup strategy for context tree rebuild
    - Map `JOBJECT64` to handles for callbacks
 
-6. **Locator Enhancements**
+3. **Locator Enhancements**
    - Add `strict:True` support (currently ignored)
    - Add integer attribute support (`x`, `y`, `width`, `height`, `indexInParent`)
    - Add `visible_children_count` filtering
 
 ### Low Priority
 
-7. **Error Handling Improvements**
+1. **Error Handling Improvements**
    - More descriptive error messages
    - Proper error codes for gRPC status
    - Logging instead of `println!()`
 
-8. **Documentation**
+2. **Documentation**
    - Add doc comments to public API
    - Create examples for Python client usage
    - Document deployment process
 
-9. **Performance Optimizations**
+3. **Performance Optimizations**
    - Cache `AccessibleContextInfo` in `ContextNode`
    - Lazy-load tree children
    - Consider `max_depth` parameter for `ContextTree::from_root()`
@@ -209,15 +215,15 @@ jab-rpa-server.exe
 
 ## File Summary
 
-| File | Status | Lines | Description |
-|------|--------|-------|-------------|
-| `Cargo.toml` | ✅ | 16 | Project config with tonic, prost, tokio |
-| `build.rs` | ✅ | 54 | C compilation, bindings, proto |
-| `proto/jab.proto` | ✅ | 150 | gRPC service definition |
-| `src/lib.rs` | ✅ | 15 | Module exports |
-| `src/jab_wrapper.rs` | ✅ | ~430 | JAB FFI wrapper |
-| `src/jab_service.rs` | ✅ | ~300 | gRPC service implementation |
-| `src/context_tree.rs` | ✅ | ~180 | Tree structure & locator parsing |
-| `src/bin/jab-rpa-server.rs` | ✅ | 24 | Server entry point |
+| File                        | Status | Lines | Description                             |
+| --------------------------- | ------ | ----- | --------------------------------------- |
+| `Cargo.toml`                | ✅     | 16    | Project config with tonic, prost, tokio |
+| `build.rs`                  | ✅     | 54    | C compilation, bindings, proto          |
+| `proto/jab.proto`           | ✅     | 150   | gRPC service definition                 |
+| `src/lib.rs`                | ✅     | 15    | Module exports                          |
+| `src/jab_wrapper.rs`        | ✅     | ~430  | JAB FFI wrapper                         |
+| `src/jab_service.rs`        | ✅     | ~300  | gRPC service implementation             |
+| `src/context_tree.rs`       | ✅     | ~180  | Tree structure & locator parsing        |
+| `src/bin/jab-rpa-server.rs` | ✅     | 24    | Server entry point                      |
 
 **Total**: ~1,050 lines of Rust code (excluding generated bindings)

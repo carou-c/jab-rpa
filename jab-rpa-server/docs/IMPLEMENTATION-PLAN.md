@@ -109,27 +109,7 @@ From `AccessBridgePackages.h`:
 
 ### Phase 1: Fix Foundation
 
-**1.1 Fix `Cargo.toml`**
-
-```toml
-[package]
-name = "jab-rpa"
-version = "0.1.0"
-edition = "2021"  # FIX: was "2024"
-
-[dependencies]
-tonic = "0.10"
-prost = "0.12"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
-winapi = { version = "0.3", features = ["winuser", "processthreadsapi", "winbase"] }
-
-[build-dependencies]
-tonic-build = { version = "0.10", features = ["prost"] }
-bindgen = "0.72.1"
-cc = "1.2.61"
-```
-
-**1.2 Verify Bindings**
+**1.1 Verify Bindings**
 Check `target/i686-pc-windows-gnu/debug/build/jab-rpa-*/out/bindings.rs` for:
 
 - `initializeAccessBridge() -> BOOL`
@@ -139,7 +119,7 @@ Check `target/i686-pc-windows-gnu/debug/build/jab-rpa-*/out/bindings.rs` for:
 - `JOBJECT64` should be `i64`
 - `AccessBridgeVersionInfo`, `AccessibleContextInfo` structs
 
-**1.3 Update `src/lib.rs`**
+**1.2 Update `src/lib.rs`**
 
 ```rust
 pub mod bindings;

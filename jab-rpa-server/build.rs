@@ -53,9 +53,9 @@ fn main() {
         .expect("Couldn't write bindings!");
 
     // 5. Compile proto (NEW)
-    tonic_build::configure()
+    tonic_prost_build::configure()
         .build_server(true)
         .build_client(false)
-        .compile(&["proto/jab.proto"], &["proto/"])
+        .compile_protos(&["proto/jab.proto"], &["proto/"])
         .unwrap();
 }
