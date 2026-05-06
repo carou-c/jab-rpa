@@ -21,7 +21,7 @@ fn main() {
     println!("cargo:rustc-link-lib=static=accessbridge");
     println!("cargo:rustc-link-lib=static=stdc++");
 
-    // 2. Tell cargo to rerun if headers, C src, or build.rs change
+    // 2. Tell cargo to rerun if headers, C src, build.rs or proto change
     println!("cargo:rerun-if-changed=native/AccessBridgeDebug.h");
     println!("cargo:rerun-if-changed=native/AccessBridgePackages.h");
     println!("cargo:rerun-if-changed=native/AccessBridgeCallbacks.h");
@@ -30,6 +30,7 @@ fn main() {
     println!("cargo:rerun-if-changed=native/AccessBridgeDebug.cpp");
     println!("cargo:rerun-if-changed=native/AccessBridgeCalls.c");
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=../proto/jab.proto");
 
     // 3. Generate bindings
     let builder = bindgen::Builder::default()
@@ -56,6 +57,6 @@ fn main() {
     tonic_prost_build::configure()
         .build_server(true)
         .build_client(false)
-        .compile_protos(&["proto/jab.proto"], &["proto/"])
+        .compile_protos(&["../proto/jab.proto"], &["../proto/"])
         .unwrap();
 }

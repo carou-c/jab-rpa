@@ -1,0 +1,18 @@
+[project]
+name = "jab-rpa-client"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Carolina Helena da Silva Corrêa", email = "carolcorrea555@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "grpcio>=1.80.0",
+    "grpcio-tools>=1.80.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.16,<0.10.0"]
+build-backend = "uv_build"
+
