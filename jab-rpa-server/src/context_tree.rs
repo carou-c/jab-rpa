@@ -48,13 +48,7 @@ impl ContextTree {
             return tree;
         }
 
-        tree.root = Some(Self::build_node(
-            vm_id,
-            root_context,
-            0,
-            max_depth,
-            jab,
-        ));
+        tree.root = Some(Self::build_node(vm_id, root_context, 0, max_depth, jab));
 
         tree
     }
@@ -109,10 +103,10 @@ impl ContextTree {
             node.index_in_parent = info.indexInParent;
         }
 
-        if let Some(max) = max_depth {
-            if depth >= max {
-                return node;
-            }
+        if let Some(max) = max_depth
+            && depth >= max
+        {
+            return node;
         }
 
         unsafe {

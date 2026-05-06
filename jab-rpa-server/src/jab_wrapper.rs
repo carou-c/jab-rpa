@@ -3,6 +3,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
+use crate::bindings;
+
 type VmId = i32;
 type JObject = i64;
 
@@ -20,6 +22,7 @@ pub struct JabWrapper {
     next_handle: AtomicU64,
     pub context_tree: Mutex<Option<crate::context_tree::ContextTree>>,
     message_pump_handle: Mutex<Option<std::thread::JoinHandle<()>>>,
+    message_pump_thread_id: Mutex<Option<u32>>,
 }
 
 unsafe impl Send for JabWrapper {}
@@ -35,30 +38,51 @@ impl JabWrapper {
             next_handle: AtomicU64::new(1),
             context_tree: Mutex::new(None),
             message_pump_handle: Mutex::new(None),
+            message_pump_thread_id: Mutex::new(None),
         });
-
-        unsafe {
-            let init_result = crate::bindings::initializeAccessBridge();
-            if init_result == 0 {
-                panic!("Failed to initialize JAB");
-            }
-        }
-
-        wrapper.initialized.store(true, Ordering::SeqCst);
-        wrapper.register_callbacks();
 
         // Initialize global JObject -> handle mapping
         unsafe {
             JOBJECT_TO_HANDLE = Box::into_raw(Box::new(HashMap::new())) as *mut _;
         }
 
-        // Start Windows message pump in dedicated thread
+        // Channel to synchronize initialization
+        let (init_tx, init_rx) = std::sync::mpsc::channel::<bool>();
+
+        // Start Windows message pump in dedicated thread (same thread will call initializeAccessBridge)
+        let wrapper_clone = wrapper.clone();
         let pump_handle = std::thread::spawn(move || {
-            run_message_pump();
+            // Store thread ID for later shutdown
+            let thread_id = unsafe { winapi::um::processthreadsapi::GetCurrentThreadId() };
+            {
+                let mut tid = wrapper_clone.message_pump_thread_id.lock().unwrap();
+                *tid = Some(thread_id);
+            }
+
+            // Initialize JAB on this thread (required for callbacks to work)
+            let init_result = unsafe { crate::bindings::initializeAccessBridge() };
+            let success = init_result != 0;
+            let _ = init_tx.send(success);
+
+            if success {
+                // Run message pump loop
+                run_message_pump();
+            }
         });
+
         {
             let mut handle = wrapper.message_pump_handle.lock().unwrap();
             *handle = Some(pump_handle);
+        }
+
+        // Wait for initialization to complete
+        match init_rx.recv() {
+            Ok(true) => {
+                wrapper.initialized.store(true, Ordering::SeqCst);
+                wrapper.register_callbacks();
+            }
+            Ok(false) => panic!("Failed to initialize JAB"),
+            Err(_) => panic!("Message pump thread crashed during initialization"),
         }
 
         wrapper
@@ -83,7 +107,9 @@ impl JabWrapper {
             crate::bindings::SetPropertyCaretChange(Some(property_caret_change_cb));
             crate::bindings::SetPropertyVisibleDataChange(Some(property_visible_data_change_cb));
             crate::bindings::SetPropertyChildChange(Some(property_child_change_cb));
-            crate::bindings::SetPropertyActiveDescendentChange(Some(property_active_descendent_change_cb));
+            crate::bindings::SetPropertyActiveDescendentChange(Some(
+                property_active_descendent_change_cb,
+            ));
             crate::bindings::SetPropertyTableModelChange(Some(property_table_model_change_cb));
             crate::bindings::SetJavaShutdown(Some(java_shutdown_cb));
         }
@@ -113,7 +139,7 @@ impl JabWrapper {
         let mut elements = self.elements.lock().unwrap();
         if let Some((vm_id, context)) = elements.remove(&handle) {
             unsafe {
-                crate::bindings::ReleaseJavaObject(vm_id, context as i64);
+                crate::bindings::ReleaseJavaObject(vm_id, context as bindings::Java_Object);
                 if !JOBJECT_TO_HANDLE.is_null() {
                     (*JOBJECT_TO_HANDLE).remove(&context);
                 }
@@ -150,8 +176,8 @@ impl JabWrapper {
     pub fn list_java_windows(&self) -> Vec<crate::jab_service::WindowInfo> {
         let mut windows = Vec::new();
         unsafe {
-            use winapi::um::winuser::{EnumWindows, IsWindow};
             use winapi::shared::windef::HWND;
+            use winapi::um::winuser::{EnumWindows, IsWindow};
 
             let mut hwnds: Vec<HWND> = Vec::new();
 
@@ -195,15 +221,13 @@ impl JabWrapper {
 
     pub fn select_window_by_title(&self, title: &str, _partial_match: bool) -> Result<(), String> {
         unsafe {
-            use winapi::um::winuser::EnumWindows;
             use winapi::shared::windef::HWND;
+            use winapi::um::winuser::EnumWindows;
 
             let title_owned = title.to_string();
 
             extern "system" fn enum_proc(hwnd: HWND, lparam: isize) -> i32 {
-                let (title, found) = unsafe {
-                    &mut *(lparam as *mut (String, Option<(i32, i64)>))
-                };
+                let (title, found) = unsafe { &mut *(lparam as *mut (String, Option<(i32, i64)>)) };
                 let mut vm_id: i32 = 0;
                 let mut context: i64 = 0;
                 let result = unsafe {
@@ -214,8 +238,12 @@ impl JabWrapper {
                     )
                 };
                 if result != 0 && vm_id != 0 {
-                    let mut info: crate::bindings::AccessibleContextInfo = unsafe { std::mem::zeroed() };
-                    if unsafe { crate::bindings::GetAccessibleContextInfo(vm_id, context, &mut info) } != 0 {
+                    let mut info: crate::bindings::AccessibleContextInfo =
+                        unsafe { std::mem::zeroed() };
+                    if unsafe {
+                        crate::bindings::GetAccessibleContextInfo(vm_id, context, &mut info)
+                    } != 0
+                    {
                         let window_title = String::from_utf16_lossy(&info.name);
                         let window_title = window_title.trim_end_matches('\0');
                         if window_title == *title {
@@ -267,15 +295,25 @@ impl JabWrapper {
             for i in 0..actions.actionsCount {
                 let action_name = String::from_utf16_lossy(&actions.actionInfo[i as usize].name);
                 if action_name.to_lowercase().contains("click") {
-                    let mut actions_to_do: crate::bindings::AccessibleActionsToDo = std::mem::zeroed();
+                    let mut actions_to_do: crate::bindings::AccessibleActionsToDo =
+                        std::mem::zeroed();
                     actions_to_do.actionsCount = 1;
                     actions_to_do.actions[0] = actions.actionInfo[i as usize];
 
                     let mut failure: i32 = 0;
-                    if crate::bindings::doAccessibleActions(vm_id, context, &mut actions_to_do, &mut failure) != 0 {
+                    if crate::bindings::doAccessibleActions(
+                        vm_id,
+                        context,
+                        &mut actions_to_do,
+                        &mut failure,
+                    ) != 0
+                    {
                         return Ok(());
                     } else {
-                        return Err(format!("Failed to perform click action, failure index: {}", failure));
+                        return Err(format!(
+                            "Failed to perform click action, failure index: {}",
+                            failure
+                        ));
                     }
                 }
             }
@@ -290,7 +328,12 @@ impl JabWrapper {
         let text_wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
 
         unsafe {
-            if crate::bindings::setTextContents(vm_id, context as i64, text_wide.as_ptr()) != 0 {
+            if crate::bindings::setTextContents(
+                vm_id,
+                context as bindings::AccessibleContext,
+                text_wide.as_ptr(),
+            ) != 0
+            {
                 Ok(())
             } else {
                 Err("Failed to set text contents".to_string())
@@ -311,6 +354,37 @@ impl JabWrapper {
     }
 }
 
+impl Drop for JabWrapper {
+    fn drop(&mut self) {
+        // Post WM_QUIT to the message pump thread to exit the loop
+        let thread_id = {
+            let tid = self.message_pump_thread_id.lock().unwrap();
+            *tid
+        };
+
+        if let Some(tid) = thread_id {
+            unsafe {
+                winapi::um::winuser::PostThreadMessageW(tid, winapi::um::winuser::WM_QUIT, 0, 0);
+            }
+        }
+
+        // Wait for the message pump thread to finish
+        let handle = {
+            let mut h = self.message_pump_handle.lock().unwrap();
+            h.take()
+        };
+
+        if let Some(h) = handle {
+            let _ = h.join();
+        }
+
+        // Call shutdownAccessBridge after the message pump has exited
+        unsafe {
+            crate::bindings::shutdownAccessBridge();
+        }
+    }
+}
+
 // Standalone function to send callback events via the global sender
 fn send_callback_event(mut event: crate::JabCallbackEvent) {
     unsafe {
@@ -318,11 +392,12 @@ fn send_callback_event(mut event: crate::JabCallbackEvent) {
             let tx = &*EVENT_TX;
             // Try to convert the context_handle (JObject) to a proper handle
             let context = event.context_handle as JObject;
-            if !JOBJECT_TO_HANDLE.is_null() {
-                if let Some(handle) = (*JOBJECT_TO_HANDLE).get(&context) {
-                    event.context_handle = *handle;
-                }
+            if !JOBJECT_TO_HANDLE.is_null()
+                && let Some(handle) = (*JOBJECT_TO_HANDLE).get(&context)
+            {
+                event.context_handle = *handle;
             }
+
             let _ = tx.try_send(event);
         }
     }
@@ -330,7 +405,7 @@ fn send_callback_event(mut event: crate::JabCallbackEvent) {
 
 fn run_message_pump() {
     unsafe {
-        use winapi::um::winuser::{GetMessageW, TranslateMessage, DispatchMessageW};
+        use winapi::um::winuser::{DispatchMessageW, GetMessageW, TranslateMessage};
 
         let mut msg = std::mem::zeroed();
         loop {
@@ -523,7 +598,10 @@ extern "C" fn property_caret_change_cb(
         event_type: "PropertyCaretChange".to_string(),
         vm_id,
         context_handle: source as u64,
-        message: format!("source={}, old_pos={}, new_pos={}", source, old_pos, new_pos),
+        message: format!(
+            "source={}, old_pos={}, new_pos={}",
+            source, old_pos, new_pos
+        ),
         event_time: 0,
     });
 }
@@ -549,7 +627,10 @@ extern "C" fn property_child_change_cb(
         event_type: "PropertyChildChange".to_string(),
         vm_id,
         context_handle: source as u64,
-        message: format!("source={}, old_child={}, new_child={}", source, old_child, new_child),
+        message: format!(
+            "source={}, old_child={}, new_child={}",
+            source, old_child, new_child
+        ),
         event_time: 0,
     });
 }
@@ -565,7 +646,10 @@ extern "C" fn property_active_descendent_change_cb(
         event_type: "PropertyActiveDescendentChange".to_string(),
         vm_id,
         context_handle: source as u64,
-        message: format!("source={}, old_active={}, new_active={}", source, old_active, new_active),
+        message: format!(
+            "source={}, old_active={}, new_active={}",
+            source, old_active, new_active
+        ),
         event_time: 0,
     });
 }

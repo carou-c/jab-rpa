@@ -1,14 +1,14 @@
 use std::sync::Arc;
-use tonic::{Request, Response, Status};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
+use tonic::{Request, Response, Status};
 
 pub mod proto {
     tonic::include_proto!("jab");
 }
 
-use proto::*;
 use crate::jab_wrapper::JabWrapper;
+use proto::*;
 
 #[derive(Debug, Clone)]
 pub struct CallbackEvent {
@@ -115,10 +115,7 @@ impl jab_service_server::JabService for JabService {
                 crate::context_tree::parse_locator(&req.locator, false);
             let nodes = tree.get_by_attrs(&searches);
 
-            let elements = nodes
-                .into_iter()
-                .map(|node| element_from_context_node(node))
-                .collect();
+            let elements = nodes.into_iter().map(element_from_context_node).collect();
 
             Ok(Response::new(GetElementsResponse {
                 elements,
@@ -215,9 +212,11 @@ impl jab_service_server::JabService for JabService {
                     vm_version: String::from_utf16_lossy(&info.VMversion)
                         .trim_end_matches('\0')
                         .to_string(),
-                    bridge_java_class_version: String::from_utf16_lossy(&info.bridgeJavaClassVersion)
-                        .trim_end_matches('\0')
-                        .to_string(),
+                    bridge_java_class_version: String::from_utf16_lossy(
+                        &info.bridgeJavaClassVersion,
+                    )
+                    .trim_end_matches('\0')
+                    .to_string(),
                     bridge_java_dll_version: String::from_utf16_lossy(&info.bridgeJavaDLLVersion)
                         .trim_end_matches('\0')
                         .to_string(),
