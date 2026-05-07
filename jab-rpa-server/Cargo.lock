@@ -441,6 +441,7 @@ dependencies = [
  "bindgen",
  "cc",
  "prost",
+ "regex",
  "tokio",
  "tokio-stream",
  "tonic",

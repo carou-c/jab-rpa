@@ -1,4 +1,4 @@
-use jab_rpa_server::jab_service::proto::jab_service_server::JabServiceServer;
+use jab_rpa_server::proto::jab_service_server::JabServiceServer;
 use jab_rpa_server::jab_wrapper::JabWrapper;
 use jab_rpa_server::jab_service::JabService;
 use tonic::transport::Server;

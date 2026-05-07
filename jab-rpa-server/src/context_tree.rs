@@ -1,9 +1,4 @@
-#[derive(Debug, Clone)]
-pub struct SearchElement {
-    pub key: String,
-    pub value: String,
-    pub strict: bool,
-}
+use crate::proto;
 
 #[derive(Debug, Clone)]
 pub struct ContextNode {
@@ -134,91 +129,149 @@ impl ContextTree {
         node
     }
 
-    pub fn get_by_attrs(&self, searches: &[Vec<SearchElement>]) -> Vec<&ContextNode> {
+    pub fn get_elements(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
         let mut results = Vec::new();
-
         if let Some(ref root) = self.root {
-            for search_path in searches {
-                self.search_node(root, search_path, 0, &mut results);
-            }
+            Self::collect_matching(root, locator, &[], &mut results);
         }
-
         results
     }
 
-    fn search_node<'a>(
-        &self,
+    fn collect_matching<'a>(
         node: &'a ContextNode,
-        search_path: &[SearchElement],
-        depth: usize,
+        locator: &proto::Locator,
+        ancestors: &[&'a ContextNode],
         results: &mut Vec<&'a ContextNode>,
     ) {
-        if depth >= search_path.len() {
-            results.push(node);
-            return;
-        }
-
-        let search = &search_path[depth];
-        let matches = self.node_matches(node, search);
-
-        if matches && depth == search_path.len() - 1 {
+        if Self::node_matches(node, locator, ancestors) {
             results.push(node);
         }
 
-        if matches || depth == 0 {
-            for child in &node.children {
-                self.search_node(child, search_path, depth + 1, results);
-            }
+        let mut child_ancestors = ancestors.to_vec();
+        child_ancestors.push(node);
+
+        for child in &node.children {
+            Self::collect_matching(child, locator, &child_ancestors, results);
         }
     }
 
-    fn node_matches(&self, node: &ContextNode, search: &SearchElement) -> bool {
-        let value_lower = search.value.to_lowercase();
+    fn node_matches(
+        node: &ContextNode,
+        locator: &proto::Locator,
+        ancestors: &[&ContextNode],
+    ) -> bool {
+        if !matches_string_field(&node.name, &locator.name) {
+            return false;
+        }
+        if !matches_string_field(&node.role, &locator.role) {
+            return false;
+        }
+        if !matches_string_field(&node.description, &locator.description) {
+            return false;
+        }
+        if !matches_string_field(&node.text, &locator.text) {
+            return false;
+        }
 
-        match search.key.as_str() {
-            "name" => node.name.to_lowercase().contains(&value_lower),
-            "role" => node.role.to_lowercase().contains(&value_lower),
-            "description" => node.description.to_lowercase().contains(&value_lower),
-            "text" => node.text.to_lowercase().contains(&value_lower),
-            _ => false,
+        if let Some(ref il) = locator.index_in_parent
+            && node.index_in_parent != il.index
+        {
+            return false;
+        }
+
+        if let Some(ref asc) = locator.ascendant {
+            let found = if asc.is_parent {
+                if let Some(parent) = ancestors.last() {
+                    matches_node_simple_opt(parent, &asc.locator)
+                } else {
+                    false
+                }
+            } else {
+                ancestors
+                    .iter()
+                    .any(|&ancestor| matches_node_simple_opt(ancestor, &asc.locator))
+            };
+            if !found {
+                return false;
+            }
+        }
+
+        for desc_locator in &locator.descendants {
+            if !Self::has_descendant_matching(node, desc_locator) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn has_descendant_matching(
+        node: &ContextNode,
+        desc_locator: &proto::DescendantLocator,
+    ) -> bool {
+        let loc_ref: &Option<proto::Locator> = &desc_locator.locator;
+        if desc_locator.is_child {
+            node.children
+                .iter()
+                .any(|child| matches_node_simple_opt_ref(child, loc_ref))
+        } else {
+            node.children.iter().any(|child| {
+                matches_node_simple_opt_ref(child, loc_ref)
+                    || Self::has_descendant_matching(child, desc_locator)
+            })
         }
     }
 }
 
-pub fn parse_locator(locator: &str, strict_default: bool) -> Vec<Vec<SearchElement>> {
-    let mut result = Vec::new();
-
-    if locator.is_empty() {
-        return result;
-    }
-
-    let levels: Vec<&str> = locator.split('>').map(|s| s.trim()).collect();
-    let mut search_path = Vec::new();
-
-    for level in levels {
-        let parts: Vec<&str> = level.split(" and ").map(|s| s.trim()).collect();
-
-        for part in parts {
-            if part.starts_with("strict:") {
-                continue;
-            }
-
-            let (key, value) = if let Some(pos) = part.find(':') {
-                let key = part[..pos].trim();
-                let value = part[pos + 1..].trim();
-                (key.to_string(), value.to_string())
+fn matches_string_field(field_value: &str, locator: &Option<proto::StringLocator>) -> bool {
+    match locator {
+        None => true,
+        Some(sl) => {
+            if sl.regex {
+                if let Ok(re) = regex::Regex::new(&sl.find) {
+                    re.is_match(field_value)
+                } else {
+                    false
+                }
             } else {
-                ("name".to_string(), part.to_string())
-            };
-
-            search_path.push(SearchElement {
-                key,
-                value,
-                strict: strict_default,
-            });
+                field_value == sl.find
+            }
         }
     }
+}
 
-    result.push(search_path);
-    result
+fn matches_node_simple(node: &ContextNode, locator: &proto::Locator) -> bool {
+    if !matches_string_field(&node.name, &locator.name) {
+        return false;
+    }
+    if !matches_string_field(&node.role, &locator.role) {
+        return false;
+    }
+    if !matches_string_field(&node.description, &locator.description) {
+        return false;
+    }
+    if !matches_string_field(&node.text, &locator.text) {
+        return false;
+    }
+    if let Some(ref il) = locator.index_in_parent
+        && node.index_in_parent != il.index
+    {
+        return false;
+    }
+
+    true
+}
+
+fn matches_node_simple_opt(node: &ContextNode, locator: &Option<Box<proto::Locator>>) -> bool {
+    match locator {
+        None => false,
+        Some(box_locator) => matches_node_simple(node, box_locator),
+    }
+}
+
+fn matches_node_simple_opt_ref(node: &ContextNode, locator: &Option<proto::Locator>) -> bool {
+    match locator {
+        None => false,
+        Some(locator_ref) => matches_node_simple(node, locator_ref),
+    }
 }

@@ -3,12 +3,20 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
-pub mod proto {
-    tonic::include_proto!("jab");
-}
-
 use crate::jab_wrapper::JabWrapper;
-use proto::*;
+// Import all proto types; tonic generates them in the proto module
+// We alias our local types to avoid confusion
+use crate::proto::{
+    CallbackEvent as ProtoCallbackEvent, GetElementsResponse, ListJavaWindowsResponse,
+    SelectWindowByTitleResponse, SelectWindowByPidResponse, ClickElementResponse,
+    TypeTextResponse, ReadTableResponse, WaitUntilElementExistsResponse,
+    GetVersionInfoResponse, VersionInfo, SubscribeCallbacksRequest,
+    WindowInfo as ProtoWindowInfo, Element, ListJavaWindowsRequest,
+    SelectWindowByTitleRequest, SelectWindowByPidRequest, GetElementsRequest,
+    ClickElementRequest, TypeTextRequest, ReadTableRequest,
+    WaitUntilElementExistsRequest, GetVersionInfoRequest, Locator,
+};
+use crate::proto::jab_service_server::JabService as JabServiceTrait;
 
 #[derive(Debug, Clone)]
 pub struct CallbackEvent {
@@ -30,7 +38,7 @@ impl JabService {
 }
 
 #[tonic::async_trait]
-impl jab_service_server::JabService for JabService {
+impl JabServiceTrait for JabService {
     async fn list_java_windows(
         &self,
         _request: Request<ListJavaWindowsRequest>,
@@ -40,7 +48,7 @@ impl jab_service_server::JabService for JabService {
             .await
             .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
 
-        let proto_windows = windows
+        let proto_windows: Vec<ProtoWindowInfo> = windows
             .into_iter()
             .map(|w| window_info_to_proto(&w))
             .collect();
@@ -111,9 +119,18 @@ impl jab_service_server::JabService for JabService {
 
         let tree_lock = self.wrapper.context_tree.lock().unwrap();
         if let Some(ref tree) = *tree_lock {
-            let searches: Vec<Vec<crate::context_tree::SearchElement>> =
-                crate::context_tree::parse_locator(&req.locator, false);
-            let nodes = tree.get_by_attrs(&searches);
+            let default_locator = Locator {
+                name: None,
+                role: None,
+                description: None,
+                text: None,
+                index_in_parent: None,
+                ascendant: None,
+                descendants: Vec::new(),
+            };
+            let locator = req.locator.as_ref().unwrap_or(&default_locator);
+
+            let nodes = tree.get_elements(locator);
 
             let elements = nodes.into_iter().map(element_from_context_node).collect();
 
@@ -237,7 +254,7 @@ impl jab_service_server::JabService for JabService {
         }
     }
 
-    type SubscribeCallbacksStream = ReceiverStream<Result<proto::CallbackEvent, Status>>;
+    type SubscribeCallbacksStream = ReceiverStream<Result<ProtoCallbackEvent, Status>>;
 
     async fn subscribe_callbacks(
         &self,
@@ -249,7 +266,7 @@ impl jab_service_server::JabService for JabService {
 
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
-                let proto_event = proto::CallbackEvent {
+                let proto_event = ProtoCallbackEvent {
                     event_type: event.event_type,
                     vm_id: event.vm_id as i64,
                     context_handle: event.context_handle,
@@ -268,8 +285,8 @@ impl jab_service_server::JabService for JabService {
     }
 }
 
-fn window_info_to_proto(w: &WindowInfo) -> proto::WindowInfo {
-    proto::WindowInfo {
+fn window_info_to_proto(w: &WindowInfo) -> ProtoWindowInfo {
+    ProtoWindowInfo {
         vm_id: w.vm_id as i64,
         hwnd: w.hwnd,
         title: w.title.clone(),
@@ -283,6 +300,7 @@ fn element_from_context_node(node: &crate::context_tree::ContextNode) -> Element
         name: node.name.clone(),
         role: node.role.clone(),
         description: node.description.clone(),
+        text: node.text.clone(),
         x: node.x,
         y: node.y,
         width: node.width,
@@ -290,6 +308,9 @@ fn element_from_context_node(node: &crate::context_tree::ContextNode) -> Element
         accessible_action: node.accessible_action,
         accessible_text: node.accessible_text,
         accessible_selection: node.accessible_selection,
+        visible_children_count: node.visible_children_count,
+        index_in_parent: node.index_in_parent,
+        children: node.children.iter().map(element_from_context_node).collect(),
     }
 }
 

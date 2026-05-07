@@ -1,7 +1,9 @@
 from typing import Self
 import grpc
 from grpc._channel import Channel
-from . import jab, WindowInfo, Element, Table, VersionInfo
+from . import jab
+from .types import WindowInfo, Element, VersionInfo, Table
+from .locator import Locator
 
 
 class JabRpaRemoteError(Exception):
@@ -44,8 +46,8 @@ class JabRpaClient:
                 f"Error calling select_window_by_pid({req}): {res.error_message}"
             )
 
-    def get_elements(self, locator: str) -> list[Element]:
-        req = jab.GetElementsRequest(locator)
+    def get_elements(self, locator: Locator) -> list[Element]:
+        req = jab.GetElementsRequest(locator._locator)
         res: jab.GetElementsResponse = self.__stub.get_elements(req)
         if res.error_message:
             raise JabRpaRemoteError(
@@ -117,7 +119,7 @@ def main():
         print("Selecting first found window")
         client.select_window_by_title(window.title)
 
-        locator = "role:text"
-        print(f"Getting elements with locator {locator!r}")
+        locator = Locator(role=".*button.*")
+        print(f"Getting elements with locator {locator}")
         elements = client.get_elements(locator)
         print(f"Elements: {elements}")

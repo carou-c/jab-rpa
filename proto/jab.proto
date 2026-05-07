@@ -48,7 +48,7 @@ message SelectWindowByPidResponse {
 }
 
 message GetElementsRequest {
-  string locator = 1;
+  Locator locator = 1;
 }
 
 message Element {
@@ -56,13 +56,46 @@ message Element {
   string name = 2;
   string role = 3;
   string description = 4;
-  int32 x = 5;
-  int32 y = 6;
-  int32 width = 7;
-  int32 height = 8;
-  bool accessible_action = 9;
-  bool accessible_text = 10;
-  bool accessible_selection = 11;
+  string text = 5;
+  int32 x = 6;
+  int32 y = 7;
+  int32 width = 8;
+  int32 height = 9;
+  bool accessible_action = 10;
+  bool accessible_text = 11;
+  bool accessible_selection = 12;
+  int32 visible_children_count = 13;
+  int32 index_in_parent = 14;
+  repeated Element children = 15;
+}
+
+message StringLocator {
+  string find = 1;
+  bool regex = 2;
+}
+
+message IndexLocator {
+  int32 index = 1;
+}
+
+message AscendantLocator {
+  Locator locator = 1;
+  bool is_parent = 2;
+}
+
+message DescendantLocator {
+  Locator locator = 1;
+  bool is_child = 2;
+}
+
+message Locator {
+  optional StringLocator name = 1;
+  optional StringLocator role = 2;
+  optional StringLocator description = 3;
+  optional StringLocator text = 4;
+  optional IndexLocator index_in_parent = 5;
+  optional AscendantLocator ascendant = 6;
+  repeated DescendantLocator descendants = 7;
 }
 
 message GetElementsResponse {

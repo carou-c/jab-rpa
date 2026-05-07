@@ -4,23 +4,28 @@
 # This file has been @generated
 
 __all__ = (
+    "AscendantLocator",
     "CallbackEvent",
     "ClickElementRequest",
     "ClickElementResponse",
+    "DescendantLocator",
     "Element",
     "GetElementsRequest",
     "GetElementsResponse",
     "GetVersionInfoRequest",
     "GetVersionInfoResponse",
+    "IndexLocator",
     "JabServiceStub",
     "ListJavaWindowsRequest",
     "ListJavaWindowsResponse",
+    "Locator",
     "ReadTableRequest",
     "ReadTableResponse",
     "SelectWindowByPidRequest",
     "SelectWindowByPidResponse",
     "SelectWindowByTitleRequest",
     "SelectWindowByTitleResponse",
+    "StringLocator",
     "SubscribeCallbacksRequest",
     "Table",
     "TableCell",
@@ -43,6 +48,18 @@ from ..message_pool import default_message_pool
 
 _COMPILER_VERSION = "0.9.0"
 betterproto2.check_compiler_version(_COMPILER_VERSION)
+
+
+@dataclass(eq=False, repr=False)
+class AscendantLocator(betterproto2.Message):
+    locator: "Locator | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    is_parent: "bool" = betterproto2.field(2, betterproto2.TYPE_BOOL)
+
+
+default_message_pool.register_message("jab", "AscendantLocator", AscendantLocator)
 
 
 @dataclass(eq=False, repr=False)
@@ -82,6 +99,18 @@ default_message_pool.register_message(
 
 
 @dataclass(eq=False, repr=False)
+class DescendantLocator(betterproto2.Message):
+    locator: "Locator | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    is_child: "bool" = betterproto2.field(2, betterproto2.TYPE_BOOL)
+
+
+default_message_pool.register_message("jab", "DescendantLocator", DescendantLocator)
+
+
+@dataclass(eq=False, repr=False)
 class Element(betterproto2.Message):
     handle: "int" = betterproto2.field(1, betterproto2.TYPE_UINT64)
 
@@ -91,19 +120,29 @@ class Element(betterproto2.Message):
 
     description: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
 
-    x: "int" = betterproto2.field(5, betterproto2.TYPE_INT32)
+    text: "str" = betterproto2.field(5, betterproto2.TYPE_STRING)
 
-    y: "int" = betterproto2.field(6, betterproto2.TYPE_INT32)
+    x: "int" = betterproto2.field(6, betterproto2.TYPE_INT32)
 
-    width: "int" = betterproto2.field(7, betterproto2.TYPE_INT32)
+    y: "int" = betterproto2.field(7, betterproto2.TYPE_INT32)
 
-    height: "int" = betterproto2.field(8, betterproto2.TYPE_INT32)
+    width: "int" = betterproto2.field(8, betterproto2.TYPE_INT32)
 
-    accessible_action: "bool" = betterproto2.field(9, betterproto2.TYPE_BOOL)
+    height: "int" = betterproto2.field(9, betterproto2.TYPE_INT32)
 
-    accessible_text: "bool" = betterproto2.field(10, betterproto2.TYPE_BOOL)
+    accessible_action: "bool" = betterproto2.field(10, betterproto2.TYPE_BOOL)
 
-    accessible_selection: "bool" = betterproto2.field(11, betterproto2.TYPE_BOOL)
+    accessible_text: "bool" = betterproto2.field(11, betterproto2.TYPE_BOOL)
+
+    accessible_selection: "bool" = betterproto2.field(12, betterproto2.TYPE_BOOL)
+
+    visible_children_count: "int" = betterproto2.field(13, betterproto2.TYPE_INT32)
+
+    index_in_parent: "int" = betterproto2.field(14, betterproto2.TYPE_INT32)
+
+    children: "list[Element]" = betterproto2.field(
+        15, betterproto2.TYPE_MESSAGE, repeated=True
+    )
 
 
 default_message_pool.register_message("jab", "Element", Element)
@@ -111,7 +150,9 @@ default_message_pool.register_message("jab", "Element", Element)
 
 @dataclass(eq=False, repr=False)
 class GetElementsRequest(betterproto2.Message):
-    locator: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
+    locator: "Locator | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
 
 
 default_message_pool.register_message("jab", "GetElementsRequest", GetElementsRequest)
@@ -154,6 +195,14 @@ default_message_pool.register_message(
 
 
 @dataclass(eq=False, repr=False)
+class IndexLocator(betterproto2.Message):
+    index: "int" = betterproto2.field(1, betterproto2.TYPE_INT32)
+
+
+default_message_pool.register_message("jab", "IndexLocator", IndexLocator)
+
+
+@dataclass(eq=False, repr=False)
 class ListJavaWindowsRequest(betterproto2.Message):
     pass
 
@@ -173,6 +222,40 @@ class ListJavaWindowsResponse(betterproto2.Message):
 default_message_pool.register_message(
     "jab", "ListJavaWindowsResponse", ListJavaWindowsResponse
 )
+
+
+@dataclass(eq=False, repr=False)
+class Locator(betterproto2.Message):
+    name: "StringLocator | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    role: "StringLocator | None" = betterproto2.field(
+        2, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    description: "StringLocator | None" = betterproto2.field(
+        3, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    text: "StringLocator | None" = betterproto2.field(
+        4, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    index_in_parent: "IndexLocator | None" = betterproto2.field(
+        5, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    ascendant: "AscendantLocator | None" = betterproto2.field(
+        6, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    descendants: "list[DescendantLocator]" = betterproto2.field(
+        7, betterproto2.TYPE_MESSAGE, repeated=True
+    )
+
+
+default_message_pool.register_message("jab", "Locator", Locator)
 
 
 @dataclass(eq=False, repr=False)
@@ -239,6 +322,16 @@ class SelectWindowByTitleResponse(betterproto2.Message):
 default_message_pool.register_message(
     "jab", "SelectWindowByTitleResponse", SelectWindowByTitleResponse
 )
+
+
+@dataclass(eq=False, repr=False)
+class StringLocator(betterproto2.Message):
+    find: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
+
+    regex: "bool" = betterproto2.field(2, betterproto2.TYPE_BOOL)
+
+
+default_message_pool.register_message("jab", "StringLocator", StringLocator)
 
 
 @dataclass(eq=False, repr=False)

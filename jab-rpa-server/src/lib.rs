@@ -7,6 +7,10 @@ pub mod jab_wrapper;
 pub mod jab_service;
 pub mod context_tree;
 
+pub mod proto {
+    tonic::include_proto!("jab");
+}
+
 #[derive(Debug, Clone)]
 pub struct JabCallbackEvent {
     pub event_type: String,
