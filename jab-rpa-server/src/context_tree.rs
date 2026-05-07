@@ -2,7 +2,7 @@ use crate::proto;
 use crate::jab_wrapper::JabWrapper;
 use std::sync::Weak;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ContextNode {
     pub vm_id: i32,
     pub context: i64,
@@ -21,6 +21,43 @@ pub struct ContextNode {
     pub accessible_selection: bool,
     pub visible_children_count: i32,
     pub index_in_parent: i32,
+    wrapper: Option<Weak<JabWrapper>>,
+}
+
+impl Clone for ContextNode {
+    fn clone(&self) -> Self {
+        ContextNode {
+            vm_id: self.vm_id,
+            context: self.context,
+            handle: self.handle,
+            name: self.name.clone(),
+            role: self.role.clone(),
+            description: self.description.clone(),
+            children: self.children.clone(),
+            text: self.text.clone(),
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            accessible_action: self.accessible_action,
+            accessible_text: self.accessible_text,
+            accessible_selection: self.accessible_selection,
+            visible_children_count: self.visible_children_count,
+            index_in_parent: self.index_in_parent,
+            wrapper: None, // Don't clone the wrapper - only original releases
+        }
+    }
+}
+
+impl Drop for ContextNode {
+    fn drop(&mut self) {
+        if let Some(ref wrapper_weak) = self.wrapper {
+            if let Some(wrapper) = wrapper_weak.upgrade() {
+                eprintln!("[ContextNode::drop] Releasing handle={}", self.handle);
+                wrapper.release_element(self.handle);
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -89,6 +126,7 @@ impl ContextTree {
             accessible_selection: false,
             visible_children_count: 0,
             index_in_parent: 0,
+            wrapper: Some(std::sync::Arc::downgrade(jab)),
         };
 
         if let Some(info) = jab.get_accessible_context_info(vm_id, context) {
@@ -292,27 +330,9 @@ fn matches_node_simple_opt_ref(node: &ContextNode, locator: &Option<proto::Locat
 
 impl Drop for ContextTree {
     fn drop(&mut self) {
-        eprintln!("[ContextTree::drop] Dropping tree, releasing all elements...");
-        if let Some(ref wrapper_weak) = self.wrapper {
-            if let Some(wrapper) = wrapper_weak.upgrade() {
-                self.release_all_elements(&wrapper);
-            }
-        }
+        eprintln!("[ContextTree::drop] Dropping tree, nodes will release themselves...");
+        // ContextNode instances will release themselves via their Drop impl
+        // No need to manually release elements here
         eprintln!("[ContextTree::drop] Done.");
-    }
-}
-
-impl ContextTree {
-    fn release_all_elements(&self, wrapper: &JabWrapper) {
-        if let Some(ref root) = self.root {
-            Self::release_node_recursive(root, wrapper);
-        }
-    }
-
-    fn release_node_recursive(node: &ContextNode, wrapper: &JabWrapper) {
-        wrapper.release_element(node.handle);
-        for child in &node.children {
-            Self::release_node_recursive(child, wrapper);
-        }
     }
 }

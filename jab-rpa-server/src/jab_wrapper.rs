@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use tokio::sync::mpsc;
 
 use crate::bindings;
@@ -8,11 +8,8 @@ use crate::bindings;
 type VmId = i32;
 type JObject = i64;
 
-// Global event sender - set by JabWrapper::set_event_sender()
-static mut EVENT_TX: *mut mpsc::Sender<crate::JabCallbackEvent> = std::ptr::null_mut();
-
-// Global JObject -> handle mapping for callbacks
-static mut JOBJECT_TO_HANDLE: *mut HashMap<JObject, u64> = std::ptr::null_mut();
+// Global weak reference to JabWrapper for callbacks
+static mut JAB_WRAPPER: *mut Weak<JabWrapper> = std::ptr::null_mut();
 
 pub struct JabWrapper {
     pub initialized: AtomicBool,
@@ -23,6 +20,8 @@ pub struct JabWrapper {
     pub context_tree: Mutex<Option<crate::context_tree::ContextTree>>,
     message_pump_handle: Mutex<Option<std::thread::JoinHandle<()>>>,
     message_pump_thread_id: Mutex<Option<u32>>,
+    event_tx: Mutex<Option<mpsc::Sender<crate::JabCallbackEvent>>>,
+    jobject_to_handle: Mutex<HashMap<JObject, u64>>,
 }
 
 unsafe impl Send for JabWrapper {}
@@ -39,11 +38,13 @@ impl JabWrapper {
             context_tree: Mutex::new(None),
             message_pump_handle: Mutex::new(None),
             message_pump_thread_id: Mutex::new(None),
+            event_tx: Mutex::new(None),
+            jobject_to_handle: Mutex::new(HashMap::new()),
         });
 
-        // Initialize global JObject -> handle mapping
+        // Set global weak reference to wrapper
         unsafe {
-            JOBJECT_TO_HANDLE = Box::into_raw(Box::new(HashMap::new())) as *mut _;
+            JAB_WRAPPER = Box::into_raw(Box::new(Arc::downgrade(&wrapper))) as *mut _;
         }
 
         // Channel to synchronize initialization
@@ -121,11 +122,10 @@ impl JabWrapper {
             let mut elements = self.elements.lock().unwrap();
             elements.insert(handle, (vm_id, context));
         }
-        // Also update global JObject -> handle mapping
-        unsafe {
-            if !JOBJECT_TO_HANDLE.is_null() {
-                (*JOBJECT_TO_HANDLE).insert(context, handle);
-            }
+        // Also update JObject -> handle mapping
+        {
+            let mut map = self.jobject_to_handle.lock().unwrap();
+            map.insert(context, handle);
         }
         handle
     }
@@ -141,10 +141,10 @@ impl JabWrapper {
             eprintln!("[JabWrapper::release_element] Releasing handle={}, vm_id={}, context={}", handle, vm_id, context);
             unsafe {
                 crate::bindings::ReleaseJavaObject(vm_id, context as bindings::Java_Object);
-                if !JOBJECT_TO_HANDLE.is_null() {
-                    (*JOBJECT_TO_HANDLE).remove(&context);
-                }
             }
+            // Remove from jobject_to_handle map
+            let mut map = self.jobject_to_handle.lock().unwrap();
+            map.remove(&context);
         }
     }
 
@@ -176,9 +176,8 @@ impl JabWrapper {
     }
 
     pub fn set_event_sender(&self, tx: mpsc::Sender<crate::JabCallbackEvent>) {
-        unsafe {
-            EVENT_TX = Box::into_raw(Box::new(tx)) as *mut _;
-        }
+        let mut event_tx = self.event_tx.lock().unwrap();
+        *event_tx = Some(tx);
     }
 
     pub fn list_java_windows(&self) -> Vec<crate::jab_service::WindowInfo> {
@@ -411,6 +410,14 @@ impl Drop for JabWrapper {
             }
         }
 
+        // Clean up global weak reference
+        unsafe {
+            if !JAB_WRAPPER.is_null() {
+                let _ = Box::from_raw(JAB_WRAPPER);
+                JAB_WRAPPER = std::ptr::null_mut();
+            }
+        }
+
         // Call shutdownAccessBridge after the message pump has exited
         unsafe {
             crate::bindings::shutdownAccessBridge();
@@ -418,20 +425,24 @@ impl Drop for JabWrapper {
     }
 }
 
-// Standalone function to send callback events via the global sender
+// Standalone function to send callback events via the global weak reference
 fn send_callback_event(mut event: crate::JabCallbackEvent) {
     unsafe {
-        if !EVENT_TX.is_null() {
-            let tx = &*EVENT_TX;
-            // Try to convert the context_handle (JObject) to a proper handle
-            let context = event.context_handle as JObject;
-            if !JOBJECT_TO_HANDLE.is_null()
-                && let Some(handle) = (*JOBJECT_TO_HANDLE).get(&context)
-            {
-                event.context_handle = *handle;
-            }
+        if !JAB_WRAPPER.is_null() {
+            if let Some(wrapper) = (*JAB_WRAPPER).upgrade() {
+                // Try to convert the context_handle (JObject) to a proper handle
+                let context = event.context_handle as JObject;
+                let handle_map = wrapper.jobject_to_handle.lock().unwrap();
+                if let Some(handle) = handle_map.get(&context) {
+                    event.context_handle = *handle;
+                }
 
-            let _ = tx.try_send(event);
+                // Send the event
+                let event_tx = wrapper.event_tx.lock().unwrap();
+                if let Some(tx) = &*event_tx {
+                    let _ = tx.try_send(event);
+                }
+            }
         }
     }
 }
