@@ -1,4 +1,6 @@
 use crate::proto;
+use crate::jab_wrapper::JabWrapper;
+use std::sync::Weak;
 
 #[derive(Debug, Clone)]
 pub struct ContextNode {
@@ -21,10 +23,21 @@ pub struct ContextNode {
     pub index_in_parent: i32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ContextTree {
     pub root: Option<ContextNode>,
     pub max_depth: Option<i32>,
+    wrapper: Option<Weak<JabWrapper>>,
+}
+
+impl Clone for ContextTree {
+    fn clone(&self) -> Self {
+        ContextTree {
+            root: self.root.clone(),
+            max_depth: self.max_depth,
+            wrapper: self.wrapper.clone(),
+        }
+    }
 }
 
 impl ContextTree {
@@ -32,11 +45,12 @@ impl ContextTree {
         vm_id: i32,
         root_context: i64,
         max_depth: Option<i32>,
-        jab: &super::jab_wrapper::JabWrapper,
+        jab: &std::sync::Arc<JabWrapper>,
     ) -> Self {
         let mut tree = ContextTree {
             root: None,
             max_depth,
+            wrapper: Some(std::sync::Arc::downgrade(jab)),
         };
 
         if root_context == 0 {
@@ -53,7 +67,7 @@ impl ContextTree {
         context: i64,
         depth: i32,
         max_depth: Option<i32>,
-        jab: &super::jab_wrapper::JabWrapper,
+        jab: &std::sync::Arc<JabWrapper>,
     ) -> ContextNode {
         let handle = jab.register_element(vm_id, context);
 
@@ -273,5 +287,32 @@ fn matches_node_simple_opt_ref(node: &ContextNode, locator: &Option<proto::Locat
     match locator {
         None => false,
         Some(locator_ref) => matches_node_simple(node, locator_ref),
+    }
+}
+
+impl Drop for ContextTree {
+    fn drop(&mut self) {
+        eprintln!("[ContextTree::drop] Dropping tree, releasing all elements...");
+        if let Some(ref wrapper_weak) = self.wrapper {
+            if let Some(wrapper) = wrapper_weak.upgrade() {
+                self.release_all_elements(&wrapper);
+            }
+        }
+        eprintln!("[ContextTree::drop] Done.");
+    }
+}
+
+impl ContextTree {
+    fn release_all_elements(&self, wrapper: &JabWrapper) {
+        if let Some(ref root) = self.root {
+            Self::release_node_recursive(root, wrapper);
+        }
+    }
+
+    fn release_node_recursive(node: &ContextNode, wrapper: &JabWrapper) {
+        wrapper.release_element(node.handle);
+        for child in &node.children {
+            Self::release_node_recursive(child, wrapper);
+        }
     }
 }

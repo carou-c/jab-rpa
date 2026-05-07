@@ -138,6 +138,7 @@ impl JabWrapper {
     pub fn release_element(&self, handle: u64) {
         let mut elements = self.elements.lock().unwrap();
         if let Some((vm_id, context)) = elements.remove(&handle) {
+            eprintln!("[JabWrapper::release_element] Releasing handle={}, vm_id={}, context={}", handle, vm_id, context);
             unsafe {
                 crate::bindings::ReleaseJavaObject(vm_id, context as bindings::Java_Object);
                 if !JOBJECT_TO_HANDLE.is_null() {
@@ -159,6 +160,13 @@ impl JabWrapper {
 
     pub fn set_root_context(&self, context: JObject) {
         let mut ctx = self.root_context.lock().unwrap();
+        if let Some(old_context) = ctx.take() {
+            if let Some(vm_id) = self.get_vm_id() {
+                unsafe {
+                    crate::bindings::ReleaseJavaObject(vm_id, old_context as crate::bindings::Java_Object);
+                }
+            }
+        }
         *ctx = Some(context);
     }
 
@@ -213,6 +221,8 @@ impl JabWrapper {
                                 .to_string(),
                         });
                     }
+                    // Release the context obtained from GetAccessibleContextFromHWND
+                    crate::bindings::ReleaseJavaObject(vm_id, context as crate::bindings::Java_Object);
                 }
             }
         }
@@ -376,6 +386,29 @@ impl Drop for JabWrapper {
 
         if let Some(h) = handle {
             let _ = h.join();
+        }
+
+        // Release root_context if set
+        if let Some(vm_id) = self.get_vm_id() {
+            if let Some(root_context) = self.get_root_context() {
+                unsafe {
+                    crate::bindings::ReleaseJavaObject(vm_id, root_context as crate::bindings::Java_Object);
+                }
+            }
+        }
+
+        // Release remaining elements
+        let elements: Vec<(VmId, JObject)> = {
+            let mut elements_lock = self.elements.lock().unwrap();
+            elements_lock.drain().map(|(_, v)| v).collect()
+        };
+
+        if let Some(vm_id) = self.get_vm_id() {
+            for (_, context) in elements {
+                unsafe {
+                    crate::bindings::ReleaseJavaObject(vm_id, context as crate::bindings::Java_Object);
+                }
+            }
         }
 
         // Call shutdownAccessBridge after the message pump has exited
