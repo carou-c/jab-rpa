@@ -51,12 +51,11 @@ impl Clone for ContextNode {
 
 impl Drop for ContextNode {
     fn drop(&mut self) {
-        if let Some(ref wrapper_weak) = self.wrapper {
-            if let Some(wrapper) = wrapper_weak.upgrade() {
+        if let Some(ref wrapper_weak) = self.wrapper
+            && let Some(wrapper) = wrapper_weak.upgrade() {
                 eprintln!("[ContextNode::drop] Releasing handle={}", self.handle);
                 wrapper.release_element(self.handle);
             }
-        }
     }
 }
 

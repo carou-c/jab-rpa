@@ -160,13 +160,12 @@ impl JabWrapper {
 
     pub fn set_root_context(&self, context: JObject) {
         let mut ctx = self.root_context.lock().unwrap();
-        if let Some(old_context) = ctx.take() {
-            if let Some(vm_id) = self.get_vm_id() {
+        if let Some(old_context) = ctx.take()
+            && let Some(vm_id) = self.get_vm_id() {
                 unsafe {
                     crate::bindings::ReleaseJavaObject(vm_id, old_context as crate::bindings::Java_Object);
                 }
             }
-        }
         *ctx = Some(context);
     }
 
@@ -388,13 +387,12 @@ impl Drop for JabWrapper {
         }
 
         // Release root_context if set
-        if let Some(vm_id) = self.get_vm_id() {
-            if let Some(root_context) = self.get_root_context() {
+        if let Some(vm_id) = self.get_vm_id()
+            && let Some(root_context) = self.get_root_context() {
                 unsafe {
                     crate::bindings::ReleaseJavaObject(vm_id, root_context as crate::bindings::Java_Object);
                 }
             }
-        }
 
         // Release remaining elements
         let elements: Vec<(VmId, JObject)> = {
@@ -428,8 +426,8 @@ impl Drop for JabWrapper {
 // Standalone function to send callback events via the global weak reference
 fn send_callback_event(mut event: crate::JabCallbackEvent) {
     unsafe {
-        if !JAB_WRAPPER.is_null() {
-            if let Some(wrapper) = (*JAB_WRAPPER).upgrade() {
+        if !JAB_WRAPPER.is_null()
+            && let Some(wrapper) = (*JAB_WRAPPER).upgrade() {
                 // Try to convert the context_handle (JObject) to a proper handle
                 let context = event.context_handle as JObject;
                 let handle_map = wrapper.jobject_to_handle.lock().unwrap();
@@ -443,7 +441,6 @@ fn send_callback_event(mut event: crate::JabCallbackEvent) {
                     let _ = tx.try_send(event);
                 }
             }
-        }
     }
 }
 
