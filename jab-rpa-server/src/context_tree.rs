@@ -14,6 +14,8 @@ pub struct ContextNode {
     pub handle: NodeHandle,
     pub name: String,
     pub role: String,
+    pub states: Vec<String>,
+    pub states_en_us: Vec<String>,
     pub description: String,
     pub children: Vec<NodeHandle>,
     pub text: String,
@@ -26,6 +28,7 @@ pub struct ContextNode {
     pub accessible_selection: bool,
     pub children_count: i32,
     pub index_in_parent: i32,
+    pub parent: Option<NodeHandle>,
     pub depth: i32,
 }
 
@@ -36,12 +39,20 @@ pub struct ContextTree {
 }
 
 impl ContextNode {
-    fn new(obj: JavaObject, depth: i32, handle: NodeHandle, jab: &std::sync::Arc<JabWrapper>) -> Self {
+    fn new(
+        obj: JavaObject,
+        depth: i32,
+        handle: NodeHandle,
+        parent: Option<NodeHandle>,
+        jab: &std::sync::Arc<JabWrapper>,
+    ) -> Self {
         let mut node = Self {
             obj,
             handle,
             name: String::new(),
             role: String::new(),
+            states: Vec::new(),
+            states_en_us: Vec::new(),
             description: String::new(),
             children: Vec::new(),
             text: String::new(),
@@ -54,12 +65,21 @@ impl ContextNode {
             accessible_selection: false,
             children_count: 0,
             index_in_parent: 0,
+            parent,
             depth,
         };
 
         if let Some(info) = jab.get_obj_info(&node.obj) {
             node.name = utf16_to_string(&info.name);
             node.role = utf16_to_string(&info.role);
+            node.states = utf16_to_string(&info.states)
+                .split(',')
+                .map(|s| s.to_string())
+                .collect();
+            node.states_en_us = utf16_to_string(&info.states_en_US)
+                .split(',')
+                .map(|s| s.to_string())
+                .collect();
             node.description = utf16_to_string(&info.description);
             node.x = info.x;
             node.y = info.y;
@@ -94,7 +114,7 @@ impl ContextTree {
             next_handle: ROOT_HANDLE + 1,
         };
 
-        let mut root = ContextNode::new(root_obj, 0, ROOT_HANDLE, jab);
+        let mut root = ContextNode::new(root_obj, 0, ROOT_HANDLE, None, jab);
         tree.build_subtree(&mut root, max_depth, jab);
         tree.nodes.insert(ROOT_HANDLE, root);
 
@@ -118,7 +138,8 @@ impl ContextTree {
 
             let handle = self.next_handle;
             self.next_handle += 1;
-            let mut child_node = ContextNode::new(child_obj, node.depth + 1, handle, jab);
+            let mut child_node =
+                ContextNode::new(child_obj, node.depth + 1, handle, Some(node.handle), jab);
 
             self.build_subtree(&mut child_node, max_depth, jab);
 
@@ -175,6 +196,22 @@ impl ContextTree {
 
         if let Some(ref il) = locator.index_in_parent
             && node.index_in_parent != il.index
+        {
+            return false;
+        }
+
+        if locator
+            .has_state
+            .iter()
+            .any(|state| !node.states.contains(state))
+        {
+            return false;
+        }
+
+        if locator
+            .not_has_state
+            .iter()
+            .any(|state| node.states.contains(state))
         {
             return false;
         }

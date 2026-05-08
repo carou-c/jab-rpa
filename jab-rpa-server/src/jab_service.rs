@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
 
 use crate::bindings;
-use crate::context_tree::{ContextTree, NodeHandle, ROOT_HANDLE};
+use crate::context_tree::{ContextNode, ContextTree, ROOT_HANDLE};
 use crate::jab_wrapper::JabWrapper;
 use crate::types::WindowInfo;
 use crate::utils::utf16_to_string;
@@ -13,11 +13,7 @@ use crate::utils::utf16_to_string;
 // We alias our local types to avoid confusion
 use crate::proto::jab_service_server::JabService as JabServiceTrait;
 use crate::proto::{
-    ClickElementRequest, ClickElementResponse, Element, GetElementsRequest, GetElementsResponse,
-    GetVersionInfoRequest, GetVersionInfoResponse, ListJavaWindowsRequest, ListJavaWindowsResponse,
-    Locator, ReadTableRequest, ReadTableResponse, SelectWindowRequest, SelectWindowResponse,
-    TypeTextRequest, TypeTextResponse, VersionInfo as ProtoVersionInfo,
-    WaitUntilElementExistsRequest, WaitUntilElementExistsResponse, WindowInfo as ProtoWindowInfo,
+    ClickElementRequest, ClickElementResponse, Element, FindElementsRequest, FindElementsResponse, GetElementFromHandleRequest, GetElementFromHandleResponse, GetVersionInfoRequest, GetVersionInfoResponse, ListJavaWindowsRequest, ListJavaWindowsResponse, Locator, ReadTableRequest, ReadTableResponse, SelectWindowRequest, SelectWindowResponse, TypeTextRequest, TypeTextResponse, VersionInfo as ProtoVersionInfo, WaitUntilElementExistsRequest, WaitUntilElementExistsResponse, WindowInfo as ProtoWindowInfo
 };
 
 #[derive(Debug, Clone)]
@@ -129,17 +125,17 @@ impl JabServiceTrait for JabService {
         }
     }
 
-    async fn get_elements(
+    async fn find_elements(
         &self,
-        request: Request<GetElementsRequest>,
-    ) -> Result<Response<GetElementsResponse>, Status> {
+        request: Request<FindElementsRequest>,
+    ) -> Result<Response<FindElementsResponse>, Status> {
         let req = request.into_inner();
 
         let tree_lock = self.ctx_tree.lock().unwrap();
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
             None => {
-                return Ok(Response::new(GetElementsResponse {
+                return Ok(Response::new(FindElementsResponse {
                     elements: Vec::new(),
                     error_message: "No window selected. Call SelectWindow first.".to_string(),
                 }));
@@ -151,6 +147,8 @@ impl JabServiceTrait for JabService {
             role: None,
             description: None,
             text: None,
+            has_state: Vec::new(),
+            not_has_state: Vec::new(),
             index_in_parent: None,
             ascendant: None,
             descendants: Vec::new(),
@@ -160,11 +158,44 @@ impl JabServiceTrait for JabService {
 
         let elements = nodes
             .into_iter()
-            .map(|node| element_from_node_handle(&node.handle, tree))
+            .map(element_from_node)
             .collect();
 
-        Ok(Response::new(GetElementsResponse {
+        Ok(Response::new(FindElementsResponse {
             elements,
+            error_message: String::new(),
+        }))
+    }
+
+    async fn get_element_from_handle(
+        &self,
+        request: Request<GetElementFromHandleRequest>,
+    ) -> Result<Response<GetElementFromHandleResponse>, Status> {
+        let req = request.into_inner();
+
+        let tree_lock = self.ctx_tree.lock().unwrap();
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => {
+                return Ok(Response::new(GetElementFromHandleResponse {
+                    element: None,
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
+            }
+        };
+
+        let node = match tree.nodes.get(&req.handle) {
+            Some(node) => node,
+            None => {
+                return Ok(Response::new(GetElementFromHandleResponse {
+                    element: None,
+                    error_message: format!("No node with handle={}", req.handle),
+                }));
+            }
+        };
+
+        Ok(Response::new(GetElementFromHandleResponse {
+            element: Some(element_from_node(node)),
             error_message: String::new(),
         }))
     }
@@ -305,44 +336,15 @@ impl JabServiceTrait for JabService {
             })),
         }
     }
-
-    // type SubscribeCallbacksStream = ReceiverStream<Result<ProtoCallbackEvent, Status>>;
-    //
-    // async fn subscribe_callbacks(
-    //     &self,
-    //     _request: Request<SubscribeCallbacksRequest>,
-    // ) -> Result<Response<Self::SubscribeCallbacksStream>, Status> {
-    //     let (tx, mut rx) = mpsc::channel::<crate::JabCallbackEvent>(100);
-    //
-    //     let (proto_tx, proto_rx) = mpsc::channel(100);
-    //
-    //     tokio::spawn(async move {
-    //         while let Some(event) = rx.recv().await {
-    //             let proto_event = ProtoCallbackEvent {
-    //                 event_type: event.event_type,
-    //                 vm_id: event.vm_id as i64,
-    //                 context_handle: event.context_handle,
-    //                 message: event.message,
-    //                 event_time: event.event_time,
-    //             };
-    //             if proto_tx.send(Ok(proto_event)).await.is_err() {
-    //                 break;
-    //             }
-    //         }
-    //     });
-    //
-    //     self.wrapper.set_event_sender(tx);
-    //
-    //     Ok(Response::new(ReceiverStream::new(proto_rx)))
-    // }
 }
 
-fn element_from_node_handle(handle: &NodeHandle, tree: &ContextTree) -> Element {
-    let node = &tree.nodes[handle];
+fn element_from_node(node: &ContextNode) -> Element {
     Element {
         handle: node.handle,
         name: node.name.clone(),
         role: node.role.clone(),
+        states: node.states.clone(),
+        states_en_us: node.states_en_us.clone(),
         description: node.description.clone(),
         text: node.text.clone(),
         x: node.x,
@@ -354,10 +356,8 @@ fn element_from_node_handle(handle: &NodeHandle, tree: &ContextTree) -> Element 
         accessible_selection: node.accessible_selection,
         children_count: node.children_count,
         index_in_parent: node.index_in_parent,
-        children: node
-            .children
-            .iter()
-            .map(|h| element_from_node_handle(h, tree))
-            .collect(),
+        children_handles: node.children.clone(),
+        parent_handle: node.parent,
+        depth: node.depth,
     }
 }
