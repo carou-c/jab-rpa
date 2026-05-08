@@ -19,8 +19,8 @@ class Locator:
         has_state: list[str] | None = None,
         not_has_state: list[str] | None = None,
         index_in_parent: int | None = None,
-        has_children: list[Locator] | None = None,
-        has_descendants: list[Locator] | None = None,
+        has_children: list["Locator"] | None = None,
+        has_descendants: list["Locator"] | None = None,
         name_regex: bool = True,
         role_regex: bool = True,
         description_regex: bool = True,
@@ -64,13 +64,13 @@ class Locator:
         has_state: list[str] | None = None,
         not_has_state: list[str] | None = None,
         index_in_parent: int | None = None,
-        has_children: list[Locator] | None = None,
-        has_descendants: list[Locator] | None = None,
+        has_children: list["Locator"] | None = None,
+        has_descendants: list["Locator"] | None = None,
         name_regex: bool = True,
         role_regex: bool = True,
         description_regex: bool = True,
         text_regex: bool = True,
-    ) -> Locator:
+    ) -> "Locator":
         return Locator(
             name=name,
             role=role,
@@ -98,13 +98,13 @@ class Locator:
         has_state: list[str] | None = None,
         not_has_state: list[str] | None = None,
         index_in_parent: int | None = None,
-        has_children: list[Locator] | None = None,
-        has_descendants: list[Locator] | None = None,
+        has_children: list["Locator"] | None = None,
+        has_descendants: list["Locator"] | None = None,
         name_regex: bool = True,
         role_regex: bool = True,
         description_regex: bool = True,
         text_regex: bool = True,
-    ) -> Locator:
+    ) -> "Locator":
         return Locator(
             name=name,
             role=role,

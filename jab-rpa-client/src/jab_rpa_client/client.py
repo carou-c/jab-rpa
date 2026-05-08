@@ -41,6 +41,14 @@ class JabRpaClient:
                 f"Error calling select_window({req}): {res.error_message}"
             )
 
+    def refresh_tree(self) -> None:
+        req = jab.RefreshTreeRequest()
+        res: jab.RefreshTreeResponse = self.__stub.refresh_tree(req)
+        if not res.success:
+            raise JabRpaRemoteError(
+                f"Error calling select_window({req}): {res.error_message}"
+            )
+
     def find_elements(self, locator: Locator) -> list[Element]:
         req = jab.FindElementsRequest(locator._locator)
         res: jab.FindElementsResponse = self.__stub.find_elements(req)
