@@ -127,7 +127,7 @@ impl ContextTree {
         }
     }
 
-    pub fn get_elements(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
+    pub fn get_nodes(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
         let mut results = Vec::new();
         self.collect_matching(self.root(), locator, &[], &mut results);
         results

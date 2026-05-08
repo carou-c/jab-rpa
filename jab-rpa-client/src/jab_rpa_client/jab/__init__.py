@@ -5,7 +5,6 @@
 
 __all__ = (
     "AscendantLocator",
-    "CallbackEvent",
     "ClickElementRequest",
     "ClickElementResponse",
     "DescendantLocator",
@@ -24,7 +23,6 @@ __all__ = (
     "SelectWindowRequest",
     "SelectWindowResponse",
     "StringLocator",
-    "SubscribeCallbacksRequest",
     "Table",
     "TableCell",
     "TableRow",
@@ -36,7 +34,6 @@ __all__ = (
     "WindowInfo",
 )
 
-from collections.abc import Iterator
 from dataclasses import dataclass
 
 import betterproto2
@@ -58,22 +55,6 @@ class AscendantLocator(betterproto2.Message):
 
 
 default_message_pool.register_message("jab", "AscendantLocator", AscendantLocator)
-
-
-@dataclass(eq=False, repr=False)
-class CallbackEvent(betterproto2.Message):
-    event_type: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
-
-    vm_id: "int" = betterproto2.field(2, betterproto2.TYPE_INT64)
-
-    context_handle: "int" = betterproto2.field(3, betterproto2.TYPE_UINT64)
-
-    message: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
-
-    event_time: "int" = betterproto2.field(5, betterproto2.TYPE_INT64)
-
-
-default_message_pool.register_message("jab", "CallbackEvent", CallbackEvent)
 
 
 @dataclass(eq=False, repr=False)
@@ -309,18 +290,6 @@ default_message_pool.register_message("jab", "StringLocator", StringLocator)
 
 
 @dataclass(eq=False, repr=False)
-class SubscribeCallbacksRequest(betterproto2.Message):
-    event_types: "list[str]" = betterproto2.field(
-        1, betterproto2.TYPE_STRING, repeated=True
-    )
-
-
-default_message_pool.register_message(
-    "jab", "SubscribeCallbacksRequest", SubscribeCallbacksRequest
-)
-
-
-@dataclass(eq=False, repr=False)
 class Table(betterproto2.Message):
     row_count: "int" = betterproto2.field(1, betterproto2.TYPE_INT32)
 
@@ -491,6 +460,10 @@ class JabServiceStub:
     def get_version_info(
         self, message: "GetVersionInfoRequest | None" = None
     ) -> "GetVersionInfoResponse":
+        """
+        rpc SubscribeCallbacks(SubscribeCallbacksRequest) returns (stream CallbackEvent);
+        """
+
         if message is None:
             message = GetVersionInfoRequest()
 
@@ -498,13 +471,4 @@ class JabServiceStub:
             "/jab.JabService/GetVersionInfo",
             GetVersionInfoRequest.SerializeToString,
             GetVersionInfoResponse.FromString,
-        )(message)
-
-    def subscribe_callbacks(
-        self, message: "SubscribeCallbacksRequest"
-    ) -> "Iterator[CallbackEvent]":
-        yield from self._channel.unary_stream(
-            "/jab.JabService/SubscribeCallbacks",
-            SubscribeCallbacksRequest.SerializeToString,
-            CallbackEvent.FromString,
         )(message)

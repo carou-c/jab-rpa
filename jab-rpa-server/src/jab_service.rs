@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
+// use tokio::sync::mpsc;
+// use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 use crate::bindings;
@@ -13,12 +13,11 @@ use crate::utils::utf16_to_string;
 // We alias our local types to avoid confusion
 use crate::proto::jab_service_server::JabService as JabServiceTrait;
 use crate::proto::{
-    CallbackEvent as ProtoCallbackEvent, ClickElementRequest, ClickElementResponse, Element,
-    GetElementsRequest, GetElementsResponse, GetVersionInfoRequest, GetVersionInfoResponse,
-    ListJavaWindowsRequest, ListJavaWindowsResponse, Locator, ReadTableRequest, ReadTableResponse,
-    SelectWindowRequest, SelectWindowResponse, SubscribeCallbacksRequest, TypeTextRequest,
-    TypeTextResponse, VersionInfo as ProtoVersionInfo, WaitUntilElementExistsRequest,
-    WaitUntilElementExistsResponse, WindowInfo as ProtoWindowInfo,
+    ClickElementRequest, ClickElementResponse, Element, GetElementsRequest, GetElementsResponse,
+    GetVersionInfoRequest, GetVersionInfoResponse, ListJavaWindowsRequest, ListJavaWindowsResponse,
+    Locator, ReadTableRequest, ReadTableResponse, SelectWindowRequest, SelectWindowResponse,
+    TypeTextRequest, TypeTextResponse, VersionInfo as ProtoVersionInfo,
+    WaitUntilElementExistsRequest, WaitUntilElementExistsResponse, WindowInfo as ProtoWindowInfo,
 };
 
 #[derive(Debug, Clone)]
@@ -102,8 +101,8 @@ impl JabServiceTrait for JabService {
                 error_message: "window_info not present in request".to_string(),
             }));
         };
-        let wrapper = self.wrapper.clone();
 
+        let wrapper = self.wrapper.clone();
         let result = tokio::task::spawn_blocking({
             let wrapper = wrapper.clone();
             move || wrapper.get_root_obj_from_window(w.into())
@@ -137,35 +136,37 @@ impl JabServiceTrait for JabService {
         let req = request.into_inner();
 
         let tree_lock = self.ctx_tree.lock().unwrap();
-        if let Some(tree) = tree_lock.as_ref() {
-            let default_locator = Locator {
-                name: None,
-                role: None,
-                description: None,
-                text: None,
-                index_in_parent: None,
-                ascendant: None,
-                descendants: Vec::new(),
-            };
-            let locator = req.locator.as_ref().unwrap_or(&default_locator);
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => {
+                return Ok(Response::new(GetElementsResponse {
+                    elements: Vec::new(),
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
+            }
+        };
 
-            let nodes = tree.get_elements(locator);
+        let default_locator = Locator {
+            name: None,
+            role: None,
+            description: None,
+            text: None,
+            index_in_parent: None,
+            ascendant: None,
+            descendants: Vec::new(),
+        };
+        let locator = req.locator.as_ref().unwrap_or(&default_locator);
+        let nodes = tree.get_nodes(locator);
 
-            let elements = nodes
-                .into_iter()
-                .map(|node| element_from_node_handle(&node.handle, tree))
-                .collect();
+        let elements = nodes
+            .into_iter()
+            .map(|node| element_from_node_handle(&node.handle, tree))
+            .collect();
 
-            Ok(Response::new(GetElementsResponse {
-                elements,
-                error_message: String::new(),
-            }))
-        } else {
-            Ok(Response::new(GetElementsResponse {
-                elements: Vec::new(),
-                error_message: "No window selected. Call SelectWindow first.".to_string(),
-            }))
-        }
+        Ok(Response::new(GetElementsResponse {
+            elements,
+            error_message: String::new(),
+        }))
     }
 
     async fn click_element(
@@ -305,35 +306,35 @@ impl JabServiceTrait for JabService {
         }
     }
 
-    type SubscribeCallbacksStream = ReceiverStream<Result<ProtoCallbackEvent, Status>>;
-
-    async fn subscribe_callbacks(
-        &self,
-        _request: Request<SubscribeCallbacksRequest>,
-    ) -> Result<Response<Self::SubscribeCallbacksStream>, Status> {
-        let (tx, mut rx) = mpsc::channel::<crate::JabCallbackEvent>(100);
-
-        let (proto_tx, proto_rx) = mpsc::channel(100);
-
-        tokio::spawn(async move {
-            while let Some(event) = rx.recv().await {
-                let proto_event = ProtoCallbackEvent {
-                    event_type: event.event_type,
-                    vm_id: event.vm_id as i64,
-                    context_handle: event.context_handle,
-                    message: event.message,
-                    event_time: event.event_time,
-                };
-                if proto_tx.send(Ok(proto_event)).await.is_err() {
-                    break;
-                }
-            }
-        });
-
-        self.wrapper.set_event_sender(tx);
-
-        Ok(Response::new(ReceiverStream::new(proto_rx)))
-    }
+    // type SubscribeCallbacksStream = ReceiverStream<Result<ProtoCallbackEvent, Status>>;
+    //
+    // async fn subscribe_callbacks(
+    //     &self,
+    //     _request: Request<SubscribeCallbacksRequest>,
+    // ) -> Result<Response<Self::SubscribeCallbacksStream>, Status> {
+    //     let (tx, mut rx) = mpsc::channel::<crate::JabCallbackEvent>(100);
+    //
+    //     let (proto_tx, proto_rx) = mpsc::channel(100);
+    //
+    //     tokio::spawn(async move {
+    //         while let Some(event) = rx.recv().await {
+    //             let proto_event = ProtoCallbackEvent {
+    //                 event_type: event.event_type,
+    //                 vm_id: event.vm_id as i64,
+    //                 context_handle: event.context_handle,
+    //                 message: event.message,
+    //                 event_time: event.event_time,
+    //             };
+    //             if proto_tx.send(Ok(proto_event)).await.is_err() {
+    //                 break;
+    //             }
+    //         }
+    //     });
+    //
+    //     self.wrapper.set_event_sender(tx);
+    //
+    //     Ok(Response::new(ReceiverStream::new(proto_rx)))
+    // }
 }
 
 fn element_from_node_handle(handle: &NodeHandle, tree: &ContextTree) -> Element {

@@ -154,8 +154,8 @@ impl JabWrapper {
                     title: {
                         let len = GetWindowTextLengthW(hwnd);
                         if len > 0 {
-                            let mut buf: Vec<wchar_t> = Vec::new();
-                            GetWindowTextW(hwnd, buf.as_mut_ptr(), len);
+                            let mut buf: Vec<wchar_t> = vec![0; (len + 1) as usize];
+                            GetWindowTextW(hwnd, buf.as_mut_ptr(), len + 1);
                             utf16_to_string(&buf)
                         } else {
                             String::new()
