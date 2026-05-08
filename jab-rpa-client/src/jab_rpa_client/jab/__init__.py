@@ -21,10 +21,8 @@ __all__ = (
     "Locator",
     "ReadTableRequest",
     "ReadTableResponse",
-    "SelectWindowByPidRequest",
-    "SelectWindowByPidResponse",
-    "SelectWindowByTitleRequest",
-    "SelectWindowByTitleResponse",
+    "SelectWindowRequest",
+    "SelectWindowResponse",
     "StringLocator",
     "SubscribeCallbacksRequest",
     "Table",
@@ -136,7 +134,7 @@ class Element(betterproto2.Message):
 
     accessible_selection: "bool" = betterproto2.field(12, betterproto2.TYPE_BOOL)
 
-    visible_children_count: "int" = betterproto2.field(13, betterproto2.TYPE_INT32)
+    children_count: "int" = betterproto2.field(13, betterproto2.TYPE_INT32)
 
     index_in_parent: "int" = betterproto2.field(14, betterproto2.TYPE_INT32)
 
@@ -279,48 +277,24 @@ default_message_pool.register_message("jab", "ReadTableResponse", ReadTableRespo
 
 
 @dataclass(eq=False, repr=False)
-class SelectWindowByPidRequest(betterproto2.Message):
-    pid: "int" = betterproto2.field(1, betterproto2.TYPE_INT32)
+class SelectWindowRequest(betterproto2.Message):
+    window_info: "WindowInfo | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
 
 
-default_message_pool.register_message(
-    "jab", "SelectWindowByPidRequest", SelectWindowByPidRequest
-)
+default_message_pool.register_message("jab", "SelectWindowRequest", SelectWindowRequest)
 
 
 @dataclass(eq=False, repr=False)
-class SelectWindowByPidResponse(betterproto2.Message):
+class SelectWindowResponse(betterproto2.Message):
     success: "bool" = betterproto2.field(1, betterproto2.TYPE_BOOL)
 
     error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
 
 
 default_message_pool.register_message(
-    "jab", "SelectWindowByPidResponse", SelectWindowByPidResponse
-)
-
-
-@dataclass(eq=False, repr=False)
-class SelectWindowByTitleRequest(betterproto2.Message):
-    title: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
-
-    partial_match: "bool" = betterproto2.field(2, betterproto2.TYPE_BOOL)
-
-
-default_message_pool.register_message(
-    "jab", "SelectWindowByTitleRequest", SelectWindowByTitleRequest
-)
-
-
-@dataclass(eq=False, repr=False)
-class SelectWindowByTitleResponse(betterproto2.Message):
-    success: "bool" = betterproto2.field(1, betterproto2.TYPE_BOOL)
-
-    error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
-
-
-default_message_pool.register_message(
-    "jab", "SelectWindowByTitleResponse", SelectWindowByTitleResponse
+    "jab", "SelectWindowResponse", SelectWindowResponse
 )
 
 
@@ -446,13 +420,9 @@ default_message_pool.register_message(
 
 @dataclass(eq=False, repr=False)
 class WindowInfo(betterproto2.Message):
-    vm_id: "int" = betterproto2.field(1, betterproto2.TYPE_INT64)
+    hwnd: "int" = betterproto2.field(1, betterproto2.TYPE_UINT64)
 
-    hwnd: "int" = betterproto2.field(2, betterproto2.TYPE_UINT64)
-
-    title: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
-
-    role: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
+    title: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
 
 
 default_message_pool.register_message("jab", "WindowInfo", WindowInfo)
@@ -474,22 +444,11 @@ class JabServiceStub:
             ListJavaWindowsResponse.FromString,
         )(message)
 
-    def select_window_by_title(
-        self, message: "SelectWindowByTitleRequest"
-    ) -> "SelectWindowByTitleResponse":
+    def select_window(self, message: "SelectWindowRequest") -> "SelectWindowResponse":
         return self._channel.unary_unary(
-            "/jab.JabService/SelectWindowByTitle",
-            SelectWindowByTitleRequest.SerializeToString,
-            SelectWindowByTitleResponse.FromString,
-        )(message)
-
-    def select_window_by_pid(
-        self, message: "SelectWindowByPidRequest"
-    ) -> "SelectWindowByPidResponse":
-        return self._channel.unary_unary(
-            "/jab.JabService/SelectWindowByPid",
-            SelectWindowByPidRequest.SerializeToString,
-            SelectWindowByPidResponse.FromString,
+            "/jab.JabService/SelectWindow",
+            SelectWindowRequest.SerializeToString,
+            SelectWindowResponse.FromString,
         )(message)
 
     def get_elements(self, message: "GetElementsRequest") -> "GetElementsResponse":

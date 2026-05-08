@@ -30,20 +30,12 @@ class JabRpaClient:
         res: jab.ListJavaWindowsResponse = self.__stub.list_java_windows(req)
         return res.windows
 
-    def select_window_by_title(self, title: str, partial_match: bool = False) -> None:
-        req = jab.SelectWindowByTitleRequest(title, partial_match)
-        res: jab.SelectWindowByTitleResponse = self.__stub.select_window_by_title(req)
+    def select_window(self, window_info: WindowInfo) -> None:
+        req = jab.SelectWindowRequest(window_info)
+        res: jab.SelectWindowResponse = self.__stub.select_window(req)
         if not res.success:
             raise JabRpaRemoteError(
-                f"Error calling select_window_by_title({req}): {res.error_message}"
-            )
-
-    def select_window_by_pid(self, pid: int) -> None:
-        req = jab.SelectWindowByPidRequest(pid)
-        res: jab.SelectWindowByPidResponse = self.__stub.select_window_by_pid(req)
-        if not res.success:
-            raise JabRpaRemoteError(
-                f"Error calling select_window_by_pid({req}): {res.error_message}"
+                f"Error calling select_window({req}): {res.error_message}"
             )
 
     def get_elements(self, locator: Locator) -> list[Element]:
@@ -117,7 +109,7 @@ def main():
         window = windows[0]
 
         print("Selecting first found window")
-        client.select_window_by_title(window.title)
+        client.select_window(window)
 
         locator = Locator(role=".*button.*")
         print(f"Getting elements with locator {locator}")

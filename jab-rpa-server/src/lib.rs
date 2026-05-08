@@ -3,6 +3,8 @@ pub mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
+mod utils;
+pub mod types;
 pub mod jab_wrapper;
 pub mod jab_service;
 pub mod context_tree;

@@ -1,22 +1,25 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
+use crate::bindings;
+use crate::context_tree::{ContextTree, NodeHandle, ROOT_HANDLE};
 use crate::jab_wrapper::JabWrapper;
+use crate::types::WindowInfo;
+use crate::utils::utf16_to_string;
+
 // Import all proto types; tonic generates them in the proto module
 // We alias our local types to avoid confusion
-use crate::proto::{
-    CallbackEvent as ProtoCallbackEvent, GetElementsResponse, ListJavaWindowsResponse,
-    SelectWindowByTitleResponse, SelectWindowByPidResponse, ClickElementResponse,
-    TypeTextResponse, ReadTableResponse, WaitUntilElementExistsResponse,
-    GetVersionInfoResponse, VersionInfo, SubscribeCallbacksRequest,
-    WindowInfo as ProtoWindowInfo, Element, ListJavaWindowsRequest,
-    SelectWindowByTitleRequest, SelectWindowByPidRequest, GetElementsRequest,
-    ClickElementRequest, TypeTextRequest, ReadTableRequest,
-    WaitUntilElementExistsRequest, GetVersionInfoRequest, Locator,
-};
 use crate::proto::jab_service_server::JabService as JabServiceTrait;
+use crate::proto::{
+    CallbackEvent as ProtoCallbackEvent, ClickElementRequest, ClickElementResponse, Element,
+    GetElementsRequest, GetElementsResponse, GetVersionInfoRequest, GetVersionInfoResponse,
+    ListJavaWindowsRequest, ListJavaWindowsResponse, Locator, ReadTableRequest, ReadTableResponse,
+    SelectWindowRequest, SelectWindowResponse, SubscribeCallbacksRequest, TypeTextRequest,
+    TypeTextResponse, VersionInfo as ProtoVersionInfo, WaitUntilElementExistsRequest,
+    WaitUntilElementExistsResponse, WindowInfo as ProtoWindowInfo,
+};
 
 #[derive(Debug, Clone)]
 pub struct CallbackEvent {
@@ -27,13 +30,46 @@ pub struct CallbackEvent {
     pub event_time: i64,
 }
 
+impl From<WindowInfo> for ProtoWindowInfo {
+    fn from(w: WindowInfo) -> Self {
+        Self {
+            hwnd: w.hwnd,
+            title: w.title,
+        }
+    }
+}
+
+impl From<ProtoWindowInfo> for WindowInfo {
+    fn from(w: ProtoWindowInfo) -> Self {
+        Self {
+            hwnd: w.hwnd,
+            title: w.title,
+        }
+    }
+}
+
+impl From<bindings::AccessBridgeVersionInfo> for ProtoVersionInfo {
+    fn from(vi: bindings::AccessBridgeVersionInfo) -> Self {
+        Self {
+            vm_version: utf16_to_string(&vi.VMversion),
+            bridge_java_class_version: utf16_to_string(&vi.bridgeJavaClassVersion),
+            bridge_java_dll_version: utf16_to_string(&vi.bridgeJavaDLLVersion),
+            bridge_win_dll_version: utf16_to_string(&vi.bridgeWinDLLVersion),
+        }
+    }
+}
+
 pub struct JabService {
     wrapper: Arc<JabWrapper>,
+    ctx_tree: Mutex<Option<ContextTree>>,
 }
 
 impl JabService {
     pub fn new(wrapper: Arc<JabWrapper>) -> Self {
-        Self { wrapper }
+        Self {
+            wrapper,
+            ctx_tree: Mutex::new(None),
+        }
     }
 }
 
@@ -48,67 +84,50 @@ impl JabServiceTrait for JabService {
             .await
             .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
 
-        let proto_windows: Vec<ProtoWindowInfo> = windows
-            .into_iter()
-            .map(|w| window_info_to_proto(&w))
-            .collect();
+        let proto_windows: Vec<ProtoWindowInfo> = windows.into_iter().map(|w| w.into()).collect();
 
         Ok(Response::new(ListJavaWindowsResponse {
             windows: proto_windows,
         }))
     }
 
-    async fn select_window_by_title(
+    async fn select_window(
         &self,
-        request: Request<SelectWindowByTitleRequest>,
-    ) -> Result<Response<SelectWindowByTitleResponse>, Status> {
+        request: Request<SelectWindowRequest>,
+    ) -> Result<Response<SelectWindowResponse>, Status> {
         let req = request.into_inner();
+        let Some(w) = req.window_info else {
+            return Ok(Response::new(SelectWindowResponse {
+                success: false,
+                error_message: "window_info not present in request".to_string(),
+            }));
+        };
         let wrapper = self.wrapper.clone();
 
         let result = tokio::task::spawn_blocking({
             let wrapper = wrapper.clone();
-            move || wrapper.select_window_by_title(&req.title, req.partial_match)
+            move || wrapper.get_root_obj_from_window(w.into())
         })
         .await
         .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
 
         match result {
-            Ok(()) => {
-                let vm_id = wrapper.get_vm_id().unwrap_or(0);
-                let root_context = wrapper.get_root_context().unwrap_or(0);
+            Ok(root) => {
+                let tree = crate::context_tree::ContextTree::from_root(root, None, &wrapper);
 
-                let tree = crate::context_tree::ContextTree::from_root(
-                    vm_id,
-                    root_context,
-                    None,
-                    &wrapper,
-                );
+                let mut tree_lock = self.ctx_tree.lock().unwrap();
+                *tree_lock = Some(tree);
 
-                {
-                    let mut tree_lock = wrapper.context_tree.lock().unwrap();
-                    *tree_lock = Some(tree);
-                }
-
-                Ok(Response::new(SelectWindowByTitleResponse {
+                Ok(Response::new(SelectWindowResponse {
                     success: true,
                     error_message: String::new(),
                 }))
             }
-            Err(e) => Ok(Response::new(SelectWindowByTitleResponse {
+            Err(e) => Ok(Response::new(SelectWindowResponse {
                 success: false,
                 error_message: e,
             })),
         }
-    }
-
-    async fn select_window_by_pid(
-        &self,
-        _request: Request<SelectWindowByPidRequest>,
-    ) -> Result<Response<SelectWindowByPidResponse>, Status> {
-        Ok(Response::new(SelectWindowByPidResponse {
-            success: false,
-            error_message: "select_window_by_pid not yet implemented".to_string(),
-        }))
     }
 
     async fn get_elements(
@@ -117,8 +136,8 @@ impl JabServiceTrait for JabService {
     ) -> Result<Response<GetElementsResponse>, Status> {
         let req = request.into_inner();
 
-        let tree_lock = self.wrapper.context_tree.lock().unwrap();
-        if let Some(ref tree) = *tree_lock {
+        let tree_lock = self.ctx_tree.lock().unwrap();
+        if let Some(tree) = tree_lock.as_ref() {
             let default_locator = Locator {
                 name: None,
                 role: None,
@@ -132,7 +151,10 @@ impl JabServiceTrait for JabService {
 
             let nodes = tree.get_elements(locator);
 
-            let elements = nodes.into_iter().map(element_from_context_node).collect();
+            let elements = nodes
+                .into_iter()
+                .map(|node| element_from_node_handle(&node.handle, tree))
+                .collect();
 
             Ok(Response::new(GetElementsResponse {
                 elements,
@@ -141,7 +163,7 @@ impl JabServiceTrait for JabService {
         } else {
             Ok(Response::new(GetElementsResponse {
                 elements: Vec::new(),
-                error_message: "No window selected. Call SelectWindowByTitle first.".to_string(),
+                error_message: "No window selected. Call SelectWindow first.".to_string(),
             }))
         }
     }
@@ -151,13 +173,29 @@ impl JabServiceTrait for JabService {
         request: Request<ClickElementRequest>,
     ) -> Result<Response<ClickElementResponse>, Status> {
         let req = request.into_inner();
-        let wrapper = self.wrapper.clone();
+        let tree_lock = self.ctx_tree.lock().unwrap();
 
-        let result = tokio::task::spawn_blocking(move || wrapper.click_element(req.handle))
-            .await
-            .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => {
+                return Ok(Response::new(ClickElementResponse {
+                    success: false,
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
+            }
+        };
 
-        match result {
+        let node = match tree.nodes.get(&req.handle) {
+            Some(node) => node,
+            None => {
+                return Ok(Response::new(ClickElementResponse {
+                    success: false,
+                    error_message: format!("No element with handle={}", req.handle),
+                }));
+            }
+        };
+
+        match self.wrapper.click_element(&node.obj) {
             Ok(()) => Ok(Response::new(ClickElementResponse {
                 success: true,
                 error_message: String::new(),
@@ -174,14 +212,30 @@ impl JabServiceTrait for JabService {
         request: Request<TypeTextRequest>,
     ) -> Result<Response<TypeTextResponse>, Status> {
         let req = request.into_inner();
-        let wrapper = self.wrapper.clone();
-        let text = req.text.clone();
 
-        let result = tokio::task::spawn_blocking(move || wrapper.type_text(req.handle, &text))
-            .await
-            .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
+        let tree_lock = self.ctx_tree.lock().unwrap();
 
-        match result {
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => {
+                return Ok(Response::new(TypeTextResponse {
+                    success: false,
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
+            }
+        };
+
+        let node = match tree.nodes.get(&req.handle) {
+            Some(node) => node,
+            None => {
+                return Ok(Response::new(TypeTextResponse {
+                    success: false,
+                    error_message: format!("No element with handle={}", req.handle),
+                }));
+            }
+        };
+
+        match self.wrapper.type_text(&node.obj, &req.text) {
             Ok(()) => Ok(Response::new(TypeTextResponse {
                 success: true,
                 error_message: String::new(),
@@ -217,36 +271,33 @@ impl JabServiceTrait for JabService {
         &self,
         _request: Request<GetVersionInfoRequest>,
     ) -> Result<Response<GetVersionInfoResponse>, Status> {
-        let wrapper = self.wrapper.clone();
+        let tree_lock = self.ctx_tree.lock().unwrap();
 
-        let result = tokio::task::spawn_blocking(move || wrapper.get_version_info())
-            .await
-            .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
-
-        match result {
-            Ok(info) => {
-                let version_info = VersionInfo {
-                    vm_version: String::from_utf16_lossy(&info.VMversion)
-                        .trim_end_matches('\0')
-                        .to_string(),
-                    bridge_java_class_version: String::from_utf16_lossy(
-                        &info.bridgeJavaClassVersion,
-                    )
-                    .trim_end_matches('\0')
-                    .to_string(),
-                    bridge_java_dll_version: String::from_utf16_lossy(&info.bridgeJavaDLLVersion)
-                        .trim_end_matches('\0')
-                        .to_string(),
-                    bridge_win_dll_version: String::from_utf16_lossy(&info.bridgeWinDLLVersion)
-                        .trim_end_matches('\0')
-                        .to_string(),
-                };
-
-                Ok(Response::new(GetVersionInfoResponse {
-                    version_info: Some(version_info),
-                    error_message: String::new(),
-                }))
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => {
+                return Ok(Response::new(GetVersionInfoResponse {
+                    version_info: None,
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
             }
+        };
+
+        let root = match tree.nodes.get(&ROOT_HANDLE) {
+            Some(root) => root,
+            None => {
+                return Ok(Response::new(GetVersionInfoResponse {
+                    version_info: None,
+                    error_message: format!("No element with handle={}", ROOT_HANDLE),
+                }));
+            }
+        };
+
+        match self.wrapper.get_version_info(&root.obj) {
+            Ok(version_info) => Ok(Response::new(GetVersionInfoResponse {
+                version_info: Some(version_info.into()),
+                error_message: String::new(),
+            })),
             Err(e) => Ok(Response::new(GetVersionInfoResponse {
                 version_info: None,
                 error_message: e,
@@ -285,16 +336,8 @@ impl JabServiceTrait for JabService {
     }
 }
 
-fn window_info_to_proto(w: &WindowInfo) -> ProtoWindowInfo {
-    ProtoWindowInfo {
-        vm_id: w.vm_id as i64,
-        hwnd: w.hwnd,
-        title: w.title.clone(),
-        role: w.role.clone(),
-    }
-}
-
-fn element_from_context_node(node: &crate::context_tree::ContextNode) -> Element {
+fn element_from_node_handle(handle: &NodeHandle, tree: &ContextTree) -> Element {
+    let node = &tree.nodes[handle];
     Element {
         handle: node.handle,
         name: node.name.clone(),
@@ -308,16 +351,12 @@ fn element_from_context_node(node: &crate::context_tree::ContextNode) -> Element
         accessible_action: node.accessible_action,
         accessible_text: node.accessible_text,
         accessible_selection: node.accessible_selection,
-        visible_children_count: node.visible_children_count,
+        children_count: node.children_count,
         index_in_parent: node.index_in_parent,
-        children: node.children.iter().map(element_from_context_node).collect(),
+        children: node
+            .children
+            .iter()
+            .map(|h| element_from_node_handle(h, tree))
+            .collect(),
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct WindowInfo {
-    pub vm_id: i32,
-    pub hwnd: u64,
-    pub title: String,
-    pub role: String,
 }

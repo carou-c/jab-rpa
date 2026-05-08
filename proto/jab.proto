@@ -4,8 +4,7 @@ package jab;
 
 service JabService {
   rpc ListJavaWindows(ListJavaWindowsRequest) returns (ListJavaWindowsResponse);
-  rpc SelectWindowByTitle(SelectWindowByTitleRequest) returns (SelectWindowByTitleResponse);
-  rpc SelectWindowByPid(SelectWindowByPidRequest) returns (SelectWindowByPidResponse);
+  rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
   rpc GetElements(GetElementsRequest) returns (GetElementsResponse);
   rpc ClickElement(ClickElementRequest) returns (ClickElementResponse);
   rpc TypeText(TypeTextRequest) returns (TypeTextResponse);
@@ -18,31 +17,19 @@ service JabService {
 message ListJavaWindowsRequest {}
 
 message WindowInfo {
-  int64 vm_id = 1;
-  uint64 hwnd = 2;
-  string title = 3;
-  string role = 4;
+  uint64 hwnd = 1;
+  string title = 2;
 }
 
 message ListJavaWindowsResponse {
   repeated WindowInfo windows = 1;
 }
 
-message SelectWindowByTitleRequest {
-  string title = 1;
-  bool partial_match = 2;
+message SelectWindowRequest {
+  WindowInfo window_info = 1;
 }
 
-message SelectWindowByTitleResponse {
-  bool success = 1;
-  string error_message = 2;
-}
-
-message SelectWindowByPidRequest {
-  int32 pid = 1;
-}
-
-message SelectWindowByPidResponse {
+message SelectWindowResponse {
   bool success = 1;
   string error_message = 2;
 }
@@ -64,7 +51,7 @@ message Element {
   bool accessible_action = 10;
   bool accessible_text = 11;
   bool accessible_selection = 12;
-  int32 visible_children_count = 13;
+  int32 children_count = 13;
   int32 index_in_parent = 14;
   repeated Element children = 15;
 }

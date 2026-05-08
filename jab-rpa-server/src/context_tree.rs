@@ -1,16 +1,21 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use crate::jab_wrapper::{JabWrapper, JavaObject};
 use crate::proto;
-use crate::jab_wrapper::JabWrapper;
-use std::sync::Weak;
+use crate::utils::utf16_to_string;
+
+pub type NodeHandle = u64;
+pub const ROOT_HANDLE: NodeHandle = 0;
 
 #[derive(Debug)]
 pub struct ContextNode {
-    pub vm_id: i32,
-    pub context: i64,
-    pub handle: u64,
+    pub obj: JavaObject,
+    pub handle: NodeHandle,
     pub name: String,
     pub role: String,
     pub description: String,
-    pub children: Vec<ContextNode>,
+    pub children: Vec<NodeHandle>,
     pub text: String,
     pub x: i32,
     pub y: i32,
@@ -19,97 +24,21 @@ pub struct ContextNode {
     pub accessible_action: bool,
     pub accessible_text: bool,
     pub accessible_selection: bool,
-    pub visible_children_count: i32,
+    pub children_count: i32,
     pub index_in_parent: i32,
-    wrapper: Option<Weak<JabWrapper>>,
-}
-
-impl Clone for ContextNode {
-    fn clone(&self) -> Self {
-        ContextNode {
-            vm_id: self.vm_id,
-            context: self.context,
-            handle: self.handle,
-            name: self.name.clone(),
-            role: self.role.clone(),
-            description: self.description.clone(),
-            children: self.children.clone(),
-            text: self.text.clone(),
-            x: self.x,
-            y: self.y,
-            width: self.width,
-            height: self.height,
-            accessible_action: self.accessible_action,
-            accessible_text: self.accessible_text,
-            accessible_selection: self.accessible_selection,
-            visible_children_count: self.visible_children_count,
-            index_in_parent: self.index_in_parent,
-            wrapper: None, // Don't clone the wrapper - only original releases
-        }
-    }
-}
-
-impl Drop for ContextNode {
-    fn drop(&mut self) {
-        if let Some(ref wrapper_weak) = self.wrapper
-            && let Some(wrapper) = wrapper_weak.upgrade() {
-                eprintln!("[ContextNode::drop] Releasing handle={}", self.handle);
-                wrapper.release_element(self.handle);
-            }
-    }
+    pub depth: i32,
 }
 
 #[derive(Debug)]
 pub struct ContextTree {
-    pub root: Option<ContextNode>,
-    pub max_depth: Option<i32>,
-    wrapper: Option<Weak<JabWrapper>>,
+    pub nodes: HashMap<NodeHandle, ContextNode>,
+    pub next_handle: NodeHandle,
 }
 
-impl Clone for ContextTree {
-    fn clone(&self) -> Self {
-        ContextTree {
-            root: self.root.clone(),
-            max_depth: self.max_depth,
-            wrapper: self.wrapper.clone(),
-        }
-    }
-}
-
-impl ContextTree {
-    pub fn from_root(
-        vm_id: i32,
-        root_context: i64,
-        max_depth: Option<i32>,
-        jab: &std::sync::Arc<JabWrapper>,
-    ) -> Self {
-        let mut tree = ContextTree {
-            root: None,
-            max_depth,
-            wrapper: Some(std::sync::Arc::downgrade(jab)),
-        };
-
-        if root_context == 0 {
-            return tree;
-        }
-
-        tree.root = Some(Self::build_node(vm_id, root_context, 0, max_depth, jab));
-
-        tree
-    }
-
-    fn build_node(
-        vm_id: i32,
-        context: i64,
-        depth: i32,
-        max_depth: Option<i32>,
-        jab: &std::sync::Arc<JabWrapper>,
-    ) -> ContextNode {
-        let handle = jab.register_element(vm_id, context);
-
-        let mut node = ContextNode {
-            vm_id,
-            context,
+impl ContextNode {
+    fn new(obj: JavaObject, depth: i32, handle: NodeHandle, jab: &std::sync::Arc<JabWrapper>) -> Self {
+        let mut node = Self {
+            obj,
             handle,
             name: String::new(),
             role: String::new(),
@@ -123,21 +52,15 @@ impl ContextTree {
             accessible_action: false,
             accessible_text: false,
             accessible_selection: false,
-            visible_children_count: 0,
+            children_count: 0,
             index_in_parent: 0,
-            wrapper: Some(std::sync::Arc::downgrade(jab)),
+            depth,
         };
 
-        if let Some(info) = jab.get_accessible_context_info(vm_id, context) {
-            node.name = String::from_utf16_lossy(&info.name)
-                .trim_end_matches('\0')
-                .to_string();
-            node.role = String::from_utf16_lossy(&info.role)
-                .trim_end_matches('\0')
-                .to_string();
-            node.description = String::from_utf16_lossy(&info.description)
-                .trim_end_matches('\0')
-                .to_string();
+        if let Some(info) = jab.get_obj_info(&node.obj) {
+            node.name = utf16_to_string(&info.name);
+            node.role = utf16_to_string(&info.role);
+            node.description = utf16_to_string(&info.description);
             node.x = info.x;
             node.y = info.y;
             node.width = info.width;
@@ -145,56 +68,79 @@ impl ContextTree {
             node.accessible_action = info.accessibleAction != 0;
             node.accessible_text = info.accessibleText != 0;
             node.accessible_selection = info.accessibleSelection != 0;
-            node.visible_children_count = info.childrenCount;
+            node.children_count = info.childrenCount;
             node.index_in_parent = info.indexInParent;
-        }
 
-        if let Some(max) = max_depth
-            && depth >= max
-        {
-            return node;
-        }
+            node.children.reserve(node.children_count as usize);
 
-        unsafe {
-            let child_count = if let Some(info) = jab.get_accessible_context_info(vm_id, context) {
-                info.childrenCount
-            } else {
-                0
-            };
-
-            for i in 0..child_count {
-                let child_context =
-                    super::bindings::GetAccessibleChildFromContext(vm_id as _, context, i);
-                if child_context != 0 {
-                    node.children.push(Self::build_node(
-                        vm_id,
-                        child_context,
-                        depth + 1,
-                        max_depth,
-                        jab,
-                    ));
-                }
+            if node.accessible_text
+                && let Ok(text) = jab.get_text(&node.obj)
+            {
+                node.text = text;
             }
         }
-
         node
+    }
+}
+
+impl ContextTree {
+    pub fn root(&self) -> &ContextNode {
+        &self.nodes[&ROOT_HANDLE]
+    }
+
+    pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>, jab: &Arc<JabWrapper>) -> Self {
+        let mut tree = Self {
+            nodes: HashMap::new(),
+            next_handle: ROOT_HANDLE + 1,
+        };
+
+        let mut root = ContextNode::new(root_obj, 0, ROOT_HANDLE, jab);
+        tree.build_subtree(&mut root, max_depth, jab);
+        tree.nodes.insert(ROOT_HANDLE, root);
+
+        tree
+    }
+
+    fn build_subtree(
+        &mut self,
+        node: &mut ContextNode,
+        max_depth: Option<i32>,
+        jab: &std::sync::Arc<JabWrapper>,
+    ) {
+        if let Some(max) = max_depth
+            && node.depth >= max
+        {
+            return;
+        }
+
+        for i in 0..node.children_count {
+            let child_obj = unsafe { jab.get_child_from_obj(&node.obj, i) };
+
+            let handle = self.next_handle;
+            self.next_handle += 1;
+            let mut child_node = ContextNode::new(child_obj, node.depth + 1, handle, jab);
+
+            self.build_subtree(&mut child_node, max_depth, jab);
+
+            self.nodes.insert(handle, child_node);
+            node.children.push(handle);
+        }
     }
 
     pub fn get_elements(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
         let mut results = Vec::new();
-        if let Some(ref root) = self.root {
-            Self::collect_matching(root, locator, &[], &mut results);
-        }
+        self.collect_matching(self.root(), locator, &[], &mut results);
         results
     }
 
     fn collect_matching<'a>(
+        &'a self,
         node: &'a ContextNode,
         locator: &proto::Locator,
         ancestors: &[&'a ContextNode],
         results: &mut Vec<&'a ContextNode>,
     ) {
-        if Self::node_matches(node, locator, ancestors) {
+        if self.node_matches(node, locator, ancestors) {
             results.push(node);
         }
 
@@ -202,11 +148,14 @@ impl ContextTree {
         child_ancestors.push(node);
 
         for child in &node.children {
-            Self::collect_matching(child, locator, &child_ancestors, results);
+            if let Some(child_node) = self.nodes.get(child) {
+                self.collect_matching(child_node, locator, &child_ancestors, results);
+            }
         }
     }
 
     fn node_matches(
+        &self,
         node: &ContextNode,
         locator: &proto::Locator,
         ancestors: &[&ContextNode],
@@ -248,7 +197,7 @@ impl ContextTree {
         }
 
         for desc_locator in &locator.descendants {
-            if !Self::has_descendant_matching(node, desc_locator) {
+            if !self.has_descendant_matching(node, desc_locator) {
                 return false;
             }
         }
@@ -257,6 +206,7 @@ impl ContextTree {
     }
 
     fn has_descendant_matching(
+        &self,
         node: &ContextNode,
         desc_locator: &proto::DescendantLocator,
     ) -> bool {
@@ -264,12 +214,16 @@ impl ContextTree {
         if desc_locator.is_child {
             node.children
                 .iter()
+                .filter_map(|child| self.nodes.get(child))
                 .any(|child| matches_node_simple_opt_ref(child, loc_ref))
         } else {
-            node.children.iter().any(|child| {
-                matches_node_simple_opt_ref(child, loc_ref)
-                    || Self::has_descendant_matching(child, desc_locator)
-            })
+            node.children
+                .iter()
+                .filter_map(|child| self.nodes.get(child))
+                .any(|child| {
+                    matches_node_simple_opt_ref(child, loc_ref)
+                        || self.has_descendant_matching(child, desc_locator)
+                })
         }
     }
 }
@@ -324,14 +278,5 @@ fn matches_node_simple_opt_ref(node: &ContextNode, locator: &Option<proto::Locat
     match locator {
         None => false,
         Some(locator_ref) => matches_node_simple(node, locator_ref),
-    }
-}
-
-impl Drop for ContextTree {
-    fn drop(&mut self) {
-        eprintln!("[ContextTree::drop] Dropping tree, nodes will release themselves...");
-        // ContextNode instances will release themselves via their Drop impl
-        // No need to manually release elements here
-        eprintln!("[ContextTree::drop] Done.");
     }
 }
