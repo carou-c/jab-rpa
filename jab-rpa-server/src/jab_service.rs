@@ -150,7 +150,7 @@ impl JabServiceTrait for JabService {
         *tree_lock = Some(tree);
 
         Ok(Response::new(RefreshTreeResponse {
-            success: false,
+            success: true,
             error_message: String::new(),
         }))
     }
