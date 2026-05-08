@@ -4,7 +4,7 @@ from typing import Self
 import grpc
 from grpc._channel import Channel
 
-from . import jab
+from .proto import jab
 from .types import WindowInfo, Element, VersionInfo, Table
 from .locator import Locator
 

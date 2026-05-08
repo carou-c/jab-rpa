@@ -1,2 +1,17 @@
+# Cargo-generated files
 target/
+python/src/jab_rpa/bin/
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Testing script
 /copy_to_windows.sh

@@ -1,5 +1,5 @@
 from typing import Any
-from .jab import (
+from .proto.jab import (
     Locator as _Locator,
     StringLocator,
     IndexLocator,

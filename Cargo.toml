@@ -1,6 +1,6 @@
 [package]
 name = "jab-rpa-server"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 
 [dependencies]
@@ -15,3 +15,10 @@ regex = "1"
 tonic-prost-build = { version = "0.14" } # , features = ["prost"] }
 bindgen = "0.72.1"
 cc = "1.2.61"
+
+[lib]
+path = "server/src/lib.rs"
+
+[[bin]]
+name = "jab-rpa-server"
+path = "server/src/bin/jab-rpa-server.rs"
