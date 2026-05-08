@@ -17,7 +17,7 @@ pub struct JavaObject {
 
 impl Drop for JavaObject {
     fn drop(&mut self) {
-        eprintln!("Releasing vm_id={}, context={}", self.vm_id, self.jobject);
+        // eprintln!("Releasing vm_id={}, context={}", self.vm_id, self.jobject);
         unsafe {
             bindings::ReleaseJavaObject(self.vm_id, self.jobject);
         }

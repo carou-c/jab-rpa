@@ -428,7 +428,6 @@ extern "C" {
         if (theAccessBridgeInitializedFlag == TRUE) {
                         BOOL ret ;
                         ret = theAccessBridge.IsJavaWindow(window);
-                        printf("%d", ret);
             return ret ;
 
         }

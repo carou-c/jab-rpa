@@ -1,6 +1,9 @@
+import time
 from typing import Self
+
 import grpc
 from grpc._channel import Channel
+
 from . import jab
 from .types import WindowInfo, Element, VersionInfo, Table
 from .locator import Locator
@@ -109,9 +112,15 @@ def main():
         window = windows[0]
 
         print("Selecting first found window")
+        start = time.time()
         client.select_window(window)
+        end = time.time()
+        print(f"Time: {end - start}")
 
         locator = Locator(role=".*button.*")
         print(f"Getting elements with locator {locator}")
+        start = time.time()
         elements = client.get_elements(locator)
+        end = time.time()
         print(f"Elements: {elements}")
+        print(f"Time: {end - start}")
