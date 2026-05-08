@@ -443,7 +443,6 @@ dependencies = [
  "prost",
  "regex",
  "tokio",
- "tokio-stream",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
