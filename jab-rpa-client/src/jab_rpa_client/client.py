@@ -41,9 +41,9 @@ class JabRpaClient:
                 f"Error calling select_window({req}): {res.error_message}"
             )
 
-    def get_elements(self, locator: Locator) -> list[Element]:
-        req = jab.GetElementsRequest(locator._locator)
-        res: jab.GetElementsResponse = self.__stub.get_elements(req)
+    def find_elements(self, locator: Locator) -> list[Element]:
+        req = jab.FindElementsRequest(locator._locator)
+        res: jab.FindElementsResponse = self.__stub.find_elements(req)
         if res.error_message:
             raise JabRpaRemoteError(
                 f"Error calling get_elements({req}): {res.error_message}"
@@ -99,7 +99,7 @@ class JabRpaClient:
         return res.version_info
 
 
-def main():
+def test_find_window_and_buttons():
     with JabRpaClient() as client:
         print("Listing windows...")
         windows = client.list_java_windows()
@@ -120,7 +120,7 @@ def main():
         locator = Locator(role=".*button.*")
         print(f"Getting elements with locator {locator}")
         start = time.time()
-        elements = client.get_elements(locator)
+        elements = client.find_elements(locator)
         end = time.time()
         print(f"Elements: {elements}")
         print(f"Time: {end - start}")

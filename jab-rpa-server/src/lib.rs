@@ -3,11 +3,11 @@ pub mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
-mod utils;
-pub mod types;
-pub mod jab_wrapper;
-pub mod jab_service;
 pub mod context_tree;
+pub mod jab_service;
+pub mod jab_wrapper;
+pub mod types;
+mod utils;
 
 pub mod proto {
     tonic::include_proto!("jab");

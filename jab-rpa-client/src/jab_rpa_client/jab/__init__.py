@@ -9,8 +9,10 @@ __all__ = (
     "ClickElementResponse",
     "DescendantLocator",
     "Element",
-    "GetElementsRequest",
-    "GetElementsResponse",
+    "FindElementsRequest",
+    "FindElementsResponse",
+    "GetElementFromHandleRequest",
+    "GetElementFromHandleResponse",
     "GetVersionInfoRequest",
     "GetVersionInfoResponse",
     "IndexLocator",
@@ -20,6 +22,8 @@ __all__ = (
     "Locator",
     "ReadTableRequest",
     "ReadTableResponse",
+    "RefreshTreeRequest",
+    "RefreshTreeResponse",
     "SelectWindowRequest",
     "SelectWindowResponse",
     "StringLocator",
@@ -97,48 +101,60 @@ class Element(betterproto2.Message):
 
     role: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
 
-    description: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
+    states: "list[str]" = betterproto2.field(4, betterproto2.TYPE_STRING, repeated=True)
 
-    text: "str" = betterproto2.field(5, betterproto2.TYPE_STRING)
-
-    x: "int" = betterproto2.field(6, betterproto2.TYPE_INT32)
-
-    y: "int" = betterproto2.field(7, betterproto2.TYPE_INT32)
-
-    width: "int" = betterproto2.field(8, betterproto2.TYPE_INT32)
-
-    height: "int" = betterproto2.field(9, betterproto2.TYPE_INT32)
-
-    accessible_action: "bool" = betterproto2.field(10, betterproto2.TYPE_BOOL)
-
-    accessible_text: "bool" = betterproto2.field(11, betterproto2.TYPE_BOOL)
-
-    accessible_selection: "bool" = betterproto2.field(12, betterproto2.TYPE_BOOL)
-
-    children_count: "int" = betterproto2.field(13, betterproto2.TYPE_INT32)
-
-    index_in_parent: "int" = betterproto2.field(14, betterproto2.TYPE_INT32)
-
-    children: "list[Element]" = betterproto2.field(
-        15, betterproto2.TYPE_MESSAGE, repeated=True
+    states_en_us: "list[str]" = betterproto2.field(
+        5, betterproto2.TYPE_STRING, repeated=True
     )
+
+    description: "str" = betterproto2.field(6, betterproto2.TYPE_STRING)
+
+    text: "str" = betterproto2.field(7, betterproto2.TYPE_STRING)
+
+    x: "int" = betterproto2.field(8, betterproto2.TYPE_INT32)
+
+    y: "int" = betterproto2.field(9, betterproto2.TYPE_INT32)
+
+    width: "int" = betterproto2.field(10, betterproto2.TYPE_INT32)
+
+    height: "int" = betterproto2.field(11, betterproto2.TYPE_INT32)
+
+    accessible_action: "bool" = betterproto2.field(12, betterproto2.TYPE_BOOL)
+
+    accessible_text: "bool" = betterproto2.field(13, betterproto2.TYPE_BOOL)
+
+    accessible_selection: "bool" = betterproto2.field(14, betterproto2.TYPE_BOOL)
+
+    children_count: "int" = betterproto2.field(15, betterproto2.TYPE_INT32)
+
+    index_in_parent: "int" = betterproto2.field(16, betterproto2.TYPE_INT32)
+
+    children_handles: "list[int]" = betterproto2.field(
+        17, betterproto2.TYPE_UINT64, repeated=True
+    )
+
+    parent_handle: "int | None" = betterproto2.field(
+        18, betterproto2.TYPE_UINT64, optional=True
+    )
+
+    depth: "int" = betterproto2.field(19, betterproto2.TYPE_INT32)
 
 
 default_message_pool.register_message("jab", "Element", Element)
 
 
 @dataclass(eq=False, repr=False)
-class GetElementsRequest(betterproto2.Message):
+class FindElementsRequest(betterproto2.Message):
     locator: "Locator | None" = betterproto2.field(
         1, betterproto2.TYPE_MESSAGE, optional=True
     )
 
 
-default_message_pool.register_message("jab", "GetElementsRequest", GetElementsRequest)
+default_message_pool.register_message("jab", "FindElementsRequest", FindElementsRequest)
 
 
 @dataclass(eq=False, repr=False)
-class GetElementsResponse(betterproto2.Message):
+class FindElementsResponse(betterproto2.Message):
     elements: "list[Element]" = betterproto2.field(
         1, betterproto2.TYPE_MESSAGE, repeated=True
     )
@@ -146,7 +162,33 @@ class GetElementsResponse(betterproto2.Message):
     error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
 
 
-default_message_pool.register_message("jab", "GetElementsResponse", GetElementsResponse)
+default_message_pool.register_message(
+    "jab", "FindElementsResponse", FindElementsResponse
+)
+
+
+@dataclass(eq=False, repr=False)
+class GetElementFromHandleRequest(betterproto2.Message):
+    handle: "int" = betterproto2.field(1, betterproto2.TYPE_UINT64)
+
+
+default_message_pool.register_message(
+    "jab", "GetElementFromHandleRequest", GetElementFromHandleRequest
+)
+
+
+@dataclass(eq=False, repr=False)
+class GetElementFromHandleResponse(betterproto2.Message):
+    element: "Element | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+
+
+default_message_pool.register_message(
+    "jab", "GetElementFromHandleResponse", GetElementFromHandleResponse
+)
 
 
 @dataclass(eq=False, repr=False)
@@ -221,16 +263,24 @@ class Locator(betterproto2.Message):
         4, betterproto2.TYPE_MESSAGE, optional=True
     )
 
+    has_state: "list[str]" = betterproto2.field(
+        5, betterproto2.TYPE_STRING, repeated=True
+    )
+
+    not_has_state: "list[str]" = betterproto2.field(
+        6, betterproto2.TYPE_STRING, repeated=True
+    )
+
     index_in_parent: "IndexLocator | None" = betterproto2.field(
-        5, betterproto2.TYPE_MESSAGE, optional=True
+        7, betterproto2.TYPE_MESSAGE, optional=True
     )
 
     ascendant: "AscendantLocator | None" = betterproto2.field(
-        6, betterproto2.TYPE_MESSAGE, optional=True
+        8, betterproto2.TYPE_MESSAGE, optional=True
     )
 
     descendants: "list[DescendantLocator]" = betterproto2.field(
-        7, betterproto2.TYPE_MESSAGE, repeated=True
+        9, betterproto2.TYPE_MESSAGE, repeated=True
     )
 
 
@@ -255,6 +305,24 @@ class ReadTableResponse(betterproto2.Message):
 
 
 default_message_pool.register_message("jab", "ReadTableResponse", ReadTableResponse)
+
+
+@dataclass(eq=False, repr=False)
+class RefreshTreeRequest(betterproto2.Message):
+    pass
+
+
+default_message_pool.register_message("jab", "RefreshTreeRequest", RefreshTreeRequest)
+
+
+@dataclass(eq=False, repr=False)
+class RefreshTreeResponse(betterproto2.Message):
+    success: "bool" = betterproto2.field(1, betterproto2.TYPE_BOOL)
+
+    error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+
+
+default_message_pool.register_message("jab", "RefreshTreeResponse", RefreshTreeResponse)
 
 
 @dataclass(eq=False, repr=False)
@@ -420,11 +488,32 @@ class JabServiceStub:
             SelectWindowResponse.FromString,
         )(message)
 
-    def get_elements(self, message: "GetElementsRequest") -> "GetElementsResponse":
+    def refresh_tree(
+        self, message: "RefreshTreeRequest | None" = None
+    ) -> "RefreshTreeResponse":
+        if message is None:
+            message = RefreshTreeRequest()
+
         return self._channel.unary_unary(
-            "/jab.JabService/GetElements",
-            GetElementsRequest.SerializeToString,
-            GetElementsResponse.FromString,
+            "/jab.JabService/RefreshTree",
+            RefreshTreeRequest.SerializeToString,
+            RefreshTreeResponse.FromString,
+        )(message)
+
+    def find_elements(self, message: "FindElementsRequest") -> "FindElementsResponse":
+        return self._channel.unary_unary(
+            "/jab.JabService/FindElements",
+            FindElementsRequest.SerializeToString,
+            FindElementsResponse.FromString,
+        )(message)
+
+    def get_element_from_handle(
+        self, message: "GetElementFromHandleRequest"
+    ) -> "GetElementFromHandleResponse":
+        return self._channel.unary_unary(
+            "/jab.JabService/GetElementFromHandle",
+            GetElementFromHandleRequest.SerializeToString,
+            GetElementFromHandleResponse.FromString,
         )(message)
 
     def click_element(self, message: "ClickElementRequest") -> "ClickElementResponse":

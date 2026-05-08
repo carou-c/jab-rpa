@@ -13,7 +13,13 @@ use crate::utils::utf16_to_string;
 // We alias our local types to avoid confusion
 use crate::proto::jab_service_server::JabService as JabServiceTrait;
 use crate::proto::{
-    ClickElementRequest, ClickElementResponse, Element, FindElementsRequest, FindElementsResponse, GetElementFromHandleRequest, GetElementFromHandleResponse, GetVersionInfoRequest, GetVersionInfoResponse, ListJavaWindowsRequest, ListJavaWindowsResponse, Locator, ReadTableRequest, ReadTableResponse, SelectWindowRequest, SelectWindowResponse, TypeTextRequest, TypeTextResponse, VersionInfo as ProtoVersionInfo, WaitUntilElementExistsRequest, WaitUntilElementExistsResponse, WindowInfo as ProtoWindowInfo
+    ClickElementRequest, ClickElementResponse, Element, FindElementsRequest, FindElementsResponse,
+    GetElementFromHandleRequest, GetElementFromHandleResponse, GetVersionInfoRequest,
+    GetVersionInfoResponse, ListJavaWindowsRequest, ListJavaWindowsResponse, Locator,
+    ReadTableRequest, ReadTableResponse, RefreshTreeRequest, RefreshTreeResponse,
+    SelectWindowRequest, SelectWindowResponse, TypeTextRequest, TypeTextResponse,
+    VersionInfo as ProtoVersionInfo, WaitUntilElementExistsRequest, WaitUntilElementExistsResponse,
+    WindowInfo as ProtoWindowInfo,
 };
 
 #[derive(Debug, Clone)]
@@ -125,6 +131,30 @@ impl JabServiceTrait for JabService {
         }
     }
 
+    async fn refresh_tree(
+        &self,
+        _request: Request<RefreshTreeRequest>,
+    ) -> Result<Response<RefreshTreeResponse>, Status> {
+        let mut tree_lock = self.ctx_tree.lock().unwrap();
+        let root_obj = match tree_lock.take() {
+            Some(tree) => tree.into_root(),
+            None => {
+                return Ok(Response::new(RefreshTreeResponse {
+                    success: false,
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
+            }
+        };
+
+        let tree = crate::context_tree::ContextTree::from_root(root_obj, None, &self.wrapper);
+        *tree_lock = Some(tree);
+
+        Ok(Response::new(RefreshTreeResponse {
+            success: false,
+            error_message: String::new(),
+        }))
+    }
+
     async fn find_elements(
         &self,
         request: Request<FindElementsRequest>,
@@ -156,10 +186,7 @@ impl JabServiceTrait for JabService {
         let locator = req.locator.as_ref().unwrap_or(&default_locator);
         let nodes = tree.get_nodes(locator);
 
-        let elements = nodes
-            .into_iter()
-            .map(element_from_node)
-            .collect();
+        let elements = nodes.into_iter().map(element_from_node).collect();
 
         Ok(Response::new(FindElementsResponse {
             elements,

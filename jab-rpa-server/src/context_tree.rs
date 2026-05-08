@@ -74,11 +74,11 @@ impl ContextNode {
             node.role = utf16_to_string(&info.role);
             node.states = utf16_to_string(&info.states)
                 .split(',')
-                .map(|s| s.to_string())
+                .map(str::to_uppercase)
                 .collect();
             node.states_en_us = utf16_to_string(&info.states_en_US)
                 .split(',')
-                .map(|s| s.to_string())
+                .map(str::to_uppercase)
                 .collect();
             node.description = utf16_to_string(&info.description);
             node.x = info.x;
@@ -106,6 +106,13 @@ impl ContextNode {
 impl ContextTree {
     pub fn root(&self) -> &ContextNode {
         &self.nodes[&ROOT_HANDLE]
+    }
+
+    pub fn into_root(mut self) -> JavaObject {
+        self.nodes
+            .remove(&ROOT_HANDLE)
+            .expect("Root node missing")
+            .obj
     }
 
     pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>, jab: &Arc<JabWrapper>) -> Self {
@@ -203,7 +210,7 @@ impl ContextTree {
         if locator
             .has_state
             .iter()
-            .any(|state| !node.states.contains(state))
+            .any(|state| !node.states.contains(&state.to_uppercase()))
         {
             return false;
         }
@@ -211,7 +218,7 @@ impl ContextTree {
         if locator
             .not_has_state
             .iter()
-            .any(|state| node.states.contains(state))
+            .any(|state| node.states.contains(&state.to_uppercase()))
         {
             return false;
         }

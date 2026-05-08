@@ -5,6 +5,7 @@ package jab;
 service JabService {
   rpc ListJavaWindows(ListJavaWindowsRequest) returns (ListJavaWindowsResponse);
   rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
+  rpc RefreshTree(RefreshTreeRequest) returns (RefreshTreeResponse);
   rpc FindElements(FindElementsRequest) returns (FindElementsResponse);
   rpc GetElementFromHandle(GetElementFromHandleRequest) returns (GetElementFromHandleResponse);
   rpc ClickElement(ClickElementRequest) returns (ClickElementResponse);
@@ -31,6 +32,14 @@ message SelectWindowRequest {
 }
 
 message SelectWindowResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message RefreshTreeRequest {
+}
+
+message RefreshTreeResponse {
   bool success = 1;
   string error_message = 2;
 }

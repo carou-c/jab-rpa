@@ -16,6 +16,8 @@ class Locator:
         role: str | None = None,
         description: str | None = None,
         text: str | None = None,
+        has_state: list[str] | None = None,
+        not_has_state: list[str] | None = None,
         index_in_parent: int | None = None,
         has_children: list[Locator] | None = None,
         has_descendants: list[Locator] | None = None,
@@ -25,6 +27,8 @@ class Locator:
         text_regex: bool = True,
         ascendant: AscendantLocator | None = None,
     ):
+        has_state: list[str] = has_state or []
+        not_has_state: list[str] = not_has_state or []
         has_children: list[Locator] = has_children or []
         has_descendants: list[Locator] = has_descendants or []
 
@@ -35,6 +39,8 @@ class Locator:
             if description is not None
             else None,
             text=StringLocator(text, text_regex) if text is not None else None,
+            has_state=has_state,
+            not_has_state=not_has_state,
             index_in_parent=IndexLocator(index_in_parent)
             if index_in_parent is not None
             else None,
@@ -55,6 +61,8 @@ class Locator:
         role: str | None = None,
         description: str | None = None,
         text: str | None = None,
+        has_state: list[str] | None = None,
+        not_has_state: list[str] | None = None,
         index_in_parent: int | None = None,
         has_children: list[Locator] | None = None,
         has_descendants: list[Locator] | None = None,
@@ -68,6 +76,8 @@ class Locator:
             role=role,
             description=description,
             text=text,
+            has_state=has_state,
+            not_has_state=not_has_state,
             index_in_parent=index_in_parent,
             has_children=has_children,
             has_descendants=has_descendants,
@@ -85,6 +95,8 @@ class Locator:
         role: str | None = None,
         description: str | None = None,
         text: str | None = None,
+        has_state: list[str] | None = None,
+        not_has_state: list[str] | None = None,
         index_in_parent: int | None = None,
         has_children: list[Locator] | None = None,
         has_descendants: list[Locator] | None = None,
@@ -98,6 +110,8 @@ class Locator:
             role=role,
             description=description,
             text=text,
+            has_state=has_state,
+            not_has_state=not_has_state,
             index_in_parent=index_in_parent,
             has_children=has_children,
             has_descendants=has_descendants,
