@@ -1,0 +1,24 @@
+site_name: jab-rpa
+repo_url: https://github.com/carou-c/jab-rpa
+theme: readthedocs
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [python/src]
+          options:
+            docstring_style: google
+            show_signature_annotations: true
+            separate_signature: true
+            show_source: false
+            heading_level: 2
+
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - API Reference:
+      - JabDriver: api/driver.md
+      - Locator: api/locator.md
+      - Element: api/element.md
+      - JabRpaServer: api/server.md
+      - JabRpaClient: api/client.md

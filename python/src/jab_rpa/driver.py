@@ -20,10 +20,26 @@ _WAIT_FOR_WINDOW_STEP: int = 5
 
 
 class WindowNotFound(Exception):
-    """Raised when window with specified title is not found"""
+    """Raised when no Java window matching the given title is found within the timeout."""
 
 
 class JabDriver:
+    """High-level driver that manages the JAB server and provides the main entry point.
+
+    ``JabDriver`` handles the full lifecycle:
+
+    1. Spawns the ``jab-rpa-server.exe`` subprocess
+    2. Waits for a Java window matching the given title regex
+    3. Brings the window to the foreground and maximizes it
+    4. Selects the window on the server to build the accessibility tree
+
+    Typical usage:
+
+        with JabDriver("MyApp.*") as driver:
+            btn = driver.locator(role="push button", name="Clear").wait_for()
+            btn.click()
+    """
+
     def __init__(
         self,
         window_title: str | re.Pattern[str],
@@ -34,6 +50,18 @@ class JabDriver:
         window_timeout: int = _WAIT_FOR_WINDOW_TIMEOUT,
         window_step: int = _WAIT_FOR_WINDOW_STEP,
     ) -> None:
+        """Configure the driver.
+
+        Args:
+            window_title: Regex pattern to match against Java window titles.
+                The first window whose title matches via ``re.search()`` is
+                selected. Can be a string or compiled pattern.
+            server_path: Path to the ``jab-rpa-server.exe`` binary.
+            server_timeout: Maximum seconds to wait for the server to start.
+            server_step: Seconds between server readiness checks.
+            window_timeout: Maximum seconds to wait for a matching window.
+            window_step: Seconds between window discovery polls.
+        """
         self.__window_title: str | re.Pattern[str] = window_title
         self.__server_path: Path = server_path
         self.__server_timeout: int = server_timeout
@@ -42,6 +70,16 @@ class JabDriver:
         self.__window_step: int = window_step
 
     def start(self) -> None:
+        """Start the server and connect to the target window.
+
+        Spawns the JAB gRPC server, polls for Java windows whose title
+        matches ``window_title``, brings the first match to the foreground,
+        maximizes it, and selects it on the server.
+
+        Raises:
+            WindowNotFound: If no matching window appears within the timeout.
+            ServerStoppedError: If the server process exits prematurely.
+        """
         self.__server: JabRpaServer = JabRpaServer(
             server_path=self.__server_path,
             server_timeout=self.__server_timeout,
@@ -74,6 +112,7 @@ class JabDriver:
         return self
 
     def stop(self) -> None:
+        """Stop the client and terminate the server."""
         self.__client.stop()
         self.__server.stop()
 
@@ -81,6 +120,14 @@ class JabDriver:
         self.stop()
 
     def get_children(self, element: Element) -> list[Element]:
+        """Get the direct children of an element.
+
+        Args:
+            element: The element to query.
+
+        Returns:
+            List of child ``Element`` objects.
+        """
         children: list[Element] = []
         for handle in element._element.children_handles:
             child = self.__client.get_element_from_handle(handle)
@@ -89,6 +136,14 @@ class JabDriver:
         return children
 
     def get_parent(self, element: Element) -> Element | None:
+        """Get the parent of an element.
+
+        Args:
+            element: The element to query.
+
+        Returns:
+            The parent ``Element`` or ``None`` if the element has no parent.
+        """
         handle = element._element.parent_handle
         parent = None
         if handle is not None:
@@ -97,23 +152,59 @@ class JabDriver:
             return Element(parent, self)
 
     def accessible_click(self, element: Element) -> None:
+        """Click an element using the JAB accessibility API directly.
+
+        Unlike ``Element.click()`` this does not use ``pyautogui`` —
+        it sends the click action through the Java Access Bridge.
+
+        Args:
+            element: The element to click.
+        """
         self.__client.click_element(element._element)
 
     def matching(self, locator: Locator) -> list[Element]:
+        """Find elements matching a structured locator.
+
+        Args:
+            locator: A ``Locator`` instance describing the search criteria.
+
+        Returns:
+            List of matching ``Element`` objects (may be empty).
+        """
         return [
             Element(el, self) for el in self.__client.find_elements(locator._locator)
         ]
 
     def list_java_windows(self) -> list[WindowInfo]:
+        """List all Java windows currently detected by the server.
+
+        Returns:
+            List of ``WindowInfo`` with hwnd and title.
+        """
         return self.__client.list_java_windows()
 
     def select_window(self, window_info: WindowInfo) -> None:
+        """Set the active window to build the accessibility tree from.
+
+        Args:
+            window_info: A ``WindowInfo`` from ``list_java_windows()``.
+        """
         return self.__client.select_window(window_info)
 
     def refresh_tree(self) -> None:
+        """Rebuild the cached accessibility tree on the server.
+
+        Call this after UI changes (e.g. a dialog opens) so subsequent
+        locator queries see the updated tree.
+        """
         return self.__client.refresh_tree()
 
     def get_version_info(self) -> VersionInfo | None:
+        """Get version info for the JAB bridge and server.
+
+        Returns:
+            ``VersionInfo`` if available, or ``None``.
+        """
         return self.__client.get_version_info()
 
     def locator(
@@ -129,10 +220,32 @@ class JabDriver:
         has_children: list["Locator"] | None = None,
         has_descendants: list["Locator"] | None = None,
         name_regex: bool = True,
-        role_regex: bool = True,
+        role_regex: bool = False,
         description_regex: bool = True,
         text_regex: bool = True,
     ) -> Locator:
+        """Build a locator to find elements in the accessibility tree.
+
+        All criteria are keyword-only.
+
+        Args:
+            name: Element's accessible name.
+            role: Element's accessible role (e.g. ``"push button"``).
+            description: Element's accessible description.
+            text: Element's text content.
+            has_state: Element must have all of these states (e.g. ``["enabled"]``).
+            not_has_state: Element must not have any of these states.
+            index_in_parent: Exact index in parent's children list.
+            has_children: List of ``Locator`` that must match at least one child each.
+            has_descendants: List of ``Locator`` that must match at least one descendant each.
+            name_regex: If True, treat ``name`` as a regex pattern.
+            role_regex: If True, treat ``role`` as a regex pattern.
+            description_regex: If True, treat ``description`` as a regex pattern.
+            text_regex: If True, treat ``text`` as a regex pattern.
+
+        Returns:
+            A ``Locator`` bound to this driver.
+        """
         return Locator(
             self,
             name=name,
