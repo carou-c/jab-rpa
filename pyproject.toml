@@ -22,10 +22,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "betterproto2-compiler>=0.9.0",
-    "grpcio-tools>=1.80.0",
-]
+dev = ["betterproto2-compiler>=0.9.0", "grpcio-tools>=1.80.0"]
 
 # [tool.cibuildwheel]
 # build = [
@@ -35,9 +32,7 @@ dev = [
 # ]
 
 [tool.uv]
-required-environments = [
-    "sys_platform == 'win32'"
-]
+required-environments = ["sys_platform == 'win32'"]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
@@ -46,6 +41,10 @@ source = "uv-dynamic-versioning"
 source = "Cargo.toml"
 pattern = '^version = "(.+)"$'
 
+[tool.hatch.build]
+artifacts = ["python/src/jab_rpa/bin/jab-rpa-server.exe"]
+
 [tool.hatch.build.targets.wheel]
+# include = ["python/src/jab_rpa/bin/jab-rpa-server.exe"]
 packages = ["python/src/jab_rpa"]
 pure-python = false
