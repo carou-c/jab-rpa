@@ -150,10 +150,7 @@ class Locator:
         return f"Locator {self.to_dict()}"
 
     def matching(self) -> list[Element]:
-        return [
-            Element(el, self._driver)
-            for el in self._driver._client.find_elements(self._locator)
-        ]
+        return self._driver.matching(self)
 
     def first_matching(self) -> Element:
         matching = self.matching()

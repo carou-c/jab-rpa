@@ -1,25 +1,22 @@
 import re
 from typing import Self
 import time
-import threading
-import queue
-import subprocess
 from pathlib import Path
-from importlib.resources import files
 
+from win32gui import ShowWindow, SetForegroundWindow
+from win32con import SW_SHOWMAXIMIZED
+
+from .server import (
+    JabRpaServer,
+    _SERVER_PATH,
+    _WAIT_FOR_SERVER_TIMEOUT,
+    _INIT_SERVER_STEP,
+)
 from .client import JabRpaClient
-from .types import VersionInfo, WindowInfo, Locator
+from .types import VersionInfo, WindowInfo, Element, Locator
 
-_SERVER_PATH = Path(str(files("jab_rpa").joinpath("bin/jab-rpa-server.exe")))
-_SERVER_LISTENING = "JAB gRPC Server listening on 127.0.0.1:50051"
-
-_WAIT_FOR_SERVER_TIMEOUT: int = 30
 _WAIT_FOR_WINDOW_TIMEOUT: int = 60
-_INIT_DRIVER_STEP: int = 5
-
-
-class ServerStoppedError(Exception):
-    """Raised when JAB gRPC server stops before listening"""
+_WAIT_FOR_WINDOW_STEP: int = 5
 
 
 class WindowNotFound(Exception):
@@ -29,95 +26,95 @@ class WindowNotFound(Exception):
 class JabDriver:
     def __init__(
         self,
-        window_title: str | re.Pattern[str] | None = None,
+        window_title: str | re.Pattern[str],
         *,
         server_path: Path = _SERVER_PATH,
         server_timeout: int = _WAIT_FOR_SERVER_TIMEOUT,
+        server_step: int = _INIT_SERVER_STEP,
         window_timeout: int = _WAIT_FOR_WINDOW_TIMEOUT,
-        step: int = _INIT_DRIVER_STEP,
+        window_step: int = _WAIT_FOR_WINDOW_STEP,
     ) -> None:
-        self.__window_title: str | re.Pattern[str] | None = window_title
+        self.__window_title: str | re.Pattern[str] = window_title
         self.__server_path: Path = server_path
         self.__server_timeout: int = server_timeout
         self.__window_timeout: int = window_timeout
-        self.__step: int = step
+        self.__server_step: int = server_step
+        self.__window_step: int = window_step
+
+    def start(self) -> None:
+        self.__server: JabRpaServer = JabRpaServer(
+            server_path=self.__server_path,
+            server_timeout=self.__server_timeout,
+            step=self.__server_step,
+        )
+        self.__client: JabRpaClient = JabRpaClient()
+
+        wait_start = time.monotonic()
+        while time.monotonic() - wait_start <= self.__window_timeout:
+            windows = [
+                window
+                for window in self.__client.list_java_windows()
+                if re.search(self.__window_title, window.title)
+            ]
+            if windows:
+                window_info = windows[0]
+                break
+            time.sleep(self.__window_step)
+        else:
+            raise WindowNotFound(
+                f"Java window with title matching {self.__window_title!r} not found within timeout {self.__window_timeout!r}."
+            )
+
+        SetForegroundWindow(window_info.hwnd)
+        ShowWindow(window_info.hwnd, SW_SHOWMAXIMIZED)
+        self.__client.select_window(window_info)
 
     def __enter__(self) -> Self:
-        server_proc = subprocess.Popen(
-            [self.__server_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-
-        q: queue.Queue[str] = queue.Queue()
-
-        def _reader():
-            if server_proc.stdout is not None:
-                for line in iter(server_proc.stdout.readline, ""):
-                    q.put(line)
-
-        t = threading.Thread(target=_reader, daemon=True)
-        t.start()
-
-        stdout = ""
-        wait_start = time.monotonic()
-        while time.monotonic() - wait_start <= self.__server_timeout:
-            while True:
-                try:
-                    stdout += q.get_nowait()
-                except queue.Empty:
-                    break
-            if _SERVER_LISTENING in stdout:
-                break
-
-            if (status := server_proc.poll()) is not None:
-                raise ServerStoppedError(
-                    "JAB gRPC server process stopped before listening.\n"
-                    f"Exit code: {status}"
-                    f"stderr: {server_proc.stderr.read() if server_proc.stderr is not None else None}\n"
-                    f"stdout: {server_proc.stdout.read() if server_proc.stdout is not None else None}\n"
-                )
-
-            time.sleep(self.__step)
-
-        self.__server_proc = server_proc
-        self._client: JabRpaClient = JabRpaClient()
-
-        if self.__window_title is not None:
-            wait_start = time.monotonic()
-            while time.monotonic() - wait_start <= self.__window_timeout:
-                windows = [
-                    window
-                    for window in self._client.list_java_windows()
-                    if re.search(self.__window_title, window.title)
-                ]
-                if windows:
-                    window_info = windows[0]
-                    break
-            else:
-                raise WindowNotFound(
-                    f"Java window with title matching {self.__window_title} not found."
-                )
-            self._client.select_window(window_info)
-
+        self.start()
         return self
 
+    def stop(self) -> None:
+        self.__client.stop()
+        self.__server.stop()
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._client.__exit__(exc_type, exc_val, exc_tb)
-        self.__server_proc.terminate()
+        self.stop()
+
+    def get_children(self, element: Element) -> list[Element]:
+        children: list[Element] = []
+        for handle in element._element.children_handles:
+            child = self.__client.get_element_from_handle(handle)
+            if child is not None:
+                children.append(Element(child, self))
+        return children
+
+    def get_parent(self, element: Element) -> Element | None:
+        handle = element._element.parent_handle
+        parent = None
+        if handle is not None:
+            parent = self.__client.get_element_from_handle(handle)
+        if parent is not None:
+            return Element(parent, self)
+
+    def accessible_click(self, element: Element) -> None:
+        self.__client.click_element(element._element)
+
+    def matching(self, locator: Locator) -> list[Element]:
+        return [
+            Element(el, self) for el in self.__client.find_elements(locator._locator)
+        ]
 
     def list_java_windows(self) -> list[WindowInfo]:
-        return self._client.list_java_windows()
+        return self.__client.list_java_windows()
 
     def select_window(self, window_info: WindowInfo) -> None:
-        return self._client.select_window(window_info)
+        return self.__client.select_window(window_info)
 
     def refresh_tree(self) -> None:
-        return self._client.refresh_tree()
+        return self.__client.refresh_tree()
 
     def get_version_info(self) -> VersionInfo | None:
-        return self._client.get_version_info()
+        return self.__client.get_version_info()
 
     def locator(
         self,

@@ -75,23 +75,13 @@ class Element:
         return self._element.index_in_parent
 
     def children(self) -> list["Element"]:
-        children: list[Element] = []
-        for handle in self._element.children_handles:
-            child = self._driver._client.get_element_from_handle(handle)
-            if child is not None:
-                children.append(Element(child, self._driver))
-        return children
+        return self._driver.get_children(self)
 
     def parent(self) -> "Element | None":
-        handle = self._element.parent_handle
-        parent = None
-        if handle is not None:
-            parent = self._driver._client.get_element_from_handle(handle)
-        if parent is not None:
-            return Element(parent, self._driver)
+        return self._driver.get_parent(self)
 
     def accessible_click(self) -> None:
-        self._driver._client.click_element(self._element)
+        self._driver.accessible_click(self)
 
     def click(self, clicks: int = 1, interval: int | float | None = None) -> None:
         interval = interval or 0.0

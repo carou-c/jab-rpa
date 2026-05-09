@@ -19,13 +19,19 @@ class JabRpaClient:
     def __init__(self) -> None:
         pass
 
-    def __enter__(self) -> Self:
+    def start(self) -> None:
         self.__channel: Channel = grpc.insecure_channel("127.0.0.1:50051")
         self.__stub: jab.JabServiceStub = jab.JabServiceStub(self.__channel)
+
+    def __enter__(self) -> Self:
+        self.start()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def stop(self) -> None:
         self.__channel.close()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
 
     def list_java_windows(self) -> list[WindowInfo]:
         req = jab.ListJavaWindowsRequest()

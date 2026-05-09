@@ -92,16 +92,14 @@ impl JabServiceTrait for JabService {
         };
 
         let wrapper = self.wrapper.clone();
-        let result = tokio::task::spawn_blocking({
-            let wrapper = wrapper.clone();
-            move || wrapper.get_root_obj_from_window(w.into())
-        })
-        .await
-        .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
+        let result =
+            tokio::task::spawn_blocking(move || wrapper.get_root_obj_from_window(w.into()))
+                .await
+                .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
 
         match result {
             Ok(root) => {
-                let tree = crate::context_tree::ContextTree::from_root(root, None, &wrapper);
+                let tree = crate::context_tree::ContextTree::from_root(root, None, &self.wrapper);
 
                 let mut tree_lock = self.ctx_tree.lock().unwrap();
                 *tree_lock = Some(tree);
@@ -173,7 +171,7 @@ impl JabServiceTrait for JabService {
         let locator = req.locator.as_ref().unwrap_or(&default_locator);
         let nodes = tree.get_nodes(locator);
 
-        let elements = nodes.into_iter().map(element_from_node).collect();
+        let elements = nodes.into_iter().map(Into::into).collect();
 
         Ok(Response::new(FindElementsResponse {
             elements,
@@ -209,7 +207,7 @@ impl JabServiceTrait for JabService {
         };
 
         Ok(Response::new(GetElementFromHandleResponse {
-            element: Some(element_from_node(node)),
+            element: Some(node.into()),
             error_message: String::new(),
         }))
     }
@@ -292,26 +290,28 @@ impl JabServiceTrait for JabService {
     }
 }
 
-fn element_from_node(node: &ContextNode) -> Element {
-    Element {
-        handle: node.handle,
-        name: node.name.clone(),
-        role: node.role.clone(),
-        states: node.states.clone(),
-        states_en_us: node.states_en_us.clone(),
-        description: node.description.clone(),
-        text: node.text.clone(),
-        x: node.x,
-        y: node.y,
-        width: node.width,
-        height: node.height,
-        accessible_action: node.accessible_action,
-        accessible_text: node.accessible_text,
-        accessible_selection: node.accessible_selection,
-        children_count: node.children_count,
-        index_in_parent: node.index_in_parent,
-        children_handles: node.children.clone(),
-        parent_handle: node.parent,
-        depth: node.depth,
+impl From<&ContextNode> for Element {
+    fn from(node: &ContextNode) -> Self {
+        Self {
+            handle: node.handle,
+            name: node.name.clone(),
+            role: node.role.clone(),
+            states: node.states.clone(),
+            states_en_us: node.states_en_us.clone(),
+            description: node.description.clone(),
+            text: node.text.clone(),
+            x: node.x,
+            y: node.y,
+            width: node.width,
+            height: node.height,
+            accessible_action: node.accessible_action,
+            accessible_text: node.accessible_text,
+            accessible_selection: node.accessible_selection,
+            children_count: node.children_count,
+            index_in_parent: node.index_in_parent,
+            children_handles: node.children.clone(),
+            parent_handle: node.parent,
+            depth: node.depth,
+        }
     }
 }
