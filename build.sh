@@ -1,7 +1,9 @@
+cd server
 cargo build --release
+cd ..
 
 mkdir -p python/src/jab_rpa/bin
-cp target/i686-pc-windows-gnu/release/jab-rpa-server.exe python/src/jab_rpa/bin
+cp server/target/i686-pc-windows-gnu/release/jab-rpa-server.exe python/src/jab_rpa/bin
 
 mkdir -p python/src/jab_rpa/proto
 uv run python -m grpc_tools.protoc \

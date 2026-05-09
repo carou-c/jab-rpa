@@ -45,7 +45,7 @@ required-environments = ["sys_platform == 'win32'"]
 source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning.from-file]
-source = "Cargo.toml"
+source = "server/Cargo.toml"
 pattern = '^version = "(.+)"$'
 
 [tool.hatch.build]

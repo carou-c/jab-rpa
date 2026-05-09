@@ -12,9 +12,9 @@ fn main() {
         .warnings(false)
         .include(format!("{}/include", JAVA_HOME))
         .include(format!("{}/include/linux", JAVA_HOME))
-        .include("server/native") // for headers
-        .file("server/native/AccessBridgeCalls.c")
-        .file("server/native/AccessBridgeDebug.cpp")
+        .include("native") // for headers
+        .file("native/AccessBridgeCalls.c")
+        .file("native/AccessBridgeDebug.cpp")
         .compile("accessbridge"); // produces libaccessbridge.a
 
     println!("cargo:rustc-link-search=native={}/lib", MINGW_SYSROOT);
@@ -22,28 +22,28 @@ fn main() {
     println!("cargo:rustc-link-lib=static=stdc++");
 
     // 2. Tell cargo to rerun if headers, C src, build.rs or proto change
-    println!("cargo:rerun-if-changed=server/native/AccessBridgeDebug.h");
-    println!("cargo:rerun-if-changed=server/native/AccessBridgePackages.h");
-    println!("cargo:rerun-if-changed=server/native/AccessBridgeCallbacks.h");
-    println!("cargo:rerun-if-changed=server/native/AccessBridgeCalls.h");
-    println!("cargo:rerun-if-changed=server/native/wrapper.h");
-    println!("cargo:rerun-if-changed=server/native/AccessBridgeDebug.cpp");
-    println!("cargo:rerun-if-changed=server/native/AccessBridgeCalls.c");
+    println!("cargo:rerun-if-changed=native/AccessBridgeDebug.h");
+    println!("cargo:rerun-if-changed=native/AccessBridgePackages.h");
+    println!("cargo:rerun-if-changed=native/AccessBridgeCallbacks.h");
+    println!("cargo:rerun-if-changed=native/AccessBridgeCalls.h");
+    println!("cargo:rerun-if-changed=native/wrapper.h");
+    println!("cargo:rerun-if-changed=native/AccessBridgeDebug.cpp");
+    println!("cargo:rerun-if-changed=native/AccessBridgeCalls.c");
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=proto/jab.proto");
+    println!("cargo:rerun-if-changed=../proto/jab.proto");
 
     // 3. Generate bindings
     let builder = bindgen::Builder::default()
-        .header("server/native/wrapper.h")
+        .header("native/wrapper.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        .clang_arg("-Iserver/native")
+        .clang_arg("-Inative")
         .clang_arg(format!("-I{}/include", JAVA_HOME))
         .clang_arg(format!("-I{}/include/linux", JAVA_HOME))
         .clang_arg("-Wno-everything")
         .blocklist_type("_LONGDOUBLE")
-        .allowlist_file("server/native/AccessBridgePackages.h")
-        .allowlist_file("server/native/AccessBridgeCallbacks.h")
-        .allowlist_file("server/native/AccessBridgeCalls.h");
+        .allowlist_file("native/AccessBridgePackages.h")
+        .allowlist_file("native/AccessBridgeCallbacks.h")
+        .allowlist_file("native/AccessBridgeCalls.h");
 
     let bindings = builder.generate().expect("Unable to generate bindings");
 
@@ -57,6 +57,6 @@ fn main() {
     tonic_prost_build::configure()
         .build_server(true)
         .build_client(false)
-        .compile_protos(&["proto/jab.proto"], &["proto/"])
+        .compile_protos(&["../proto/jab.proto"], &["../proto/"])
         .expect("Couldn't build protos!");
 }
