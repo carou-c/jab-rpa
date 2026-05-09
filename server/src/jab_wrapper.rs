@@ -1,6 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc;
 
 use crate::bindings;
 use crate::types::WindowInfo;
@@ -10,7 +9,7 @@ type VmId = std::os::raw::c_long;
 type JObject = bindings::Java_Object;
 
 #[derive(Debug)]
-pub struct JavaObject {
+pub(crate) struct JavaObject {
     vm_id: VmId,
     jobject: JObject,
 }
@@ -25,10 +24,9 @@ impl Drop for JavaObject {
 }
 
 pub struct JabWrapper {
-    pub initialized: AtomicBool,
+    pub(crate) initialized: AtomicBool,
     message_pump_handle: Mutex<Option<std::thread::JoinHandle<()>>>,
     message_pump_thread_id: Mutex<Option<u32>>,
-    event_tx: Mutex<Option<mpsc::Sender<crate::JabCallbackEvent>>>,
 }
 
 impl JabWrapper {
@@ -37,7 +35,6 @@ impl JabWrapper {
             initialized: AtomicBool::new(false),
             message_pump_handle: Mutex::new(None),
             message_pump_thread_id: Mutex::new(None),
-            event_tx: Mutex::new(None),
         });
 
         // Channel to synchronize initialization
@@ -82,12 +79,7 @@ impl JabWrapper {
         wrapper
     }
 
-    pub fn set_event_sender(&self, tx: mpsc::Sender<crate::JabCallbackEvent>) {
-        let mut event_tx = self.event_tx.lock().unwrap();
-        *event_tx = Some(tx);
-    }
-
-    pub fn list_java_windows(&self) -> Vec<WindowInfo> {
+    pub(crate) fn list_java_windows(&self) -> Vec<WindowInfo> {
         unsafe {
             use winapi::ctypes::wchar_t;
             use winapi::shared::minwindef::LPARAM;
@@ -128,7 +120,7 @@ impl JabWrapper {
         }
     }
 
-    pub fn get_root_obj_from_window(&self, window: WindowInfo) -> Result<JavaObject, String> {
+    pub(crate) fn get_root_obj_from_window(&self, window: WindowInfo) -> Result<JavaObject, String> {
         unsafe {
             let mut vm_id: VmId = 0;
             let mut jobject: bindings::AccessibleContext = 0;
@@ -142,7 +134,7 @@ impl JabWrapper {
         }
     }
 
-    pub fn get_obj_info(&self, obj: &JavaObject) -> Option<bindings::AccessibleContextInfo> {
+    pub(crate) fn get_obj_info(&self, obj: &JavaObject) -> Option<bindings::AccessibleContextInfo> {
         unsafe {
             let mut info: bindings::AccessibleContextInfo = std::mem::zeroed();
             if bindings::GetAccessibleContextInfo(obj.vm_id, obj.jobject, &mut info) != 0 {
@@ -155,7 +147,7 @@ impl JabWrapper {
 
     /// # Safety
     /// The caller must verify index is within bounds
-    pub unsafe fn get_child_from_obj(&self, obj: &JavaObject, index: i32) -> JavaObject {
+    pub(crate) unsafe fn get_child_from_obj(&self, obj: &JavaObject, index: i32) -> JavaObject {
         unsafe {
             let child = bindings::GetAccessibleChildFromContext(obj.vm_id, obj.jobject, index);
             JavaObject {
@@ -164,7 +156,7 @@ impl JabWrapper {
             }
         }
     }
-    pub fn click_element(&self, obj: &JavaObject) -> Result<(), String> {
+    pub(crate) fn click_element(&self, obj: &JavaObject) -> Result<(), String> {
         unsafe {
             let mut actions: bindings::AccessibleActions = std::mem::zeroed();
             if bindings::getAccessibleActions(obj.vm_id, obj.jobject, &mut actions) == 0 {
@@ -200,7 +192,7 @@ impl JabWrapper {
         Err("No click action found for element".to_string())
     }
 
-    pub fn get_text(&self, obj: &JavaObject) -> Result<String, String> {
+    pub(crate) fn get_text(&self, obj: &JavaObject) -> Result<String, String> {
         unsafe {
             let mut text_info: bindings::AccessibleTextInfo = std::mem::zeroed();
             if bindings::GetAccessibleTextInfo(obj.vm_id, obj.jobject, &mut text_info, 0, 0) == 0 {
@@ -244,19 +236,7 @@ impl JabWrapper {
         }
     }
 
-    pub fn type_text(&self, obj: &JavaObject, text: &str) -> Result<(), String> {
-        let text_wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
-
-        unsafe {
-            if bindings::setTextContents(obj.vm_id, obj.jobject, text_wide.as_ptr()) != 0 {
-                Ok(())
-            } else {
-                Err("Failed to set text contents".to_string())
-            }
-        }
-    }
-
-    pub fn get_version_info(
+    pub(crate) fn get_version_info(
         &self,
         obj: &JavaObject,
     ) -> Result<bindings::AccessBridgeVersionInfo, String> {
@@ -294,14 +274,6 @@ impl Drop for JabWrapper {
         if let Some(h) = handle {
             let _ = h.join();
         }
-
-        // Clean up global weak reference
-        // unsafe {
-        //     if !JAB_WRAPPER.is_null() {
-        //         let _ = Box::from_raw(JAB_WRAPPER);
-        //         JAB_WRAPPER = std::ptr::null_mut();
-        //     }
-        // }
 
         // Call shutdownAccessBridge after the message pump has exited
         unsafe {

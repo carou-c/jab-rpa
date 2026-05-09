@@ -1,5 +1,5 @@
 #[derive(Debug, Clone)]
-pub struct WindowInfo {
-    pub hwnd: u64,
-    pub title: String,
+pub(crate) struct WindowInfo {
+    pub(crate) hwnd: u64,
+    pub(crate) title: String,
 }

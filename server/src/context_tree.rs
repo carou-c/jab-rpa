@@ -5,37 +5,37 @@ use crate::jab_wrapper::{JabWrapper, JavaObject};
 use crate::proto;
 use crate::utils::utf16_to_string;
 
-pub type NodeHandle = u64;
-pub const ROOT_HANDLE: NodeHandle = 0;
+pub(crate) type NodeHandle = u64;
+pub(crate) const ROOT_HANDLE: NodeHandle = 0;
 
 #[derive(Debug)]
-pub struct ContextNode {
-    pub obj: JavaObject,
-    pub handle: NodeHandle,
-    pub name: String,
-    pub role: String,
-    pub states: Vec<String>,
-    pub states_en_us: Vec<String>,
-    pub description: String,
-    pub children: Vec<NodeHandle>,
-    pub text: String,
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-    pub accessible_action: bool,
-    pub accessible_text: bool,
-    pub accessible_selection: bool,
-    pub children_count: i32,
-    pub index_in_parent: i32,
-    pub parent: Option<NodeHandle>,
-    pub depth: i32,
+pub(crate) struct ContextNode {
+    pub(crate) obj: JavaObject,
+    pub(crate) handle: NodeHandle,
+    pub(crate) name: String,
+    pub(crate) role: String,
+    pub(crate) states: Vec<String>,
+    pub(crate) states_en_us: Vec<String>,
+    pub(crate) description: String,
+    pub(crate) children: Vec<NodeHandle>,
+    pub(crate) text: String,
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) width: i32,
+    pub(crate) height: i32,
+    pub(crate) accessible_action: bool,
+    pub(crate) accessible_text: bool,
+    pub(crate) accessible_selection: bool,
+    pub(crate) children_count: i32,
+    pub(crate) index_in_parent: i32,
+    pub(crate) parent: Option<NodeHandle>,
+    pub(crate) depth: i32,
 }
 
 #[derive(Debug)]
-pub struct ContextTree {
-    pub nodes: HashMap<NodeHandle, ContextNode>,
-    pub next_handle: NodeHandle,
+pub(crate) struct ContextTree {
+    pub(crate) nodes: HashMap<NodeHandle, ContextNode>,
+    pub(crate) next_handle: NodeHandle,
 }
 
 impl ContextNode {
@@ -104,18 +104,18 @@ impl ContextNode {
 }
 
 impl ContextTree {
-    pub fn root(&self) -> &ContextNode {
+    pub(crate) fn root(&self) -> &ContextNode {
         &self.nodes[&ROOT_HANDLE]
     }
 
-    pub fn into_root(mut self) -> JavaObject {
+    pub(crate) fn into_root(mut self) -> JavaObject {
         self.nodes
             .remove(&ROOT_HANDLE)
             .expect("Root node missing")
             .obj
     }
 
-    pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>, jab: &Arc<JabWrapper>) -> Self {
+    pub(crate) fn from_root(root_obj: JavaObject, max_depth: Option<i32>, jab: &Arc<JabWrapper>) -> Self {
         let mut tree = Self {
             nodes: HashMap::new(),
             next_handle: ROOT_HANDLE + 1,
@@ -155,7 +155,7 @@ impl ContextTree {
         }
     }
 
-    pub fn get_nodes(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
+    pub(crate) fn get_nodes(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
         let mut results = Vec::new();
         self.collect_matching(self.root(), locator, &[], &mut results);
         results

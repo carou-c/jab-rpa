@@ -1,12 +1,10 @@
-import time
 from typing import Self
 
 import grpc
 from grpc._channel import Channel
 
 from .proto import jab
-from .types import WindowInfo, Element, VersionInfo, Table
-from .locator import Locator
+from .types import WindowInfo, VersionInfo
 
 
 class JabRpaRemoteError(Exception):
@@ -19,10 +17,11 @@ class JabRpaTimeoutError(TimeoutError):
 
 class JabRpaClient:
     def __init__(self) -> None:
-        self.__channel: Channel = grpc.insecure_channel("127.0.0.1:50051")
-        self.__stub: jab.JabServiceStub = jab.JabServiceStub(self.__channel)
+        pass
 
     def __enter__(self) -> Self:
+        self.__channel: Channel = grpc.insecure_channel("127.0.0.1:50051")
+        self.__stub: jab.JabServiceStub = jab.JabServiceStub(self.__channel)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -46,55 +45,33 @@ class JabRpaClient:
         res: jab.RefreshTreeResponse = self.__stub.refresh_tree(req)
         if not res.success:
             raise JabRpaRemoteError(
-                f"Error calling select_window({req}): {res.error_message}"
+                f"Error calling refresh_tree({req}): {res.error_message}"
             )
 
-    def find_elements(self, locator: Locator) -> list[Element]:
-        req = jab.FindElementsRequest(locator._locator)
+    def find_elements(self, locator: jab.Locator) -> list[jab.Element]:
+        req = jab.FindElementsRequest(locator)
         res: jab.FindElementsResponse = self.__stub.find_elements(req)
         if res.error_message:
             raise JabRpaRemoteError(
-                f"Error calling get_elements({req}): {res.error_message}"
+                f"Error calling find_elements({req}): {res.error_message}"
             )
         return res.elements
 
-    def click_element(self, element: Element) -> None:
+    def get_element_from_handle(self, handle: int) -> jab.Element | None:
+        req = jab.GetElementFromHandleRequest(handle)
+        res: jab.GetElementFromHandleResponse = self.__stub.get_element_from_handle(req)
+        if res.error_message:
+            raise JabRpaRemoteError(
+                f"Error calling get_element_from_handle({req}): {res.error_message}"
+            )
+        return res.element
+
+    def click_element(self, element: jab.Element) -> None:
         req = jab.ClickElementRequest(element.handle)
         res: jab.ClickElementResponse = self.__stub.click_element(req)
         if not res.success:
             raise JabRpaRemoteError(
                 f"Error calling click_element({req}): {res.error_message}"
-            )
-
-    def type_text(self, element: Element, text: str) -> None:
-        req = jab.TypeTextRequest(element.handle, text)
-        res: jab.TypeTextResponse = self.__stub.type_text(req)
-        if not res.success:
-            raise JabRpaRemoteError(
-                f"Error calling type_text({req}): {res.error_message}"
-            )
-
-    def read_table(self, locator: str) -> Table | None:
-        req = jab.ReadTableRequest(locator)
-        res: jab.ReadTableResponse = self.__stub.read_table(req)
-        if res.error_message:
-            raise JabRpaRemoteError(
-                f"Error calling read_table({req}): {res.error_message}"
-            )
-        return res.table
-
-    def wait_until_element_exists(self, locator: str, timeout_seconds: int) -> None:
-        req = jab.WaitUntilElementExistsRequest(locator, timeout_seconds)
-        res: jab.WaitUntilElementExistsResponse = self.__stub.wait_until_element_exists(
-            req
-        )
-        if res.error_message:
-            raise JabRpaRemoteError(
-                f"Error calling wait_until_element_exists({req}): {res.error_message}"
-            )
-        if not res.exists:
-            raise JabRpaTimeoutError(
-                f"Timeout while waiting for element with locator {locator!r} to exist"
             )
 
     def get_version_info(self) -> VersionInfo | None:
@@ -105,30 +82,3 @@ class JabRpaClient:
                 f"Error calling get_version_info({req}): {res.error_message}"
             )
         return res.version_info
-
-
-def test_find_window_and_buttons():
-    with JabRpaClient() as client:
-        print("Listing windows...")
-        windows = client.list_java_windows()
-        print(f"Windows: {windows}")
-
-        if not windows:
-            print("No windows found")
-            return
-
-        window = windows[0]
-
-        print("Selecting first found window")
-        start = time.time()
-        client.select_window(window)
-        end = time.time()
-        print(f"Time: {end - start}")
-
-        locator = Locator(role=".*button.*")
-        print(f"Getting elements with locator {locator}")
-        start = time.time()
-        elements = client.find_elements(locator)
-        end = time.time()
-        print(f"Elements: {elements}")
-        print(f"Time: {end - start}")

@@ -1,6 +1,4 @@
 use std::sync::{Arc, Mutex};
-// use tokio::sync::mpsc;
-// use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 use crate::bindings;
@@ -16,20 +14,9 @@ use crate::proto::{
     ClickElementRequest, ClickElementResponse, Element, FindElementsRequest, FindElementsResponse,
     GetElementFromHandleRequest, GetElementFromHandleResponse, GetVersionInfoRequest,
     GetVersionInfoResponse, ListJavaWindowsRequest, ListJavaWindowsResponse, Locator,
-    ReadTableRequest, ReadTableResponse, RefreshTreeRequest, RefreshTreeResponse,
-    SelectWindowRequest, SelectWindowResponse, TypeTextRequest, TypeTextResponse,
-    VersionInfo as ProtoVersionInfo, WaitUntilElementExistsRequest, WaitUntilElementExistsResponse,
-    WindowInfo as ProtoWindowInfo,
+    RefreshTreeRequest, RefreshTreeResponse, SelectWindowRequest, SelectWindowResponse,
+    VersionInfo as ProtoVersionInfo, WindowInfo as ProtoWindowInfo,
 };
-
-#[derive(Debug, Clone)]
-pub struct CallbackEvent {
-    pub event_type: String,
-    pub vm_id: i32,
-    pub context_handle: u64,
-    pub message: String,
-    pub event_time: i64,
-}
 
 impl From<WindowInfo> for ProtoWindowInfo {
     fn from(w: WindowInfo) -> Self {
@@ -264,66 +251,6 @@ impl JabServiceTrait for JabService {
                 error_message: e,
             })),
         }
-    }
-
-    async fn type_text(
-        &self,
-        request: Request<TypeTextRequest>,
-    ) -> Result<Response<TypeTextResponse>, Status> {
-        let req = request.into_inner();
-
-        let tree_lock = self.ctx_tree.lock().unwrap();
-
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => {
-                return Ok(Response::new(TypeTextResponse {
-                    success: false,
-                    error_message: "No window selected. Call SelectWindow first.".to_string(),
-                }));
-            }
-        };
-
-        let node = match tree.nodes.get(&req.handle) {
-            Some(node) => node,
-            None => {
-                return Ok(Response::new(TypeTextResponse {
-                    success: false,
-                    error_message: format!("No element with handle={}", req.handle),
-                }));
-            }
-        };
-
-        match self.wrapper.type_text(&node.obj, &req.text) {
-            Ok(()) => Ok(Response::new(TypeTextResponse {
-                success: true,
-                error_message: String::new(),
-            })),
-            Err(e) => Ok(Response::new(TypeTextResponse {
-                success: false,
-                error_message: e,
-            })),
-        }
-    }
-
-    async fn read_table(
-        &self,
-        _request: Request<ReadTableRequest>,
-    ) -> Result<Response<ReadTableResponse>, Status> {
-        Ok(Response::new(ReadTableResponse {
-            table: None,
-            error_message: "read_table not yet implemented".to_string(),
-        }))
-    }
-
-    async fn wait_until_element_exists(
-        &self,
-        _request: Request<WaitUntilElementExistsRequest>,
-    ) -> Result<Response<WaitUntilElementExistsResponse>, Status> {
-        Ok(Response::new(WaitUntilElementExistsResponse {
-            exists: false,
-            error_message: "wait_until_element_exists not yet implemented".to_string(),
-        }))
     }
 
     async fn get_version_info(

@@ -20,21 +20,12 @@ __all__ = (
     "ListJavaWindowsRequest",
     "ListJavaWindowsResponse",
     "Locator",
-    "ReadTableRequest",
-    "ReadTableResponse",
     "RefreshTreeRequest",
     "RefreshTreeResponse",
     "SelectWindowRequest",
     "SelectWindowResponse",
     "StringLocator",
-    "Table",
-    "TableCell",
-    "TableRow",
-    "TypeTextRequest",
-    "TypeTextResponse",
     "VersionInfo",
-    "WaitUntilElementExistsRequest",
-    "WaitUntilElementExistsResponse",
     "WindowInfo",
 )
 
@@ -288,26 +279,6 @@ default_message_pool.register_message("jab", "Locator", Locator)
 
 
 @dataclass(eq=False, repr=False)
-class ReadTableRequest(betterproto2.Message):
-    locator: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
-
-
-default_message_pool.register_message("jab", "ReadTableRequest", ReadTableRequest)
-
-
-@dataclass(eq=False, repr=False)
-class ReadTableResponse(betterproto2.Message):
-    table: "Table | None" = betterproto2.field(
-        1, betterproto2.TYPE_MESSAGE, optional=True
-    )
-
-    error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
-
-
-default_message_pool.register_message("jab", "ReadTableResponse", ReadTableResponse)
-
-
-@dataclass(eq=False, repr=False)
 class RefreshTreeRequest(betterproto2.Message):
     pass
 
@@ -358,66 +329,6 @@ default_message_pool.register_message("jab", "StringLocator", StringLocator)
 
 
 @dataclass(eq=False, repr=False)
-class Table(betterproto2.Message):
-    row_count: "int" = betterproto2.field(1, betterproto2.TYPE_INT32)
-
-    column_count: "int" = betterproto2.field(2, betterproto2.TYPE_INT32)
-
-    rows: "list[TableRow]" = betterproto2.field(
-        3, betterproto2.TYPE_MESSAGE, repeated=True
-    )
-
-    column_headers: "list[str]" = betterproto2.field(
-        4, betterproto2.TYPE_STRING, repeated=True
-    )
-
-
-default_message_pool.register_message("jab", "Table", Table)
-
-
-@dataclass(eq=False, repr=False)
-class TableCell(betterproto2.Message):
-    value: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
-
-    row: "int" = betterproto2.field(2, betterproto2.TYPE_INT32)
-
-    column: "int" = betterproto2.field(3, betterproto2.TYPE_INT32)
-
-
-default_message_pool.register_message("jab", "TableCell", TableCell)
-
-
-@dataclass(eq=False, repr=False)
-class TableRow(betterproto2.Message):
-    cells: "list[TableCell]" = betterproto2.field(
-        1, betterproto2.TYPE_MESSAGE, repeated=True
-    )
-
-
-default_message_pool.register_message("jab", "TableRow", TableRow)
-
-
-@dataclass(eq=False, repr=False)
-class TypeTextRequest(betterproto2.Message):
-    handle: "int" = betterproto2.field(1, betterproto2.TYPE_UINT64)
-
-    text: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
-
-
-default_message_pool.register_message("jab", "TypeTextRequest", TypeTextRequest)
-
-
-@dataclass(eq=False, repr=False)
-class TypeTextResponse(betterproto2.Message):
-    success: "bool" = betterproto2.field(1, betterproto2.TYPE_BOOL)
-
-    error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
-
-
-default_message_pool.register_message("jab", "TypeTextResponse", TypeTextResponse)
-
-
-@dataclass(eq=False, repr=False)
 class VersionInfo(betterproto2.Message):
     vm_version: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
 
@@ -429,30 +340,6 @@ class VersionInfo(betterproto2.Message):
 
 
 default_message_pool.register_message("jab", "VersionInfo", VersionInfo)
-
-
-@dataclass(eq=False, repr=False)
-class WaitUntilElementExistsRequest(betterproto2.Message):
-    locator: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
-
-    timeout_seconds: "int" = betterproto2.field(2, betterproto2.TYPE_INT32)
-
-
-default_message_pool.register_message(
-    "jab", "WaitUntilElementExistsRequest", WaitUntilElementExistsRequest
-)
-
-
-@dataclass(eq=False, repr=False)
-class WaitUntilElementExistsResponse(betterproto2.Message):
-    exists: "bool" = betterproto2.field(1, betterproto2.TYPE_BOOL)
-
-    error_message: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
-
-
-default_message_pool.register_message(
-    "jab", "WaitUntilElementExistsResponse", WaitUntilElementExistsResponse
-)
 
 
 @dataclass(eq=False, repr=False)
@@ -521,29 +408,6 @@ class JabServiceStub:
             "/jab.JabService/ClickElement",
             ClickElementRequest.SerializeToString,
             ClickElementResponse.FromString,
-        )(message)
-
-    def type_text(self, message: "TypeTextRequest") -> "TypeTextResponse":
-        return self._channel.unary_unary(
-            "/jab.JabService/TypeText",
-            TypeTextRequest.SerializeToString,
-            TypeTextResponse.FromString,
-        )(message)
-
-    def read_table(self, message: "ReadTableRequest") -> "ReadTableResponse":
-        return self._channel.unary_unary(
-            "/jab.JabService/ReadTable",
-            ReadTableRequest.SerializeToString,
-            ReadTableResponse.FromString,
-        )(message)
-
-    def wait_until_element_exists(
-        self, message: "WaitUntilElementExistsRequest"
-    ) -> "WaitUntilElementExistsResponse":
-        return self._channel.unary_unary(
-            "/jab.JabService/WaitUntilElementExists",
-            WaitUntilElementExistsRequest.SerializeToString,
-            WaitUntilElementExistsResponse.FromString,
         )(message)
 
     def get_version_info(

@@ -1,4 +1,9 @@
-from typing import Any
+from __future__ import annotations
+
+import time
+from typing import Any, TYPE_CHECKING
+
+from .element import Element
 from .proto.jab import (
     Locator as _Locator,
     StringLocator,
@@ -7,10 +12,22 @@ from .proto.jab import (
     DescendantLocator,
 )
 
+if TYPE_CHECKING:
+    from .driver import JabDriver
+
+
+_WAIT_FOR_TIMEOUT = 60  # seconds
+_WAIT_FOR_STEP = 5  # seconds
+
+
+class LocatorNotFound(Exception):
+    """Raised when a locator is not found in the context tree"""
+
 
 class Locator:
     def __init__(
         self,
+        driver: JabDriver,
         *,
         name: str | None = None,
         role: str | None = None,
@@ -27,6 +44,8 @@ class Locator:
         text_regex: bool = True,
         ascendant: AscendantLocator | None = None,
     ):
+        self._driver: JabDriver = driver
+
         has_state: list[str] = has_state or []
         not_has_state: list[str] = not_has_state or []
         has_children: list[Locator] = has_children or []
@@ -72,6 +91,7 @@ class Locator:
         text_regex: bool = True,
     ) -> "Locator":
         return Locator(
+            self._driver,
             name=name,
             role=role,
             description=description,
@@ -106,6 +126,7 @@ class Locator:
         text_regex: bool = True,
     ) -> "Locator":
         return Locator(
+            self._driver,
             name=name,
             role=role,
             description=description,
@@ -127,3 +148,48 @@ class Locator:
 
     def __str__(self) -> str:
         return f"Locator {self.to_dict()}"
+
+    def matching(self) -> list[Element]:
+        return [
+            Element(el, self._driver)
+            for el in self._driver._client.find_elements(self._locator)
+        ]
+
+    def first_matching(self) -> Element:
+        matching = self.matching()
+        if not matching:
+            raise LocatorNotFound(f"Element with locator = {self._locator!r} not found")
+        return matching[0]
+
+    def accessible_click(self) -> None:
+        self.first_matching().accessible_click()
+
+    def click(self, clicks: int = 1, interval: int | float | None = None) -> None:
+        self.first_matching().click(clicks, interval)
+
+    def click_and_type(
+        self,
+        text: str,
+        clicks: int = 1,
+        interval_text: int | float | None = None,
+        interval_clicks: int | float | None = None,
+    ) -> None:
+        self.first_matching().click_and_type(
+            text, clicks, interval_text, interval_clicks
+        )
+
+    def wait_for(
+        self,
+        timeout: int | float = _WAIT_FOR_TIMEOUT,
+        sleep_step: int | float = _WAIT_FOR_STEP,
+    ) -> Element:
+        start = time.monotonic()
+        while time.monotonic() - start <= timeout:
+            matching = self.matching()
+            if matching:
+                return matching[0]
+            time.sleep(sleep_step)
+            self._driver.refresh_tree()
+        raise LocatorNotFound(
+            f"Element with locator = {self._locator!r} not found within timeout {timeout!r}"
+        )

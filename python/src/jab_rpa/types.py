@@ -1,10 +1,11 @@
-from .jab import WindowInfo, Element, VersionInfo, Table, TableRow, TableCell
+from .proto.jab import WindowInfo, VersionInfo
+
+from .element import Element
+from .locator import Locator
 
 __all__ = [
     "WindowInfo",
-    "Element",
     "VersionInfo",
-    "Table",
-    "TableRow",
-    "TableCell",
+    "Element",
+    "Locator",
 ]

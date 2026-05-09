@@ -15,10 +15,29 @@ dependencies = [
     # "betterproto2-compiler>=0.9.0",
     "grpcio>=1.80.0",
     # "grpcio-tools>=1.80.0",
+    "pyautogui>=0.9.54",
+    "pywin32>=311 ; sys_platform == 'win32'",
+    "types-pyautogui>=0.9.3.20260508",
+    "types-pywin32>=311.0.0.20260508",
 ]
 
 [dependency-groups]
-dev = ["betterproto2-compiler>=0.9.0", "grpcio-tools>=1.80.0"]
+dev = [
+    "betterproto2-compiler>=0.9.0",
+    "grpcio-tools>=1.80.0",
+]
+
+# [tool.cibuildwheel]
+# build = [
+#     "cp312-win_amd64",
+#     "cp313-win_amd64",
+#     "cp314-win_amd64",
+# ]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'win32'"
+]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
@@ -29,3 +48,4 @@ pattern = '^version = "(.+)"$'
 
 [tool.hatch.build.targets.wheel]
 packages = ["python/src/jab_rpa"]
+pure-python = false
