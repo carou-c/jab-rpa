@@ -9,6 +9,7 @@ build/
 dist/
 wheels/
 *.egg-info
+.ruff_cache
 
 # MkDocs output
 /site/
