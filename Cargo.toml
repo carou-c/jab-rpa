@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "rust/crates/wrapper",
+    "rust/crates/rpa-server",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.0.5"
+edition = "2024"
+license = "MIT"

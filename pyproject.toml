@@ -8,16 +8,21 @@ dynamic = ["version"]
 description = "Python client for jab-rpa — automate 32-bit Java applications from 64-bit Python"
 requires-python = ">=3.12"
 readme = "README.md"
-authors = [
-    { name = "Carolina Helena da Silva Corrêa", email = "carolcorrea555@gmail.com" },
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Operating System :: Microsoft :: Windows",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
 ]
+authors = [{ name = "carou-c", email = "carolcorrea555@gmail.com" }]
 dependencies = [
-    # "betterproto2-compiler>=0.9.0",
     "grpcio>=1.80.0",
-    # "grpcio-tools>=1.80.0",
+    "grpcio-tools>=1.80.0",
     "pyautogui>=0.9.54",
-    "pywin32>=311 ; sys_platform == 'win32'",
     "types-pyautogui>=0.9.3.20260508",
+    "pywin32>=311 ; sys_platform == 'win32'",
     "types-pywin32>=311.0.0.20260508",
 ]
 
@@ -29,29 +34,20 @@ dev = [
     "mkdocs-material>=9.7.6",
     "mkdocstrings>=1.0.4",
     "mkdocstrings-python>=2.0.3",
+    "wheel>=0.47",
 ]
-
-# [tool.cibuildwheel]
-# build = [
-#     "cp312-win_amd64",
-#     "cp313-win_amd64",
-#     "cp314-win_amd64",
-# ]
-
-[tool.uv]
-required-environments = ["sys_platform == 'win32'"]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning.from-file]
-source = "server/Cargo.toml"
+source = "Cargo.toml"
 pattern = '^version = "(.+)"$'
 
 [tool.hatch.build]
-artifacts = ["python/src/jab_rpa/bin/jab-rpa-server.exe"]
+artifacts = ["python/jab_rpa/bin/jab-rpa-server.exe"]
 
 [tool.hatch.build.targets.wheel]
 # include = ["python/src/jab_rpa/bin/jab-rpa-server.exe"]
-packages = ["python/src/jab_rpa"]
+packages = ["python/jab_rpa"]
 pure-python = false

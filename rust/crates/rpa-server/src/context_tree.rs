@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::jab_wrapper::{JabWrapper, JavaObject};
+use jab_wrapper::{JabWrapper, types::JavaObject};
 use crate::proto;
 use crate::utils::utf16_to_string;
 

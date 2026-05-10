@@ -1,27 +1,25 @@
+#[allow(warnings)]
+mod bindings {
+    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+}
+
+pub mod types;
+mod utils;
+
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 
-use crate::bindings;
-use crate::types::WindowInfo;
+use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
+use windows::Win32::System::Threading::GetCurrentThreadId;
+use windows::Win32::UI::WindowsAndMessaging::{
+    DispatchMessageW, EnumWindows, GetMessageW, GetWindowTextLengthW, GetWindowTextW, IsWindow,
+    PM_NOREMOVE, PeekMessageW, PostThreadMessageW, TranslateMessage, WM_QUIT,
+};
+
+use windows::core::BOOL;
+
+use crate::types::{AccessBridgeVersionInfo, AccessibleContextInfo, JavaObject, VmId, WindowInfo};
 use crate::utils::utf16_to_string;
-
-type VmId = std::os::raw::c_long;
-type JObject = bindings::Java_Object;
-
-#[derive(Debug)]
-pub(crate) struct JavaObject {
-    vm_id: VmId,
-    jobject: JObject,
-}
-
-impl Drop for JavaObject {
-    fn drop(&mut self) {
-        // eprintln!("Releasing vm_id={}, context={}", self.vm_id, self.jobject);
-        unsafe {
-            bindings::ReleaseJavaObject(self.vm_id, self.jobject);
-        }
-    }
-}
 
 pub struct JabWrapper {
     pub(crate) initialized: AtomicBool,
@@ -38,19 +36,23 @@ impl JabWrapper {
         });
 
         // Channel to synchronize initialization
-        let (init_tx, init_rx) = std::sync::mpsc::channel::<bool>();
+        let (init_tx, init_rx) = mpsc::channel::<bool>();
 
         // Start Windows message pump in dedicated thread (same thread will call initializeAccessBridge)
         let wrapper_clone = wrapper.clone();
         let pump_handle = std::thread::spawn(move || {
             // Store thread ID for later shutdown
-            let thread_id = unsafe { winapi::um::processthreadsapi::GetCurrentThreadId() };
+            let thread_id = unsafe { GetCurrentThreadId() };
             {
                 let mut tid = wrapper_clone.message_pump_thread_id.lock().unwrap();
                 *tid = Some(thread_id);
             }
 
-            // Initialize JAB on this thread (required for callbacks to work)
+            unsafe {
+                let _ = PeekMessageW(&mut std::mem::zeroed(), None, 0, 0, PM_NOREMOVE);
+            }
+
+            // Initialize JAB on this thread
             let init_result = unsafe { bindings::initializeAccessBridge() };
             let success = init_result != 0;
             let _ = init_tx.send(success);
@@ -58,6 +60,11 @@ impl JabWrapper {
             if success {
                 // Run message pump loop
                 run_message_pump();
+            }
+
+            // Shutdown JAB
+            unsafe {
+                bindings::shutdownAccessBridge();
             }
         });
 
@@ -70,7 +77,6 @@ impl JabWrapper {
         match init_rx.recv() {
             Ok(true) => {
                 wrapper.initialized.store(true, Ordering::SeqCst);
-                // wrapper.register_callbacks();
             }
             Ok(false) => panic!("Failed to initialize JAB"),
             Err(_) => panic!("Message pump thread crashed during initialization"),
@@ -79,37 +85,30 @@ impl JabWrapper {
         wrapper
     }
 
-    pub(crate) fn list_java_windows(&self) -> Vec<WindowInfo> {
+    pub fn list_java_windows(&self) -> Vec<WindowInfo> {
         unsafe {
-            use winapi::ctypes::wchar_t;
-            use winapi::shared::minwindef::LPARAM;
-            use winapi::shared::windef::HWND;
-            use winapi::um::winuser::{
-                EnumWindows, GetWindowTextLengthW, GetWindowTextW, IsWindow,
-            };
-
             let mut hwnds: Vec<HWND> = Vec::new();
 
-            extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> i32 {
-                let hwnds = unsafe { &mut *(lparam as *mut Vec<HWND>) };
-                if unsafe { IsWindow(hwnd) } != 0 {
+            extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+                let hwnds: &mut Vec<HWND> = unsafe { &mut *(lparam.0 as *mut Vec<HWND>) };
+                if unsafe { IsWindow(Some(hwnd)).0 } != 0 {
                     hwnds.push(hwnd);
                 }
-                1
+                BOOL(1)
             }
 
-            EnumWindows(Some(enum_proc), &mut hwnds as *mut _ as isize);
+            let _ = EnumWindows(Some(enum_proc), LPARAM(&mut hwnds as *mut _ as isize));
 
             hwnds
                 .into_iter()
-                .filter(|&hwnd| bindings::IsJavaWindow(hwnd as _) != 0)
+                .filter(|&hwnd| bindings::IsJavaWindow(hwnd.0 as _) != 0)
                 .map(|hwnd| WindowInfo {
-                    hwnd: hwnd as u64,
+                    hwnd: hwnd.0 as u64,
                     title: {
                         let len = GetWindowTextLengthW(hwnd);
                         if len > 0 {
-                            let mut buf: Vec<wchar_t> = vec![0; (len + 1) as usize];
-                            GetWindowTextW(hwnd, buf.as_mut_ptr(), len + 1);
+                            let mut buf: Vec<bindings::wchar_t> = vec![0; (len + 1) as usize];
+                            GetWindowTextW(hwnd, &mut buf);
                             utf16_to_string(&buf)
                         } else {
                             String::new()
@@ -120,7 +119,7 @@ impl JabWrapper {
         }
     }
 
-    pub(crate) fn get_root_obj_from_window(&self, window: WindowInfo) -> Result<JavaObject, String> {
+    pub fn get_root_obj_from_window(&self, window: WindowInfo) -> Result<JavaObject, String> {
         unsafe {
             let mut vm_id: VmId = 0;
             let mut jobject: bindings::AccessibleContext = 0;
@@ -134,7 +133,7 @@ impl JabWrapper {
         }
     }
 
-    pub(crate) fn get_obj_info(&self, obj: &JavaObject) -> Option<bindings::AccessibleContextInfo> {
+    pub fn get_obj_info(&self, obj: &JavaObject) -> Option<AccessibleContextInfo> {
         unsafe {
             let mut info: bindings::AccessibleContextInfo = std::mem::zeroed();
             if bindings::GetAccessibleContextInfo(obj.vm_id, obj.jobject, &mut info) != 0 {
@@ -147,7 +146,7 @@ impl JabWrapper {
 
     /// # Safety
     /// The caller must verify index is within bounds
-    pub(crate) unsafe fn get_child_from_obj(&self, obj: &JavaObject, index: i32) -> JavaObject {
+    pub unsafe fn get_child_from_obj(&self, obj: &JavaObject, index: i32) -> JavaObject {
         unsafe {
             let child = bindings::GetAccessibleChildFromContext(obj.vm_id, obj.jobject, index);
             JavaObject {
@@ -156,7 +155,8 @@ impl JabWrapper {
             }
         }
     }
-    pub(crate) fn click_element(&self, obj: &JavaObject) -> Result<(), String> {
+
+    pub fn click_element(&self, obj: &JavaObject) -> Result<(), String> {
         unsafe {
             let mut actions: bindings::AccessibleActions = std::mem::zeroed();
             if bindings::getAccessibleActions(obj.vm_id, obj.jobject, &mut actions) == 0 {
@@ -192,7 +192,7 @@ impl JabWrapper {
         Err("No click action found for element".to_string())
     }
 
-    pub(crate) fn get_text(&self, obj: &JavaObject) -> Result<String, String> {
+    pub fn get_text(&self, obj: &JavaObject) -> Result<String, String> {
         unsafe {
             let mut text_info: bindings::AccessibleTextInfo = std::mem::zeroed();
             if bindings::GetAccessibleTextInfo(obj.vm_id, obj.jobject, &mut text_info, 0, 0) == 0 {
@@ -236,10 +236,7 @@ impl JabWrapper {
         }
     }
 
-    pub(crate) fn get_version_info(
-        &self,
-        obj: &JavaObject,
-    ) -> Result<bindings::AccessBridgeVersionInfo, String> {
+    pub fn get_version_info(&self, obj: &JavaObject) -> Result<AccessBridgeVersionInfo, String> {
         unsafe {
             let mut info: bindings::AccessBridgeVersionInfo = std::mem::zeroed();
             if bindings::GetVersionInfo(obj.vm_id, &mut info) != 0 {
@@ -261,7 +258,7 @@ impl Drop for JabWrapper {
 
         if let Some(tid) = thread_id {
             unsafe {
-                winapi::um::winuser::PostThreadMessageW(tid, winapi::um::winuser::WM_QUIT, 0, 0);
+                let _ = PostThreadMessageW(tid, WM_QUIT, WPARAM(0), LPARAM(0));
             }
         }
 
@@ -274,28 +271,21 @@ impl Drop for JabWrapper {
         if let Some(h) = handle {
             let _ = h.join();
         }
-
-        // Call shutdownAccessBridge after the message pump has exited
-        unsafe {
-            bindings::shutdownAccessBridge();
-        }
     }
 }
 
 fn run_message_pump() {
     unsafe {
-        use winapi::um::winuser::{DispatchMessageW, GetMessageW, TranslateMessage};
-
         let mut msg = std::mem::zeroed();
         loop {
-            let result = GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0);
-            if result == 0 {
+            let result = GetMessageW(&mut msg, None, 0, 0);
+            if result.0 <= 0 {
+                if result.0 < 0 {
+                    eprintln!("Message pump error: {}", result.0);
+                }
                 break; // WM_QUIT
-            } else if result == -1 {
-                eprintln!("Message pump error");
-                break;
             } else {
-                TranslateMessage(&msg);
+                let _ = TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
         }

@@ -1,11 +1,10 @@
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
 
-use crate::bindings;
 use crate::context_tree::{ContextNode, ContextTree, ROOT_HANDLE};
-use crate::jab_wrapper::JabWrapper;
-use crate::types::WindowInfo;
 use crate::utils::utf16_to_string;
+use jab_wrapper::JabWrapper;
+use jab_wrapper::types::{AccessBridgeVersionInfo, WindowInfo};
 
 // Import all proto types; tonic generates them in the proto module
 // We alias our local types to avoid confusion
@@ -36,8 +35,8 @@ impl From<ProtoWindowInfo> for WindowInfo {
     }
 }
 
-impl From<bindings::AccessBridgeVersionInfo> for ProtoVersionInfo {
-    fn from(vi: bindings::AccessBridgeVersionInfo) -> Self {
+impl From<AccessBridgeVersionInfo> for ProtoVersionInfo {
+    fn from(vi: AccessBridgeVersionInfo) -> Self {
         Self {
             vm_version: utf16_to_string(&vi.VMversion),
             bridge_java_class_version: utf16_to_string(&vi.bridgeJavaClassVersion),

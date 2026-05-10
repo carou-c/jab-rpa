@@ -1,5 +1,5 @@
 use jab_rpa_server::jab_service::JabService;
-use jab_rpa_server::jab_wrapper::JabWrapper;
+use jab_wrapper::JabWrapper;
 use jab_rpa_server::proto::jab_service_server::JabServiceServer;
 use tonic::transport::Server;
 

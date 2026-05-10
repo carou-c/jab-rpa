@@ -5,7 +5,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [python/src]
+          paths: [python]
           options:
             docstring_style: google
             show_signature_annotations: true
