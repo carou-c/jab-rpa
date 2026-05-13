@@ -1,41 +1,77 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use jab_wrapper::{JabWrapper, types::JavaObject};
-use crate::proto;
+use crate::types::JavaObject;
 use crate::utils::utf16_to_string;
+use crate::wrapper::JabWrapper;
 
 pub(crate) type NodeHandle = u64;
-pub(crate) const ROOT_HANDLE: NodeHandle = 0;
+pub const ROOT_HANDLE: NodeHandle = 0;
 
 #[derive(Debug)]
-pub(crate) struct ContextNode {
-    pub(crate) obj: JavaObject,
-    pub(crate) handle: NodeHandle,
-    pub(crate) name: String,
-    pub(crate) role: String,
-    pub(crate) states: Vec<String>,
-    pub(crate) states_en_us: Vec<String>,
-    pub(crate) description: String,
-    pub(crate) children: Vec<NodeHandle>,
-    pub(crate) text: String,
-    pub(crate) x: i32,
-    pub(crate) y: i32,
-    pub(crate) width: i32,
-    pub(crate) height: i32,
-    pub(crate) accessible_action: bool,
-    pub(crate) accessible_text: bool,
-    pub(crate) accessible_selection: bool,
-    pub(crate) children_count: i32,
-    pub(crate) index_in_parent: i32,
-    pub(crate) parent: Option<NodeHandle>,
-    pub(crate) depth: i32,
+pub struct StringLocator {
+    pub find: String,
+    pub regex: bool,
 }
 
 #[derive(Debug)]
-pub(crate) struct ContextTree {
-    pub(crate) nodes: HashMap<NodeHandle, ContextNode>,
-    pub(crate) next_handle: NodeHandle,
+pub struct IndexLocator {
+    pub index: i32,
+}
+
+#[derive(Debug)]
+pub struct AscendantLocator {
+    pub locator: Locator,
+    pub is_parent: bool,
+}
+
+#[derive(Debug)]
+pub struct DescendantLocator {
+    pub locator: Locator,
+    pub is_child: bool,
+}
+
+#[derive(Debug)]
+pub struct Locator {
+    pub name: Option<StringLocator>,
+    pub role: Option<StringLocator>,
+    pub description: Option<StringLocator>,
+    pub text: Option<StringLocator>,
+    pub has_state: Vec<String>,
+    pub not_has_state: Vec<String>,
+    pub index_in_parent: Option<IndexLocator>,
+    pub ascendant: Option<Box<AscendantLocator>>,
+    pub descendants: Vec<DescendantLocator>,
+}
+
+#[derive(Debug)]
+pub struct ContextNode {
+    pub obj: JavaObject,
+    pub handle: NodeHandle,
+    pub name: String,
+    pub role: String,
+    pub states: Vec<String>,
+    pub states_en_us: Vec<String>,
+    pub description: String,
+    pub children: Vec<NodeHandle>,
+    pub text: String,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+    pub accessible_action: bool,
+    pub accessible_text: bool,
+    pub accessible_selection: bool,
+    pub children_count: i32,
+    pub index_in_parent: i32,
+    pub parent: Option<NodeHandle>,
+    pub depth: i32,
+}
+
+#[derive(Debug)]
+pub struct ContextTree {
+    pub nodes: HashMap<NodeHandle, ContextNode>,
+    next_handle: NodeHandle,
 }
 
 impl ContextNode {
@@ -104,18 +140,22 @@ impl ContextNode {
 }
 
 impl ContextTree {
-    pub(crate) fn root(&self) -> &ContextNode {
+    fn root(&self) -> &ContextNode {
         &self.nodes[&ROOT_HANDLE]
     }
 
-    pub(crate) fn into_root(mut self) -> JavaObject {
+    pub fn into_root(mut self) -> JavaObject {
         self.nodes
             .remove(&ROOT_HANDLE)
             .expect("Root node missing")
             .obj
     }
 
-    pub(crate) fn from_root(root_obj: JavaObject, max_depth: Option<i32>, jab: &Arc<JabWrapper>) -> Self {
+    pub fn from_root(
+        root_obj: JavaObject,
+        max_depth: Option<i32>,
+        jab: &Arc<JabWrapper>,
+    ) -> Self {
         let mut tree = Self {
             nodes: HashMap::new(),
             next_handle: ROOT_HANDLE + 1,
@@ -155,7 +195,7 @@ impl ContextTree {
         }
     }
 
-    pub(crate) fn get_nodes(&self, locator: &proto::Locator) -> Vec<&ContextNode> {
+    pub fn get_nodes(&self, locator: &Locator) -> Vec<&ContextNode> {
         let mut results = Vec::new();
         self.collect_matching(self.root(), locator, &[], &mut results);
         results
@@ -164,7 +204,7 @@ impl ContextTree {
     fn collect_matching<'a>(
         &'a self,
         node: &'a ContextNode,
-        locator: &proto::Locator,
+        locator: &Locator,
         ancestors: &[&'a ContextNode],
         results: &mut Vec<&'a ContextNode>,
     ) {
@@ -185,7 +225,7 @@ impl ContextTree {
     fn node_matches(
         &self,
         node: &ContextNode,
-        locator: &proto::Locator,
+        locator: &Locator,
         ancestors: &[&ContextNode],
     ) -> bool {
         if !matches_string_field(&node.name, &locator.name) {
@@ -226,14 +266,14 @@ impl ContextTree {
         if let Some(ref asc) = locator.ascendant {
             let found = if asc.is_parent {
                 if let Some(parent) = ancestors.last() {
-                    matches_node_simple_opt(parent, &asc.locator)
+                    matches_node_simple(parent, &asc.locator)
                 } else {
                     false
                 }
             } else {
                 ancestors
                     .iter()
-                    .any(|&ancestor| matches_node_simple_opt(ancestor, &asc.locator))
+                    .any(|&ancestor| matches_node_simple(ancestor, &asc.locator))
             };
             if !found {
                 return false;
@@ -252,27 +292,27 @@ impl ContextTree {
     fn has_descendant_matching(
         &self,
         node: &ContextNode,
-        desc_locator: &proto::DescendantLocator,
+        desc_locator: &DescendantLocator,
     ) -> bool {
-        let loc_ref: &Option<proto::Locator> = &desc_locator.locator;
+        let loc_ref = &desc_locator.locator;
         if desc_locator.is_child {
             node.children
                 .iter()
                 .filter_map(|child| self.nodes.get(child))
-                .any(|child| matches_node_simple_opt_ref(child, loc_ref))
+                .any(|child| matches_node_simple(child, loc_ref))
         } else {
             node.children
                 .iter()
                 .filter_map(|child| self.nodes.get(child))
                 .any(|child| {
-                    matches_node_simple_opt_ref(child, loc_ref)
+                    matches_node_simple(child, loc_ref)
                         || self.has_descendant_matching(child, desc_locator)
                 })
         }
     }
 }
 
-fn matches_string_field(field_value: &str, locator: &Option<proto::StringLocator>) -> bool {
+fn matches_string_field(field_value: &str, locator: &Option<StringLocator>) -> bool {
     match locator {
         None => true,
         Some(sl) => {
@@ -289,7 +329,7 @@ fn matches_string_field(field_value: &str, locator: &Option<proto::StringLocator
     }
 }
 
-fn matches_node_simple(node: &ContextNode, locator: &proto::Locator) -> bool {
+fn matches_node_simple(node: &ContextNode, locator: &Locator) -> bool {
     if !matches_string_field(&node.name, &locator.name) {
         return false;
     }
@@ -309,18 +349,4 @@ fn matches_node_simple(node: &ContextNode, locator: &proto::Locator) -> bool {
     }
 
     true
-}
-
-fn matches_node_simple_opt(node: &ContextNode, locator: &Option<Box<proto::Locator>>) -> bool {
-    match locator {
-        None => false,
-        Some(box_locator) => matches_node_simple(node, box_locator),
-    }
-}
-
-fn matches_node_simple_opt_ref(node: &ContextNode, locator: &Option<proto::Locator>) -> bool {
-    match locator {
-        None => false,
-        Some(locator_ref) => matches_node_simple(node, locator_ref),
-    }
 }
