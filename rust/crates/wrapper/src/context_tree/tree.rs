@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::OnceLock;
 
 use crate::types::JavaObject;
 use crate::utils::utf16_to_string;
-use crate::wrapper::JabWrapper;
 
 pub(crate) type NodeHandle = u64;
 pub(crate) const ROOT_HANDLE: NodeHandle = 0;
@@ -29,6 +28,8 @@ pub struct ContextNode {
     pub index_in_parent: i32,
     pub parent: Option<NodeHandle>,
     pub depth: i32,
+    pub text_cache: OnceLock<String>,
+    pub action_names_cache: OnceLock<String>,
 }
 
 #[derive(Debug)]
@@ -43,7 +44,6 @@ impl ContextNode {
         depth: i32,
         handle: NodeHandle,
         parent: Option<NodeHandle>,
-        jab: &std::sync::Arc<JabWrapper>,
     ) -> Self {
         let mut node = Self {
             obj,
@@ -65,13 +65,13 @@ impl ContextNode {
             index_in_parent: 0,
             parent,
             depth,
+            text_cache: OnceLock::new(),
+            action_names_cache: OnceLock::new(),
         };
 
-        if let Some(info) = jab.get_obj_info(&node.obj) {
+        if let Some(info) = node.obj.get_obj_info() {
             node.name = utf16_to_string(&info.name);
-            node.role = utf16_to_string(&info.role)
-                .to_lowercase()
-                .replace(' ', "_");
+            node.role = utf16_to_string(&info.role).to_lowercase().replace(' ', "_");
             node.states = utf16_to_string(&info.states)
                 .split(',')
                 .map(str::to_lowercase)
@@ -97,6 +97,30 @@ impl ContextNode {
         }
         node
     }
+
+    pub(crate) fn resolve_text(&self) -> &str {
+        self.text_cache
+            .get_or_init(|| self.obj.get_text().unwrap_or_default())
+    }
+
+    pub(crate) fn resolve_action_names(&self) -> &str {
+        self.action_names_cache.get_or_init(|| {
+            let actions = match self.obj.get_actions() {
+                Ok(actions) => actions,
+                Err(_) => return String::default(),
+            };
+
+            actions.actionInfo[..actions.actionsCount as usize]
+                .iter()
+                .map(|action| {
+                    utf16_to_string(&action.name)
+                        .to_lowercase()
+                        .replace(' ', "_")
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+    }
 }
 
 impl ContextTree {
@@ -111,25 +135,20 @@ impl ContextTree {
             .obj
     }
 
-    pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>, jab: &Arc<JabWrapper>) -> Self {
+    pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>) -> Self {
         let mut tree = Self {
             nodes: HashMap::new(),
             next_handle: ROOT_HANDLE + 1,
         };
 
-        let mut root = ContextNode::from_obj(root_obj, 0, ROOT_HANDLE, None, jab);
-        tree.build_subtree(&mut root, max_depth, jab);
+        let mut root = ContextNode::from_obj(root_obj, 0, ROOT_HANDLE, None);
+        tree.build_subtree(&mut root, max_depth);
         tree.nodes.insert(ROOT_HANDLE, root);
 
         tree
     }
 
-    fn build_subtree(
-        &mut self,
-        node: &mut ContextNode,
-        max_depth: Option<i32>,
-        jab: &std::sync::Arc<JabWrapper>,
-    ) {
+    fn build_subtree(&mut self, node: &mut ContextNode, max_depth: Option<i32>) {
         if let Some(max) = max_depth
             && node.depth >= max
         {
@@ -137,14 +156,14 @@ impl ContextTree {
         }
 
         for i in 0..node.children_count {
-            let child_obj = unsafe { jab.get_child_from_obj(&node.obj, i) };
+            let child_obj = unsafe { node.obj.get_child_from_obj(i) };
 
             let handle = self.next_handle;
             self.next_handle += 1;
             let mut child_node =
-                ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle), jab);
+                ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle));
 
-            self.build_subtree(&mut child_node, max_depth, jab);
+            self.build_subtree(&mut child_node, max_depth);
 
             self.nodes.insert(handle, child_node);
             node.children.push(handle);

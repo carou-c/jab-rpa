@@ -1,6 +1,7 @@
-pub use crate::bindings::{AccessBridgeVersionInfo, AccessibleContextInfo};
+pub use crate::bindings::{
+    AccessBridgeVersionInfo, AccessibleActionInfo, AccessibleActions, AccessibleContextInfo,
+};
 pub use crate::wrapper::JavaObject;
-
 
 #[derive(Debug, Clone)]
 pub struct WindowInfo {

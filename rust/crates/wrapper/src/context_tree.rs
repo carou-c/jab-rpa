@@ -1,4 +1,5 @@
-mod base;
-mod search;
+mod tree;
+mod selector;
 
-pub use base::{ContextNode, ContextTree};
+pub use tree::{ContextNode, ContextTree};
+pub use selector::{GetNodesError, Locator};

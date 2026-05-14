@@ -11,7 +11,7 @@ use windows::{
 use crate::{
     bindings,
     runtime::JabRuntime,
-    types::{AccessBridgeVersionInfo, AccessibleContextInfo, WindowInfo},
+    types::{AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, WindowInfo},
     utils::utf16_to_string,
 };
 
@@ -39,6 +39,7 @@ pub struct JabWrapper {
 }
 
 impl JabWrapper {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             runtime: Arc::new(JabRuntime::new()),
@@ -96,11 +97,24 @@ impl JabWrapper {
             }
         }
     }
+}
 
-    pub fn get_obj_info(&self, obj: &JavaObject) -> Option<AccessibleContextInfo> {
+impl JavaObject {
+    pub fn get_version_info(&self) -> Result<AccessBridgeVersionInfo, String> {
+        unsafe {
+            let mut info: bindings::AccessBridgeVersionInfo = std::mem::zeroed();
+            if bindings::GetVersionInfo(self.vm_id, &mut info) != 0 {
+                Ok(info)
+            } else {
+                Err("Failed to get version info".to_string())
+            }
+        }
+    }
+
+    pub fn get_obj_info(&self) -> Option<AccessibleContextInfo> {
         unsafe {
             let mut info: bindings::AccessibleContextInfo = std::mem::zeroed();
-            if bindings::GetAccessibleContextInfo(obj.vm_id, obj.jobject, &mut info) != 0 {
+            if bindings::GetAccessibleContextInfo(self.vm_id, self.jobject, &mut info) != 0 {
                 Some(info)
             } else {
                 None
@@ -110,21 +124,21 @@ impl JabWrapper {
 
     /// # Safety
     /// The caller must verify index is within bounds
-    pub unsafe fn get_child_from_obj(&self, obj: &JavaObject, index: i32) -> JavaObject {
+    pub unsafe fn get_child_from_obj(&self, index: i32) -> JavaObject {
         unsafe {
-            let child = bindings::GetAccessibleChildFromContext(obj.vm_id, obj.jobject, index);
+            let child = bindings::GetAccessibleChildFromContext(self.vm_id, self.jobject, index);
             JavaObject {
-                vm_id: obj.vm_id,
+                vm_id: self.vm_id,
                 jobject: child,
                 runtime: self.runtime.clone(),
             }
         }
     }
 
-    pub fn click_element(&self, obj: &JavaObject) -> Result<(), String> {
+    pub fn click_element(&self) -> Result<(), String> {
         unsafe {
             let mut actions: bindings::AccessibleActions = std::mem::zeroed();
-            if bindings::getAccessibleActions(obj.vm_id, obj.jobject, &mut actions) == 0 {
+            if bindings::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
                 return Err("Failed to get accessible actions".to_string());
             }
 
@@ -137,8 +151,8 @@ impl JabWrapper {
 
                     let mut failure: i32 = 0;
                     if bindings::doAccessibleActions(
-                        obj.vm_id,
-                        obj.jobject,
+                        self.vm_id,
+                        self.jobject,
                         &mut actions_to_do,
                         &mut failure,
                     ) != 0
@@ -157,10 +171,11 @@ impl JabWrapper {
         Err("No click action found for element".to_string())
     }
 
-    pub fn get_text(&self, obj: &JavaObject) -> Result<String, String> {
+    pub fn get_text(&self) -> Result<String, String> {
         unsafe {
             let mut text_info: bindings::AccessibleTextInfo = std::mem::zeroed();
-            if bindings::GetAccessibleTextInfo(obj.vm_id, obj.jobject, &mut text_info, 0, 0) == 0 {
+            if bindings::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0) == 0
+            {
                 return Err("GetAccessibleTextInfo failed".to_string());
             }
 
@@ -179,8 +194,8 @@ impl JabWrapper {
                 let mut buf: Vec<bindings::wchar_t> = vec![0; chunk_len + 1];
 
                 if bindings::GetAccessibleTextRange(
-                    obj.vm_id,
-                    obj.jobject,
+                    self.vm_id,
+                    self.jobject,
                     start as i32,
                     end as i32,
                     buf.as_mut_ptr(),
@@ -201,14 +216,13 @@ impl JabWrapper {
         }
     }
 
-    pub fn get_version_info(&self, obj: &JavaObject) -> Result<AccessBridgeVersionInfo, String> {
+    pub fn get_actions(&self) -> Result<AccessibleActions, String> {
         unsafe {
-            let mut info: bindings::AccessBridgeVersionInfo = std::mem::zeroed();
-            if bindings::GetVersionInfo(obj.vm_id, &mut info) != 0 {
-                Ok(info)
-            } else {
-                Err("Failed to get version info".to_string())
+            let mut actions: bindings::AccessibleActions = std::mem::zeroed();
+            if bindings::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
+                return Err("getAccessibleActions failed".to_string());
             }
+            Ok(actions)
         }
     }
 }
