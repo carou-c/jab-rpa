@@ -11,9 +11,6 @@ pub enum Token {
     #[token("+")]
     Plus,
 
-    #[token("-")]
-    Minus,
-
     #[token("~")]
     Tilde,
 
@@ -68,7 +65,7 @@ pub enum Token {
     #[token(">")]
     Gt,
 
-    #[regex(r"[0-9]+", |lex| lex.slice().parse())]
+    #[regex(r"-?[0-9]+", |lex| lex.slice().parse())]
     Int(i32),
 
     #[regex(r#""([^"\\]|\\.)*"|'([^'\\]|\\.)*'"#, |lex| lex.slice().to_string())]

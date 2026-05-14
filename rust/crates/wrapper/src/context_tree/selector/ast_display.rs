@@ -181,16 +181,8 @@ impl fmt::Display for PseudoClassSelector {
         match self {
             Self::Has(selector) => write!(f, ":has({})", selector),
             Self::Not(selector) => write!(f, ":not({})", selector),
-            Self::NthChild(formula) => write!(f, ":nth-child({})", formula),
-            Self::NthLastChild(formula) => write!(f, ":nth-last-child({})", formula),
-            Self::NthOfType(formula) => write!(f, ":nth-of-type({})", formula),
-            Self::NthLastOfType(formula) => write!(f, ":nth-last-of-type({})", formula),
+            Self::NthChild(n) => write!(f, ":nth-child({})", n),
+            Self::NthLastChild(n) => write!(f, ":nth-last-child({})", n),
         }
-    }
-}
-
-impl fmt::Display for NthFormula {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}n + {}", self.a, self.b)
     }
 }

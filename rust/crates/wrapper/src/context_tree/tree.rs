@@ -30,6 +30,8 @@ pub struct ContextNode {
     pub depth: i32,
     pub text_cache: OnceLock<String>,
     pub action_names_cache: OnceLock<String>,
+    pub states_cache: OnceLock<String>,
+    pub states_en_us_cache: OnceLock<String>,
 }
 
 #[derive(Debug)]
@@ -67,6 +69,8 @@ impl ContextNode {
             depth,
             text_cache: OnceLock::new(),
             action_names_cache: OnceLock::new(),
+            states_cache: OnceLock::new(),
+            states_en_us_cache: OnceLock::new(),
         };
 
         if let Some(info) = node.obj.get_obj_info() {
@@ -121,6 +125,18 @@ impl ContextNode {
                 .join(" ")
         })
     }
+
+    pub(crate) fn resolve_states(&self) -> &str {
+        self.states_cache
+            .get_or_init(|| self.states.join(" "))
+    }
+
+    pub(crate) fn resolve_states_en_us(&self) -> &str {
+        self.states_cache
+            .get_or_init(|| self.states_en_us.join(" "))
+    }
+
+
 }
 
 impl ContextTree {

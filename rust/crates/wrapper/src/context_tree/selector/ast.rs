@@ -101,43 +101,6 @@ pub enum BoolAttrName {
 pub enum PseudoClassSelector {
     Has(Box<Selector>),
     Not(Box<Selector>),
-    NthChild(NthFormula),
-    NthLastChild(NthFormula),
-    NthOfType(NthFormula),
-    NthLastOfType(NthFormula),
-}
-
-/// This is just 'an + b'
-/// e.g. ':nth-child(2*n + 1)' for odd-numbered childs
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct NthFormula {
-    pub a: i32,
-    pub b: i32,
-}
-
-impl NthFormula {
-    pub fn new(a: i32, b: i32) -> Self {
-        Self { a, b }
-    }
-
-    pub fn matches(&self, index: usize) -> bool {
-        let index = index as i32;
-
-        if self.a == 0 {
-            return index == self.b;
-        }
-
-        let diff = index - self.b;
-
-        if (diff % self.a) == 0 {
-            return false
-        }
-        let n = (index - self.b) / self.a;
-        n >= 0 && index == self.a * n + self.b
-    }
-
-    #[allow(dead_code)]
-    pub fn positions(&self, count: usize) -> Vec<usize> {
-        (0..=count).filter(|&i| self.matches(i)).collect()
-    }
+    NthChild(i32),
+    NthLastChild(i32),
 }

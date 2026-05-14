@@ -39,7 +39,7 @@ fn match_complex<'a>(
 
     let mut current: Vec<&ContextNode> = scope
         .into_iter()
-        .filter(|n| matches_compound(tree, n, &complex.first))
+        .filter(|node| matches_compound(tree, node, &complex.first))
         .collect();
 
     for (combinator, compound) in &complex.tail {
@@ -49,7 +49,7 @@ fn match_complex<'a>(
             next.extend(
                 reached
                     .into_iter()
-                    .filter(|n| matches_compound(tree, n, compound)),
+                    .filter(|node| matches_compound(tree, node, compound)),
             );
         }
         current = next;
@@ -84,8 +84,8 @@ fn apply_combinator_to_node<'a>(
             nodes
         }
         Combinator::NextSibling => {
-            if let Some(parent_handle) = &node.parent
-                && let Some(parent) = tree.nodes.get(parent_handle)
+            if let Some(parent_handle) = node.parent
+                && let Some(parent) = tree.nodes.get(&parent_handle)
             {
                 let idx = node.index_in_parent as usize;
                 if idx + 1 < parent.children.len()
@@ -117,14 +117,13 @@ fn apply_combinator_to_node<'a>(
 
 fn matches_compound(tree: &ContextTree, node: &ContextNode, compound: &CompoundSelector) -> bool {
     if let Some(role) = &compound.role
-        && node.role != *role
+        && &node.role != role
     {
         return false;
     }
 
     for state in &compound.states {
-        if !node.states.iter().any(|s| s == state) && !node.states_en_us.iter().any(|s| s == state)
-        {
+        if !node.states.iter().any(|s| s == state) {
             return false;
         }
     }
@@ -151,44 +150,34 @@ fn matches_attribute(node: &ContextNode, attr: &AttrSelector) -> bool {
             op,
             value,
             flags,
-        } => {
-            let node_val = get_string_attr(node, name);
-            match node_val {
-                Some(v) => match_string_op(&v, *op, value, flags),
-                None => false,
-            }
-        }
+        } => match_string_op(get_string_attr(node, name), *op, value, flags),
         AttrSelector::Int { name, op, value } => {
             let Some(target) = value else { return false };
-            let node_val = get_int_attr(node, name);
-            match node_val {
-                Some(v) => match_int_op(v, *op, *target),
-                None => false,
-            }
+            match_int_op(get_int_attr(node, name), *op, *target)
         }
         AttrSelector::Bool { name } => get_bool_attr(node, name),
     }
 }
 
-fn get_string_attr(node: &ContextNode, name: &StrAttrName) -> Option<String> {
+fn get_string_attr<'a>(node: &'a ContextNode, name: &StrAttrName) -> &'a str {
     match name {
-        StrAttrName::Name => Some(node.name.clone()),
-        StrAttrName::Description => Some(node.description.clone()),
-        StrAttrName::States => Some(node.states.join(" ")),
-        StrAttrName::StatesEnUs => Some(node.states_en_us.join(" ")),
-        StrAttrName::Text => Some(node.resolve_text().to_string()),
-        StrAttrName::Actions => Some(node.resolve_action_names().to_string()),
+        StrAttrName::Name => &node.name,
+        StrAttrName::Description => &node.description,
+        StrAttrName::States => node.resolve_states(),
+        StrAttrName::StatesEnUs => node.resolve_states_en_us(),
+        StrAttrName::Text => node.resolve_text(),
+        StrAttrName::Actions => node.resolve_action_names(),
     }
 }
 
-fn get_int_attr(node: &ContextNode, name: &IntAttrName) -> Option<i32> {
+fn get_int_attr(node: &ContextNode, name: &IntAttrName) -> i32 {
     match name {
-        IntAttrName::X => Some(node.x),
-        IntAttrName::Y => Some(node.y),
-        IntAttrName::Width => Some(node.width),
-        IntAttrName::Height => Some(node.height),
-        IntAttrName::ChildrenCount => Some(node.children_count),
-        IntAttrName::Depth => Some(node.depth),
+        IntAttrName::X => node.x,
+        IntAttrName::Y => node.y,
+        IntAttrName::Width => node.width,
+        IntAttrName::Height => node.height,
+        IntAttrName::ChildrenCount => node.children_count,
+        IntAttrName::Depth => node.depth,
     }
 }
 
@@ -248,61 +237,15 @@ fn matches_pseudo_class(
             let results = select_nodes(tree, inner, None);
             !results.iter().any(|n| n.handle == node.handle)
         }
-        PseudoClassSelector::NthChild(formula) => {
-            matches_nth_child(tree, node, formula, false, false)
-        }
-        PseudoClassSelector::NthLastChild(formula) => {
-            matches_nth_child(tree, node, formula, true, false)
-        }
-        PseudoClassSelector::NthOfType(formula) => {
-            matches_nth_child(tree, node, formula, false, true)
-        }
-        PseudoClassSelector::NthLastOfType(formula) => {
-            matches_nth_child(tree, node, formula, true, true)
-        }
+        PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n, false),
+        PseudoClassSelector::NthLastChild(n) => matches_nth_child(node, *n, true),
     }
 }
 
-fn matches_nth_child(
-    tree: &ContextTree,
-    node: &ContextNode,
-    formula: &NthFormula,
-    from_end: bool,
-    same_type: bool,
-) -> bool {
-    let parent_handle = match &node.parent {
-        Some(h) => h,
-        None => return false,
-    };
-
-    let parent = match tree.nodes.get(parent_handle) {
-        Some(p) => p,
-        None => return false,
-    };
-
-    let siblings: Vec<&ContextNode> = parent
-        .children
-        .iter()
-        .filter_map(|h| tree.nodes.get(h))
-        .filter(|sibling| {
-            if same_type {
-                sibling.role == node.role
-            } else {
-                true
-            }
-        })
-        .collect();
-
-    let pos = match siblings.iter().position(|s| s.handle == node.handle) {
-        Some(p) => p,
-        None => return false,
-    };
-
-    let idx = if from_end {
-        siblings.len() - pos
+fn matches_nth_child(node: &ContextNode, n: i32, from_end: bool) -> bool {
+    if from_end {
+        (node.children_count + 1 - node.index_in_parent) == n
     } else {
-        pos + 1
-    };
-
-    formula.matches(idx)
+        node.index_in_parent == n
+    }
 }

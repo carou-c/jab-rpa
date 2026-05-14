@@ -13,7 +13,7 @@ enum CompoundItem {
 }
 
 enum PseudoArg {
-    Formula(NthFormula),
+    Int(i32),
     Selector(Selector),
 }
 
@@ -72,33 +72,6 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             just(Token::Lt).to(IntOp::Lt),
             just(Token::Gt).to(IntOp::Gt),
         ));
-
-        let nth_formula = {
-            let sign = just(Token::Plus).to(1i32).or(just(Token::Minus).to(-1i32));
-
-            let a_part = sign
-                .clone()
-                .or_not()
-                .then_ignore(ws0)
-                .then(int_val.or_not())
-                .then_ignore(ws0)
-                .then_ignore(just(Token::Ident("n".to_string())))
-                .map(|(s, i): (Option<i32>, Option<i32>)| s.unwrap_or(1) * i.unwrap_or(1))
-                .or_not()
-                .map(|a: Option<i32>| a.unwrap_or(0));
-
-            let b_part = ws0
-                .ignore_then(sign.clone())
-                .then_ignore(ws0)
-                .then(int_val)
-                .map(|(s, i): (i32, i32)| s * i)
-                .or_not()
-                .map(|b: Option<i32>| b.unwrap_or(0));
-
-            a_part
-                .then(b_part)
-                .map(|(a, b): (i32, i32)| NthFormula::new(a, b))
-        };
 
         let flags = ident_val.or_not().try_map(|name, span| {
             let mut ci = false;
@@ -185,7 +158,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             .then_ignore(just(Token::RBracket));
 
         let pseudo_arg = choice((
-            nth_formula.map(PseudoArg::Formula),
+            int_val.map(PseudoArg::Int),
             selector.map(PseudoArg::Selector),
         ));
 
@@ -210,19 +183,11 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                         _ => Err(Simple::new(None, span)),
                     },
                     "nth-child" => match arg {
-                        Some(PseudoArg::Formula(f)) => Ok(PseudoClassSelector::NthChild(f)),
+                        Some(PseudoArg::Int(n)) => Ok(PseudoClassSelector::NthChild(n)),
                         _ => Err(Simple::new(None, span)),
                     },
                     "nth-last-child" => match arg {
-                        Some(PseudoArg::Formula(f)) => Ok(PseudoClassSelector::NthLastChild(f)),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "nth-of-type" => match arg {
-                        Some(PseudoArg::Formula(f)) => Ok(PseudoClassSelector::NthOfType(f)),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "nth-last-of-type" => match arg {
-                        Some(PseudoArg::Formula(f)) => Ok(PseudoClassSelector::NthLastOfType(f)),
+                        Some(PseudoArg::Int(n)) => Ok(PseudoClassSelector::NthLastChild(n)),
                         _ => Err(Simple::new(None, span)),
                     },
                     _ => Err(Simple::new(None, span)),
@@ -898,55 +863,7 @@ mod tests {
     }
 
     #[test]
-    fn nth_child_odd() {
-        let result = parse(":nth-child(odd)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthChild(NthFormula::new(2, 1))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_child_even() {
-        let result = parse(":nth-child(even)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthChild(NthFormula::new(2, 0))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_child_an_plus_b() {
-        let result = parse(":nth-child(2n+1)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthChild(NthFormula::new(2, 1))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_child_just_n() {
+    fn nth_child() {
         let result = parse(":nth-child(n)").unwrap();
         assert_eq!(
             result,
@@ -955,39 +872,7 @@ mod tests {
                 None,
                 vec![],
                 vec![],
-                vec![PseudoClassSelector::NthChild(NthFormula::new(1, 0))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_child_negative_a() {
-        let result = parse(":nth-child(-n+3)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthChild(NthFormula::new(-1, 3))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_child_negative_b() {
-        let result = parse(":nth-child(2n-3)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthChild(NthFormula::new(2, -3))],
+                vec![PseudoClassSelector::NthChild(1)],
                 vec![]
             )])
         );
@@ -1003,39 +888,7 @@ mod tests {
                 None,
                 vec![],
                 vec![],
-                vec![PseudoClassSelector::NthLastChild(NthFormula::new(-1, 1))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_of_type() {
-        let result = parse(":nth-of-type(3n)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthOfType(NthFormula::new(3, 0))],
-                vec![]
-            )])
-        );
-    }
-
-    #[test]
-    fn nth_last_of_type() {
-        let result = parse(":nth-last-of-type(4n+2)").unwrap();
-        assert_eq!(
-            result,
-            sel(vec![cs(
-                Combinator::Descendant,
-                None,
-                vec![],
-                vec![],
-                vec![PseudoClassSelector::NthLastOfType(NthFormula::new(4, 2))],
+                vec![PseudoClassSelector::NthLastChild(1)],
                 vec![]
             )])
         );
