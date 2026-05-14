@@ -1,86 +1,48 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::Arc;
 
 use windows::{
     Win32::{
-        Foundation::{HWND, LPARAM, WPARAM},
-        System::Threading::GetCurrentThreadId,
-        UI::WindowsAndMessaging::{
-            DispatchMessageW, EnumWindows, GetMessageW, GetWindowTextLengthW, GetWindowTextW,
-            IsWindow, PM_NOREMOVE, PeekMessageW, PostThreadMessageW, TranslateMessage, WM_QUIT,
-        },
+        Foundation::{HWND, LPARAM},
+        UI::WindowsAndMessaging::{EnumWindows, GetWindowTextLengthW, GetWindowTextW, IsWindow},
     },
     core::BOOL,
 };
 
 use crate::{
     bindings,
-    types::{AccessBridgeVersionInfo, AccessibleContextInfo, JavaObject, VmId, WindowInfo},
+    runtime::JabRuntime,
+    types::{AccessBridgeVersionInfo, AccessibleContextInfo, WindowInfo},
     utils::utf16_to_string,
 };
 
+type VmId = std::os::raw::c_long;
+type JObject = bindings::Java_Object;
+
+#[derive(Debug)]
+pub struct JavaObject {
+    vm_id: VmId,
+    jobject: JObject,
+    runtime: Arc<JabRuntime>,
+}
+
+impl Drop for JavaObject {
+    fn drop(&mut self) {
+        unsafe {
+            bindings::ReleaseJavaObject(self.vm_id, self.jobject);
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct JabWrapper {
-    pub(crate) initialized: AtomicBool,
-    message_pump_handle: Mutex<Option<std::thread::JoinHandle<()>>>,
-    message_pump_thread_id: Mutex<Option<u32>>,
+    runtime: Arc<JabRuntime>,
 }
 
 impl JabWrapper {
-    pub fn new() -> Arc<Self> {
-        let wrapper = Arc::new(Self {
-            initialized: AtomicBool::new(false),
-            message_pump_handle: Mutex::new(None),
-            message_pump_thread_id: Mutex::new(None),
-        });
-
-        // Channel to synchronize initialization
-        let (init_tx, init_rx) = mpsc::channel::<bool>();
-
-        // Start Windows message pump in dedicated thread (same thread will call initializeAccessBridge)
-        let wrapper_clone = wrapper.clone();
-        let pump_handle = std::thread::spawn(move || {
-            // Store thread ID for later shutdown
-            let thread_id = unsafe { GetCurrentThreadId() };
-            {
-                let mut tid = wrapper_clone.message_pump_thread_id.lock().unwrap();
-                *tid = Some(thread_id);
-            }
-
-            unsafe {
-                let _ = PeekMessageW(&mut std::mem::zeroed(), None, 0, 0, PM_NOREMOVE);
-            }
-
-            // Initialize JAB on this thread
-            let init_result = unsafe { bindings::initializeAccessBridge() };
-            let success = init_result != 0;
-            let _ = init_tx.send(success);
-
-            if success {
-                // Run message pump loop
-                run_message_pump();
-            }
-
-            // Shutdown JAB
-            unsafe {
-                bindings::shutdownAccessBridge();
-            }
-        });
-
-        {
-            let mut handle = wrapper.message_pump_handle.lock().unwrap();
-            *handle = Some(pump_handle);
+    pub fn new() -> Self {
+        Self {
+            runtime: Arc::new(JabRuntime::new()),
         }
-
-        // Wait for initialization to complete
-        match init_rx.recv() {
-            Ok(true) => {
-                wrapper.initialized.store(true, Ordering::SeqCst);
-            }
-            Ok(false) => panic!("Failed to initialize JAB"),
-            Err(_) => panic!("Message pump thread crashed during initialization"),
-        }
-
-        wrapper
     }
 
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {
@@ -124,7 +86,11 @@ impl JabWrapper {
             let result =
                 bindings::GetAccessibleContextFromHWND(window.hwnd as _, &mut vm_id, &mut jobject);
             if result != 0 {
-                Ok(JavaObject { vm_id, jobject })
+                Ok(JavaObject {
+                    vm_id,
+                    jobject,
+                    runtime: self.runtime.clone(),
+                })
             } else {
                 Err(format!("GetAccessibleContextFromHWND returned {}", result))
             }
@@ -150,6 +116,7 @@ impl JabWrapper {
             JavaObject {
                 vm_id: obj.vm_id,
                 jobject: child,
+                runtime: self.runtime.clone(),
             }
         }
     }
@@ -241,50 +208,6 @@ impl JabWrapper {
                 Ok(info)
             } else {
                 Err("Failed to get version info".to_string())
-            }
-        }
-    }
-}
-
-impl Drop for JabWrapper {
-    fn drop(&mut self) {
-        // Post WM_QUIT to the message pump thread to exit the loop
-        let thread_id = {
-            let tid = self.message_pump_thread_id.lock().unwrap();
-            *tid
-        };
-
-        if let Some(tid) = thread_id {
-            unsafe {
-                let _ = PostThreadMessageW(tid, WM_QUIT, WPARAM(0), LPARAM(0));
-            }
-        }
-
-        // Wait for the message pump thread to finish
-        let handle = {
-            let mut h = self.message_pump_handle.lock().unwrap();
-            h.take()
-        };
-
-        if let Some(h) = handle {
-            let _ = h.join();
-        }
-    }
-}
-
-fn run_message_pump() {
-    unsafe {
-        let mut msg = std::mem::zeroed();
-        loop {
-            let result = GetMessageW(&mut msg, None, 0, 0);
-            if result.0 <= 0 {
-                if result.0 < 0 {
-                    eprintln!("Message pump error: {}", result.0);
-                }
-                break; // WM_QUIT
-            } else {
-                let _ = TranslateMessage(&msg);
-                DispatchMessageW(&msg);
             }
         }
     }

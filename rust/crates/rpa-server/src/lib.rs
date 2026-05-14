@@ -8,7 +8,7 @@ use tonic::{Request, Response, Status};
 use jab_wrapper::context_tree::{
     AscendantLocator, DescendantLocator, IndexLocator, Locator, StringLocator,
 };
-use jab_wrapper::context_tree::{ContextNode, ContextTree, ROOT_HANDLE};
+use jab_wrapper::context_tree::{ContextNode, ContextTree};
 use jab_wrapper::types::{AccessBridgeVersionInfo, WindowInfo};
 use jab_wrapper::utils::utf16_to_string;
 use jab_wrapper::wrapper::JabWrapper;
@@ -322,15 +322,7 @@ impl JabServiceTrait for JabService {
             }
         };
 
-        let root = match tree.nodes.get(&ROOT_HANDLE) {
-            Some(root) => root,
-            None => {
-                return Ok(Response::new(GetVersionInfoResponse {
-                    version_info: None,
-                    error_message: format!("No element with handle={}", ROOT_HANDLE),
-                }));
-            }
-        };
+        let root = tree.root();
 
         match self.wrapper.get_version_info(&root.obj) {
             Ok(version_info) => Ok(Response::new(GetVersionInfoResponse {
