@@ -5,7 +5,7 @@ pub struct Selector {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ComplexSelector {
-    pub leading_combinator: Option<Combinator>,
+    pub leading_combinator: Combinator,
     pub first: CompoundSelector,
     pub tail: Vec<(Combinator, CompoundSelector)>,
 }
@@ -89,6 +89,7 @@ pub enum IntOp {
     Gt,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BoolAttrName {
     AccessibleAction,
@@ -120,14 +121,19 @@ impl NthFormula {
     }
 
     pub fn matches(&self, index: usize) -> bool {
+        let index = index as i32;
+
         if self.a == 0 {
-            return (index as i32) == self.b;
+            return index == self.b;
         }
-        if self.b == 0 {
-            return (index as i32) % self.a == 0;
+
+        let diff = index - self.b;
+
+        if (diff % self.a) == 0 {
+            return false
         }
-        let n = ((index as i32) - self.b) / self.a;
-        n >= 0 && (index as i32) == self.a * n + self.b
+        let n = (index - self.b) / self.a;
+        n >= 0 && index == self.a * n + self.b
     }
 
     #[allow(dead_code)]

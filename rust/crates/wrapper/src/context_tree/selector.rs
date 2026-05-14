@@ -1,8 +1,8 @@
-mod ast_display;
 mod ast;
+mod ast_display;
 mod error;
-mod matcher;
 mod lexer;
+mod matcher;
 mod parser;
 
 use chumsky::Parser;
@@ -18,6 +18,14 @@ pub struct Locator {
     pub selector: String,
 }
 
+impl Locator {
+    pub fn new(selector: &str) -> Self {
+        Self {
+            selector: selector.to_string(),
+        }
+    }
+}
+
 impl<'a> ContextTree {
     pub fn get_nodes(
         &'a self,
@@ -27,16 +35,6 @@ impl<'a> ContextTree {
         let tokens: Vec<Token> = Token::lexer(&locator.selector).collect::<Result<Vec<_>, _>>()?;
 
         let parsed = parser().parse(&tokens).into_result()?;
-
-        if relative_to.is_none() {
-            for alt in &parsed.alternatives {
-                if alt.leading_combinator.is_some() {
-                    return Err(GetNodesError::NoRelativeContext(
-                        "leading combinator requires relative_to".to_string(),
-                    ));
-                }
-            }
-        }
 
         Ok(select_nodes(self, &parsed, relative_to))
     }

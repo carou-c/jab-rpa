@@ -18,8 +18,8 @@ impl fmt::Display for Selector {
 impl fmt::Display for ComplexSelector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let leading_combinator = match self.leading_combinator {
-            Some(l) => &format!("{}", l),
-            None => "",
+            Combinator::Descendant => "",
+            l => &format!("{}", l),
         };
 
         let tail = self

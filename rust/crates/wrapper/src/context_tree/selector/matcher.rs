@@ -13,6 +13,11 @@ pub fn select_nodes<'a>(
     let mut seen: HashSet<u64> = HashSet::new();
     let mut results = Vec::new();
 
+    let relative_to = match relative_to {
+        Some(rel) => rel,
+        None => tree.root(),
+    };
+
     for complex in &selector.alternatives {
         for node in match_complex(tree, complex, relative_to) {
             if seen.insert(node.handle) {
@@ -27,23 +32,10 @@ pub fn select_nodes<'a>(
 fn match_complex<'a>(
     tree: &'a ContextTree,
     complex: &ComplexSelector,
-    relative_to: Option<&'a ContextNode>,
+    relative_to: &'a ContextNode,
 ) -> Vec<&'a ContextNode> {
-    let scope: Vec<&ContextNode> = if let Some(combinator) = &complex.leading_combinator {
-        match relative_to {
-            Some(rt) => apply_combinator_to_node(tree, rt, *combinator),
-            None => return Vec::new(),
-        }
-    } else {
-        match relative_to {
-            Some(rt) => {
-                let mut nodes = vec![rt];
-                descendants(tree, rt, &mut nodes);
-                nodes
-            }
-            None => tree.nodes.values().collect(),
-        }
-    };
+    let scope: Vec<&ContextNode> =
+        apply_combinator_to_node(tree, relative_to, complex.leading_combinator);
 
     let mut current: Vec<&ContextNode> = scope
         .into_iter()

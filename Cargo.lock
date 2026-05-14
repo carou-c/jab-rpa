@@ -495,7 +495,6 @@ dependencies = [
  "cc",
  "chumsky",
  "logos",
- "nom",
  "regex",
  "thiserror",
  "windows",
