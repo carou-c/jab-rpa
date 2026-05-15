@@ -19,7 +19,7 @@ pub fn select_nodes<'a>(
     };
 
     for complex in &selector.alternatives {
-        for node in match_complex(tree, complex, relative_to) {
+        for node in select_nodes_complex(tree, complex, relative_to) {
             if seen.insert(node.handle) {
                 results.push(node);
             }
@@ -29,7 +29,7 @@ pub fn select_nodes<'a>(
     results
 }
 
-fn match_complex<'a>(
+fn select_nodes_complex<'a>(
     tree: &'a ContextTree,
     complex: &ComplexSelector,
     relative_to: &'a ContextNode,
@@ -237,15 +237,22 @@ fn matches_pseudo_class(
             let results = select_nodes(tree, inner, None);
             !results.iter().any(|n| n.handle == node.handle)
         }
-        PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n, false),
-        PseudoClassSelector::NthLastChild(n) => matches_nth_child(node, *n, true),
+        PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n),
+        PseudoClassSelector::NthLastChild(n) => matches_nth_last_child(tree, node, *n),
     }
 }
 
-fn matches_nth_child(node: &ContextNode, n: i32, from_end: bool) -> bool {
-    if from_end {
-        (node.children_count + 1 - node.index_in_parent) == n
-    } else {
-        node.index_in_parent == n
-    }
+fn matches_nth_child(node: &ContextNode, n: i32) -> bool {
+    node.index_in_parent - 1 == n
 }
+
+fn matches_nth_last_child(tree: &ContextTree, node: &ContextNode, n: i32) -> bool {
+    let Some(parent_handle) = node.parent else {
+        return n == 0;
+    };
+    let Some(parent) = tree.nodes.get(&parent_handle) else {
+        return false;
+    };
+    parent.children_count - node.index_in_parent == n
+}
+
