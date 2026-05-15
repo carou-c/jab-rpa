@@ -102,12 +102,12 @@ impl ContextNode {
         node
     }
 
-    pub(crate) fn resolve_text(&self) -> &str {
+    pub fn resolve_text(&self) -> &str {
         self.text_cache
             .get_or_init(|| self.obj.get_text().unwrap_or_default())
     }
 
-    pub(crate) fn resolve_action_names(&self) -> &str {
+    pub fn resolve_action_names(&self) -> &str {
         self.action_names_cache.get_or_init(|| {
             let actions = match self.obj.get_actions() {
                 Ok(actions) => actions,
@@ -126,17 +126,14 @@ impl ContextNode {
         })
     }
 
-    pub(crate) fn resolve_states(&self) -> &str {
-        self.states_cache
-            .get_or_init(|| self.states.join(" "))
+    pub fn resolve_states(&self) -> &str {
+        self.states_cache.get_or_init(|| self.states.join(" "))
     }
 
-    pub(crate) fn resolve_states_en_us(&self) -> &str {
+    pub fn resolve_states_en_us(&self) -> &str {
         self.states_cache
             .get_or_init(|| self.states_en_us.join(" "))
     }
-
-
 }
 
 impl ContextTree {

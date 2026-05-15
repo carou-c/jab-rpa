@@ -17,19 +17,15 @@ impl fmt::Display for Selector {
 
 impl fmt::Display for ComplexSelector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let leading_combinator = match self.leading_combinator {
-            Combinator::Descendant => "",
-            l => &format!("{}", l),
-        };
-
-        let tail = self
-            .tail
+        let body = self
+            .body
             .iter()
-            .map(|(c, cs)| format!("{}{}", c, cs))
+            .rev()
+            .map(|(c, cs)| format!("{}{}", cs, c))
             .collect::<Vec<_>>()
             .join("");
 
-        write!(f, "{}{}{}", leading_combinator, self.first, tail)
+        write!(f, "{}{}", body, self.last)
     }
 }
 
@@ -84,7 +80,7 @@ impl fmt::Display for AttrSelector {
                 value,
                 flags,
             } => {
-                let flags = if flags.case_insensitive || flags.regex {
+                let flags = if flags.case_insensitive {
                     &format!(" {}", flags)
                 } else {
                     ""
@@ -131,12 +127,7 @@ impl fmt::Display for StringOp {
 
 impl fmt::Display for AttrFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}{}",
-            if self.case_insensitive { "i" } else { "" },
-            if self.regex { "r" } else { "" }
-        )
+        write!(f, "{}", if self.case_insensitive { "i" } else { "" },)
     }
 }
 
@@ -179,6 +170,7 @@ impl fmt::Display for BoolAttrName {
 impl fmt::Display for PseudoClassSelector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Scope => write!(f, ":scope"),
             Self::Has(selector) => write!(f, ":has({})", selector),
             Self::Not(selector) => write!(f, ":not({})", selector),
             Self::NthChild(n) => write!(f, ":nth-child({})", n),

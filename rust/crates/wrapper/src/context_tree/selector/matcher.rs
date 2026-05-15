@@ -1,121 +1,103 @@
-use std::collections::HashSet;
-
-use regex::Regex;
-
 use super::ast::*;
 use crate::context_tree::{ContextNode, ContextTree};
 
-pub fn select_nodes<'a>(
-    tree: &'a ContextTree,
+pub fn matches_selector(
+    node: &ContextNode,
     selector: &Selector,
-    relative_to: Option<&'a ContextNode>,
-) -> Vec<&'a ContextNode> {
-    let mut seen: HashSet<u64> = HashSet::new();
-    let mut results = Vec::new();
+    relative_to: Option<&ContextNode>,
+    tree: &ContextTree,
+) -> bool {
+    selector
+        .alternatives
+        .iter()
+        .any(|complex| matches_complex(node, &complex.body, &complex.last, relative_to, tree))
+}
 
-    let relative_to = match relative_to {
-        Some(rel) => rel,
-        None => tree.root(),
+fn matches_complex(
+    node: &ContextNode,
+    complex_body: &[(CompoundSelector, Combinator)],
+    complex_last: &CompoundSelector,
+    relative_to: Option<&ContextNode>,
+    tree: &ContextTree,
+) -> bool {
+    if !matches_compound(node, complex_last, relative_to, tree) {
+        return false;
+    }
+
+    let Some((compound, combinator)) = complex_body.first() else {
+        return true;
     };
 
-    for complex in &selector.alternatives {
-        for node in select_nodes_complex(tree, complex, relative_to) {
-            if seen.insert(node.handle) {
-                results.push(node);
-            }
-        }
-    }
-
-    results
-}
-
-fn select_nodes_complex<'a>(
-    tree: &'a ContextTree,
-    complex: &ComplexSelector,
-    relative_to: &'a ContextNode,
-) -> Vec<&'a ContextNode> {
-    let scope: Vec<&ContextNode> =
-        apply_combinator_to_node(tree, relative_to, complex.leading_combinator);
-
-    let mut current: Vec<&ContextNode> = scope
-        .into_iter()
-        .filter(|node| matches_compound(tree, node, &complex.first))
-        .collect();
-
-    for (combinator, compound) in &complex.tail {
-        let mut next = Vec::new();
-        for node in current {
-            let reached = apply_combinator_to_node(tree, node, *combinator);
-            next.extend(
-                reached
-                    .into_iter()
-                    .filter(|node| matches_compound(tree, node, compound)),
-            );
-        }
-        current = next;
-    }
-
-    current
-}
-
-fn descendants<'a>(tree: &'a ContextTree, node: &ContextNode, acc: &mut Vec<&'a ContextNode>) {
-    for child_handle in &node.children {
-        if let Some(child) = tree.nodes.get(child_handle) {
-            acc.push(child);
-            descendants(tree, child, acc);
-        }
-    }
-}
-
-fn apply_combinator_to_node<'a>(
-    tree: &'a ContextTree,
-    node: &ContextNode,
-    combinator: Combinator,
-) -> Vec<&'a ContextNode> {
     match combinator {
-        Combinator::Child => node
-            .children
-            .iter()
-            .filter_map(|h| tree.nodes.get(h))
-            .collect(),
+        Combinator::Child => {
+            let Some(p_h) = node.parent else { return false };
+            let Some(p) = tree.nodes.get(&p_h) else {
+                return false;
+            };
+            matches_complex(p, &complex_body[1..], compound, relative_to, tree)
+        }
         Combinator::Descendant => {
-            let mut nodes = Vec::new();
-            descendants(tree, node, &mut nodes);
-            nodes
+            let mut current = node;
+            while current.depth > 0 {
+                let Some(p_h) = current.parent else {
+                    return false;
+                };
+                let Some(p) = tree.nodes.get(&p_h) else {
+                    return false;
+                };
+                current = p;
+                if matches_complex(current, &complex_body[1..], compound, relative_to, tree) {
+                    return true;
+                }
+            }
+
+            false
         }
         Combinator::NextSibling => {
-            if let Some(parent_handle) = node.parent
-                && let Some(parent) = tree.nodes.get(&parent_handle)
-            {
-                let idx = node.index_in_parent as usize;
-                if idx + 1 < parent.children.len()
-                    && let Some(sibling) = tree.nodes.get(&parent.children[idx + 1])
-                {
-                    return vec![sibling];
-                }
+            let Some(p_h) = node.parent else { return false };
+            let Some(p) = tree.nodes.get(&p_h) else {
+                return false;
+            };
+            let sibling_index = node.index_in_parent - 1;
+            if sibling_index < 0 {
+                return false;
             }
-
-            Vec::new()
+            let Some(sibling_handle) = p.children.get(sibling_index as usize) else {
+                return false;
+            };
+            let Some(sibling) = tree.nodes.get(sibling_handle) else {
+                return false;
+            };
+            matches_complex(sibling, &complex_body[1..], compound, relative_to, tree)
         }
         Combinator::SubsequentSibling => {
-            let mut siblings = Vec::new();
-            if let Some(parent_handle) = &node.parent
-                && let Some(parent) = tree.nodes.get(parent_handle)
-            {
-                let idx = node.index_in_parent as usize;
-                for h in parent.children.iter().skip(idx + 1) {
-                    if let Some(sibling) = tree.nodes.get(h) {
-                        siblings.push(sibling);
-                    }
+            let Some(p_h) = node.parent else { return false };
+            let Some(p) = tree.nodes.get(&p_h) else {
+                return false;
+            };
+            for sibling_index in 0..node.index_in_parent {
+                let Some(sibling_handle) = p.children.get(sibling_index as usize) else {
+                    continue;
+                };
+                let Some(sibling) = tree.nodes.get(sibling_handle) else {
+                    continue;
+                };
+                if matches_complex(sibling, &complex_body[1..], compound, relative_to, tree) {
+                    return true;
                 }
             }
 
-            siblings
+            false
         }
     }
 }
 
-fn matches_compound(tree: &ContextTree, node: &ContextNode, compound: &CompoundSelector) -> bool {
+fn matches_compound(
+    node: &ContextNode,
+    compound: &CompoundSelector,
+    relative_to: Option<&ContextNode>,
+    tree: &ContextTree,
+) -> bool {
     if let Some(role) = &compound.role
         && &node.role != role
     {
@@ -135,7 +117,7 @@ fn matches_compound(tree: &ContextTree, node: &ContextNode, compound: &CompoundS
     }
 
     for pseudo in &compound.pseudo_classes {
-        if !matches_pseudo_class(tree, node, pseudo) {
+        if !matches_pseudo_class(node, pseudo, relative_to, tree) {
             return false;
         }
     }
@@ -189,25 +171,22 @@ fn get_bool_attr(node: &ContextNode, name: &BoolAttrName) -> bool {
     }
 }
 
-fn match_string_op(value: &str, op: StringOp, target: &str, flags: &super::ast::AttrFlags) -> bool {
-    let (val, tgt) = if flags.case_insensitive {
-        (value.to_lowercase(), target.to_lowercase())
-    } else {
-        (value.to_string(), target.to_string())
-    };
-
-    if flags.regex {
-        match Regex::new(&tgt) {
-            Ok(re) => re.is_match(&val),
-            Err(_) => false,
-        }
-    } else {
-        match op {
-            StringOp::Eq => val == tgt,
-            StringOp::ContainsWord => val.split_whitespace().any(|w| w == tgt),
-            StringOp::Starts => val.starts_with(&tgt),
-            StringOp::Ends => val.ends_with(&tgt),
-            StringOp::Contains => val.contains(&tgt),
+fn match_string_op(value: &str, op: StringOp, target: &StrMatcher, flags: &AttrFlags) -> bool {
+    match target {
+        StrMatcher::Regex(re) => re.is_match(value),
+        StrMatcher::Plain(s) => {
+            let (val, tgt) = if flags.case_insensitive {
+                (value.to_lowercase(), s.to_lowercase())
+            } else {
+                (value.to_string(), s.to_string())
+            };
+            match op {
+                StringOp::Eq => val == tgt,
+                StringOp::ContainsWord => val.split_whitespace().any(|w| w == tgt),
+                StringOp::Starts => val.starts_with(&tgt),
+                StringOp::Ends => val.ends_with(&tgt),
+                StringOp::Contains => val.contains(&tgt),
+            }
         }
     }
 }
@@ -224,19 +203,25 @@ fn match_int_op(node_value: i32, op: IntOp, target: i32) -> bool {
 }
 
 fn matches_pseudo_class(
-    tree: &ContextTree,
     node: &ContextNode,
     pseudo: &PseudoClassSelector,
+    relative_to: Option<&ContextNode>,
+    tree: &ContextTree,
 ) -> bool {
     match pseudo {
-        PseudoClassSelector::Has(inner) => {
-            let results = select_nodes(tree, inner, Some(node));
-            !results.is_empty()
+        PseudoClassSelector::Scope => {
+            let Some(relative_to) = relative_to else {
+                return false;
+            };
+
+            node.handle == relative_to.handle
         }
-        PseudoClassSelector::Not(inner) => {
-            let results = select_nodes(tree, inner, None);
-            !results.iter().any(|n| n.handle == node.handle)
-        }
+        PseudoClassSelector::Has(inner) => tree
+            .nodes
+            .values()
+            .filter(|candidate| candidate.handle > node.handle)
+            .any(|candidate| matches_selector(candidate, inner, Some(node), tree)),
+        PseudoClassSelector::Not(inner) => !matches_selector(node, inner, relative_to, tree),
         PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n),
         PseudoClassSelector::NthLastChild(n) => matches_nth_last_child(tree, node, *n),
     }
@@ -256,3 +241,114 @@ fn matches_nth_last_child(tree: &ContextTree, node: &ContextNode, n: i32) -> boo
     parent.children_count - node.index_in_parent == n
 }
 
+// pub fn select_nodes<'a>(
+//     tree: &'a ContextTree,
+//     selector: &Selector,
+//     relative_to: Option<&'a ContextNode>,
+// ) -> Vec<&'a ContextNode> {
+//     let mut seen: HashSet<u64> = HashSet::new();
+//     let mut results = Vec::new();
+//
+//     let relative_to = match relative_to {
+//         Some(rel) => rel,
+//         None => tree.root(),
+//     };
+//
+//     for complex in &selector.alternatives {
+//         for node in select_nodes_complex(tree, complex, relative_to) {
+//             if seen.insert(node.handle) {
+//                 results.push(node);
+//             }
+//         }
+//     }
+//
+//     results
+// }
+//
+// fn select_nodes_complex<'a>(
+//     tree: &'a ContextTree,
+//     complex: &ComplexSelector,
+//     relative_to: &'a ContextNode,
+// ) -> Vec<&'a ContextNode> {
+//     let scope: Vec<&ContextNode> =
+//         apply_combinator_to_node(tree, relative_to, complex.leading_combinator);
+//
+//     let mut current: Vec<&ContextNode> = scope
+//         .into_iter()
+//         .filter(|node| matches_compound(tree, node, &complex.first))
+//         .collect();
+//
+//     for (combinator, compound) in &complex.tail {
+//         let mut next = Vec::new();
+//         for node in current {
+//             let reached = apply_combinator_to_node(tree, node, *combinator);
+//             next.extend(
+//                 reached
+//                     .into_iter()
+//                     .filter(|node| matches_compound(tree, node, compound)),
+//             );
+//         }
+//         current = next;
+//     }
+//
+//     current
+// }
+//
+// fn combinator<'a>(
+//     combinator: Combinator,
+//     relative_to: &ContextNode,
+//     tree: &'a ContextTree,
+// ) -> Vec<&'a ContextNode> {
+//     // impl Iterator<Item = &'a ContextNode> {
+//     match combinator {
+//         Combinator::Child => relative_to
+//             .children
+//             .iter()
+//             .filter_map(|h| tree.nodes.get(h))
+//             .collect(),
+//         Combinator::Descendant => {
+//             let mut nodes = Vec::new();
+//             descendants(tree, relative_to, &mut nodes);
+//             nodes
+//         }
+//         Combinator::NextSibling => {
+//             if let Some(parent_handle) = relative_to.parent
+//                 && let Some(parent) = tree.nodes.get(&parent_handle)
+//             {
+//                 let idx = relative_to.index_in_parent as usize;
+//                 if idx + 1 < parent.children.len()
+//                     && let Some(sibling) = tree.nodes.get(&parent.children[idx + 1])
+//                 {
+//                     return vec![sibling];
+//                 }
+//             }
+//
+//             Vec::new()
+//         }
+//         Combinator::SubsequentSibling => {
+//             let mut siblings = Vec::new();
+//             if let Some(parent_handle) = &relative_to.parent
+//                 && let Some(parent) = tree.nodes.get(parent_handle)
+//             {
+//                 let idx = relative_to.index_in_parent as usize;
+//                 for h in parent.children.iter().skip(idx + 1) {
+//                     if let Some(sibling) = tree.nodes.get(h) {
+//                         siblings.push(sibling);
+//                     }
+//                 }
+//             }
+//
+//             siblings
+//         }
+//     }
+// }
+//
+// fn descendants<'a>(tree: &'a contexttree, node: &contextnode, acc: &mut vec<&'a contextnode>) {
+//     for child_handle in &node.children {
+//         if let some(child) = tree.nodes.get(child_handle) {
+//             acc.push(child);
+//             descendants(tree, child, acc);
+//         }
+//     }
+// }
+//

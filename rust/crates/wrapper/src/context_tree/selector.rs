@@ -8,7 +8,7 @@ mod parser;
 use chumsky::Parser;
 use logos::Logos;
 
-use crate::context_tree::selector::{lexer::Token, matcher::select_nodes, parser::parser};
+use crate::context_tree::selector::{lexer::Token, matcher::matches_selector, parser::parser};
 use crate::context_tree::{ContextNode, ContextTree};
 
 pub use crate::context_tree::selector::error::GetNodesError;
@@ -27,15 +27,15 @@ impl Locator {
 }
 
 impl<'a> ContextTree {
-    pub fn get_nodes(
-        &'a self,
-        locator: &Locator,
-        relative_to: Option<&'a ContextNode>,
-    ) -> Result<Vec<&'a ContextNode>, GetNodesError> {
+    pub fn get_nodes(&'a self, locator: &Locator) -> Result<Vec<&'a ContextNode>, GetNodesError> {
         let tokens: Vec<Token> = Token::lexer(&locator.selector).collect::<Result<Vec<_>, _>>()?;
 
         let parsed = parser().parse(&tokens).into_result()?;
 
-        Ok(select_nodes(self, &parsed, relative_to))
+        Ok(self
+            .nodes
+            .values()
+            .filter(|node| matches_selector(node, &parsed, None, self))
+            .collect())
     }
 }

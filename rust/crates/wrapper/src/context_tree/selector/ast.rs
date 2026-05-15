@@ -1,16 +1,18 @@
-#[derive(Debug, Clone, PartialEq)]
+use regex::Regex;
+
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Selector {
     pub alternatives: Vec<ComplexSelector>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
+// Right-to-left
 pub struct ComplexSelector {
-    pub leading_combinator: Combinator,
-    pub first: CompoundSelector,
-    pub tail: Vec<(Combinator, CompoundSelector)>,
+    pub body: Vec<(CompoundSelector, Combinator)>,
+    pub last: CompoundSelector,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum Combinator {
     Child,
     Descendant,
@@ -18,7 +20,7 @@ pub enum Combinator {
     SubsequentSibling,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct CompoundSelector {
     pub role: Option<String>,
     pub states: Vec<String>,
@@ -26,12 +28,12 @@ pub struct CompoundSelector {
     pub pseudo_classes: Vec<PseudoClassSelector>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum AttrSelector {
     Str {
         name: StrAttrName,
         op: StringOp,
-        value: String,
+        value: StrMatcher,
         flags: AttrFlags,
     },
     Int {
@@ -44,7 +46,7 @@ pub enum AttrSelector {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum StrAttrName {
     Name,
     Description,
@@ -54,7 +56,7 @@ pub enum StrAttrName {
     Actions,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum StringOp {
     Eq,
     ContainsWord,
@@ -63,13 +65,40 @@ pub enum StringOp {
     Contains,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct AttrFlags {
-    pub case_insensitive: bool,
-    pub regex: bool,
+#[derive(Debug, Clone)]
+pub enum StrMatcher {
+    Plain(String),
+    Regex(Regex),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+impl PartialEq for StrMatcher {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Plain(s), Self::Plain(o)) => s == o,
+            (Self::Regex(s), Self::Regex(o)) => s.to_string() == o.to_string(),
+            _ => false,
+        }
+    }
+}
+
+impl std::hash::Hash for StrMatcher {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
+        match self {
+            Self::Plain(s) => s.hash(state),
+            Self::Regex(r) => r.to_string().hash(state),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Hash)]
+pub struct AttrFlags {
+    pub case_insensitive: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum IntAttrName {
     X,
     Y,
@@ -79,7 +108,7 @@ pub enum IntAttrName {
     Depth,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum IntOp {
     Eq,
     Ne,
@@ -90,15 +119,16 @@ pub enum IntOp {
 }
 
 #[allow(clippy::enum_variant_names)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum BoolAttrName {
     AccessibleAction,
     AccessibleText,
     AccessibleSelection,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum PseudoClassSelector {
+    Scope,
     Has(Box<Selector>),
     Not(Box<Selector>),
     NthChild(i32),
