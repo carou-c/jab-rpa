@@ -135,42 +135,6 @@ impl JavaObject {
         }
     }
 
-    pub fn click_element(&self) -> Result<(), String> {
-        unsafe {
-            let mut actions: bindings::AccessibleActions = std::mem::zeroed();
-            if bindings::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
-                return Err("Failed to get accessible actions".to_string());
-            }
-
-            for i in 0..actions.actionsCount {
-                let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
-                if action_name.to_lowercase().contains("click") {
-                    let mut actions_to_do: bindings::AccessibleActionsToDo = std::mem::zeroed();
-                    actions_to_do.actionsCount = 1;
-                    actions_to_do.actions[0] = actions.actionInfo[i as usize];
-
-                    let mut failure: i32 = 0;
-                    if bindings::doAccessibleActions(
-                        self.vm_id,
-                        self.jobject,
-                        &mut actions_to_do,
-                        &mut failure,
-                    ) != 0
-                    {
-                        return Ok(());
-                    } else {
-                        return Err(format!(
-                            "Failed to perform click action, failure index: {}",
-                            failure
-                        ));
-                    }
-                }
-            }
-        }
-
-        Err("No click action found for element".to_string())
-    }
-
     pub fn get_text(&self) -> Result<String, String> {
         unsafe {
             let mut text_info: bindings::AccessibleTextInfo = std::mem::zeroed();
@@ -224,5 +188,77 @@ impl JavaObject {
             }
             Ok(actions)
         }
+    }
+
+    pub fn do_action(&self, action: String) -> Result<(), String> {
+        let action = action.to_lowercase();
+        unsafe {
+            let Ok(actions) = self.get_actions() else {
+                return Err("Failed to get accessible actions".to_string());
+            };
+
+            for i in 0..actions.actionsCount {
+                let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
+                if action_name.to_lowercase() == action {
+                    let mut actions_to_do: bindings::AccessibleActionsToDo = std::mem::zeroed();
+                    actions_to_do.actionsCount = 1;
+                    actions_to_do.actions[0] = actions.actionInfo[i as usize];
+
+                    let mut failure: i32 = 0;
+                    if bindings::doAccessibleActions(
+                        self.vm_id,
+                        self.jobject,
+                        &mut actions_to_do,
+                        &mut failure,
+                    ) != 0
+                    {
+                        return Ok(());
+                    } else {
+                        return Err(format!(
+                            "Failed to perform click action, failure index: {}",
+                            failure
+                        ));
+                    }
+                }
+            }
+        }
+
+        Err(format!("No {:?} action found for element", action))
+    }
+
+    pub fn click_element(&self) -> Result<(), String> {
+        unsafe {
+            let mut actions: bindings::AccessibleActions = std::mem::zeroed();
+            if bindings::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
+                return Err("Failed to get accessible actions".to_string());
+            }
+
+            for i in 0..actions.actionsCount {
+                let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
+                if action_name.to_lowercase().contains("click") {
+                    let mut actions_to_do: bindings::AccessibleActionsToDo = std::mem::zeroed();
+                    actions_to_do.actionsCount = 1;
+                    actions_to_do.actions[0] = actions.actionInfo[i as usize];
+
+                    let mut failure: i32 = 0;
+                    if bindings::doAccessibleActions(
+                        self.vm_id,
+                        self.jobject,
+                        &mut actions_to_do,
+                        &mut failure,
+                    ) != 0
+                    {
+                        return Ok(());
+                    } else {
+                        return Err(format!(
+                            "Failed to perform click action, failure index: {}",
+                            failure
+                        ));
+                    }
+                }
+            }
+        }
+
+        Err("No click action found for element".to_string())
     }
 }

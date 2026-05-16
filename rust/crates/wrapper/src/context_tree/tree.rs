@@ -28,10 +28,11 @@ pub struct ContextNode {
     pub index_in_parent: i32,
     pub parent: Option<NodeHandle>,
     pub depth: i32,
-    pub text_cache: OnceLock<String>,
-    pub action_names_cache: OnceLock<String>,
-    pub states_cache: OnceLock<String>,
-    pub states_en_us_cache: OnceLock<String>,
+    text_cache: OnceLock<String>,
+    actions_cache: OnceLock<Vec<String>>,
+    action_names_cache: OnceLock<String>,
+    states_cache: OnceLock<String>,
+    states_en_us_cache: OnceLock<String>,
 }
 
 #[derive(Debug)]
@@ -68,6 +69,7 @@ impl ContextNode {
             parent,
             depth,
             text_cache: OnceLock::new(),
+            actions_cache: OnceLock::new(),
             action_names_cache: OnceLock::new(),
             states_cache: OnceLock::new(),
             states_en_us_cache: OnceLock::new(),
@@ -107,11 +109,11 @@ impl ContextNode {
             .get_or_init(|| self.obj.get_text().unwrap_or_default())
     }
 
-    pub fn resolve_action_names(&self) -> &str {
-        self.action_names_cache.get_or_init(|| {
+    pub fn resolve_actions(&self) -> &[String] {
+        self.actions_cache.get_or_init(|| {
             let actions = match self.obj.get_actions() {
                 Ok(actions) => actions,
-                Err(_) => return String::default(),
+                Err(_) => return Vec::new(),
             };
 
             actions.actionInfo[..actions.actionsCount as usize]
@@ -122,8 +124,12 @@ impl ContextNode {
                         .replace(' ', "_")
                 })
                 .collect::<Vec<_>>()
-                .join(" ")
         })
+    }
+
+    pub fn resolve_action_names(&self) -> &str {
+        self.action_names_cache
+            .get_or_init(|| self.resolve_actions().join(" "))
     }
 
     pub fn resolve_states(&self) -> &str {
@@ -131,7 +137,7 @@ impl ContextNode {
     }
 
     pub fn resolve_states_en_us(&self) -> &str {
-        self.states_cache
+        self.states_en_us_cache
             .get_or_init(|| self.states_en_us.join(" "))
     }
 }

@@ -2,12 +2,10 @@ pub mod proto {
     tonic::include_proto!("jab");
 }
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use tonic::{Request, Response, Status};
 
-use jab_wrapper::context_tree::{
-    AscendantLocator, DescendantLocator, IndexLocator, Locator, StringLocator,
-};
+use jab_wrapper::context_tree::Locator;
 use jab_wrapper::context_tree::{ContextNode, ContextTree};
 use jab_wrapper::types::{AccessBridgeVersionInfo, WindowInfo};
 use jab_wrapper::utils::utf16_to_string;
@@ -27,7 +25,7 @@ use crate::proto::{
 impl From<WindowInfo> for ProtoWindowInfo {
     fn from(w: WindowInfo) -> Self {
         Self {
-            hwnd: w.hwnd,
+            hwnd: w.get_hwnd(),
             title: w.title,
         }
     }
@@ -35,10 +33,7 @@ impl From<WindowInfo> for ProtoWindowInfo {
 
 impl From<ProtoWindowInfo> for WindowInfo {
     fn from(w: ProtoWindowInfo) -> Self {
-        Self {
-            hwnd: w.hwnd,
-            title: w.title,
-        }
+        unsafe { Self::new(w.hwnd, w.title) }
     }
 }
 
@@ -53,62 +48,21 @@ impl From<AccessBridgeVersionInfo> for ProtoVersionInfo {
     }
 }
 
-impl From<proto::StringLocator> for StringLocator {
-    fn from(loc: proto::StringLocator) -> Self {
-        Self {
-            find: loc.find,
-            regex: loc.regex,
-        }
-    }
-}
-
-impl From<proto::IndexLocator> for IndexLocator {
-    fn from(loc: proto::IndexLocator) -> Self {
-        Self { index: loc.index }
-    }
-}
-
-impl From<proto::AscendantLocator> for AscendantLocator {
-    fn from(loc: proto::AscendantLocator) -> Self {
-        Self {
-            locator: (*loc.locator.unwrap()).into(),
-            is_parent: loc.is_parent,
-        }
-    }
-}
-
-impl From<proto::DescendantLocator> for DescendantLocator {
-    fn from(loc: proto::DescendantLocator) -> Self {
-        Self {
-            locator: loc.locator.unwrap().into(),
-            is_child: loc.is_child,
-        }
-    }
-}
-
 impl From<proto::Locator> for Locator {
     fn from(loc: proto::Locator) -> Self {
         Self {
-            name: loc.name.map(Into::into),
-            role: loc.role.map(Into::into),
-            description: loc.description.map(Into::into),
-            text: loc.text.map(Into::into),
-            has_state: loc.has_state,
-            not_has_state: loc.not_has_state,
-            index_in_parent: loc.index_in_parent.map(Into::into),
-            ascendant: loc.ascendant.map(|b| Box::new((*b).into())),
-            descendants: loc.descendants.into_iter().map(Into::into).collect(),
+            selector: loc.selector,
         }
     }
 }
 
 pub struct JabService {
-    wrapper: Arc<JabWrapper>,
+    wrapper: JabWrapper,
     ctx_tree: Mutex<Option<ContextTree>>,
 }
 
 impl JabService {
-    pub fn new(wrapper: Arc<JabWrapper>) -> Self {
+    pub fn new(wrapper: JabWrapper) -> Self {
         Self {
             wrapper,
             ctx_tree: Mutex::new(None),
@@ -122,11 +76,7 @@ impl JabServiceTrait for JabService {
         &self,
         _request: Request<ListJavaWindowsRequest>,
     ) -> Result<Response<ListJavaWindowsResponse>, Status> {
-        let wrapper = self.wrapper.clone();
-        let windows = tokio::task::spawn_blocking(move || wrapper.list_java_windows())
-            .await
-            .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
-
+        let windows = self.wrapper.list_java_windows();
         let proto_windows: Vec<ProtoWindowInfo> = windows.into_iter().map(|w| w.into()).collect();
 
         Ok(Response::new(ListJavaWindowsResponse {
@@ -146,15 +96,11 @@ impl JabServiceTrait for JabService {
             }));
         };
 
-        let wrapper = self.wrapper.clone();
-        let result =
-            tokio::task::spawn_blocking(move || wrapper.get_root_obj_from_window(w.into()))
-                .await
-                .map_err(|e| Status::internal(format!("Task failed: {}", e)))?;
+        let result = self.wrapper.get_root_obj_from_window(w.into());
 
         match result {
             Ok(root) => {
-                let tree = ContextTree::from_root(root, None, &self.wrapper);
+                let tree = ContextTree::from_root(root, None);
 
                 let mut tree_lock = self.ctx_tree.lock().unwrap();
                 *tree_lock = Some(tree);
@@ -186,7 +132,7 @@ impl JabServiceTrait for JabService {
             }
         };
 
-        let tree = ContextTree::from_root(root_obj, None, &self.wrapper);
+        let tree = ContextTree::from_root(root_obj, None);
         *tree_lock = Some(tree);
 
         Ok(Response::new(RefreshTreeResponse {
@@ -213,18 +159,18 @@ impl JabServiceTrait for JabService {
         };
 
         let default_locator = proto::Locator {
-            name: None,
-            role: None,
-            description: None,
-            text: None,
-            has_state: Vec::new(),
-            not_has_state: Vec::new(),
-            index_in_parent: None,
-            ascendant: None,
-            descendants: Vec::new(),
+            selector: String::new(),
         };
         let locator = req.locator.as_ref().unwrap_or(&default_locator);
-        let nodes = tree.get_nodes(&locator.clone().into());
+        let nodes = match tree.get_nodes(&locator.clone().into()) {
+            Ok(nodes) => nodes,
+            Err(e) => {
+                return Ok(Response::new(FindElementsResponse {
+                    elements: Vec::new(),
+                    error_message: e.to_string(),
+                }));
+            }
+        };
 
         let elements = nodes.into_iter().map(Into::into).collect();
 
@@ -294,7 +240,7 @@ impl JabServiceTrait for JabService {
             }
         };
 
-        match self.wrapper.click_element(&node.obj) {
+        match node.obj.click_element() {
             Ok(()) => Ok(Response::new(ClickElementResponse {
                 success: true,
                 error_message: String::new(),
@@ -324,7 +270,7 @@ impl JabServiceTrait for JabService {
 
         let root = tree.root();
 
-        match self.wrapper.get_version_info(&root.obj) {
+        match root.obj.get_version_info() {
             Ok(version_info) => Ok(Response::new(GetVersionInfoResponse {
                 version_info: Some(version_info.into()),
                 error_message: String::new(),
@@ -346,7 +292,7 @@ impl From<&ContextNode> for Element {
             states: node.states.clone(),
             states_en_us: node.states_en_us.clone(),
             description: node.description.clone(),
-            text: node.text.clone(),
+            children_handles: node.children.clone(),
             x: node.x,
             y: node.y,
             width: node.width,
@@ -356,7 +302,6 @@ impl From<&ContextNode> for Element {
             accessible_selection: node.accessible_selection,
             children_count: node.children_count,
             index_in_parent: node.index_in_parent,
-            children_handles: node.children.clone(),
             parent_handle: node.parent,
             depth: node.depth,
         }

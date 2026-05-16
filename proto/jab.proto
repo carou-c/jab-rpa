@@ -52,7 +52,7 @@ message Element {
   repeated string states = 4;
   repeated string states_en_us = 5;
   string description = 6;
-  string text = 7;
+  repeated uint64 children_handles = 7;
   int32 x = 8;
   int32 y = 9;
   int32 width = 10;
@@ -62,9 +62,8 @@ message Element {
   bool accessible_selection = 14;
   int32 children_count = 15;
   int32 index_in_parent = 16;
-  repeated uint64 children_handles = 17;
-  optional uint64 parent_handle = 18;
-  int32 depth = 19;
+  optional uint64 parent_handle = 17;
+  int32 depth = 18;
 }
 
 message StringLocator {
@@ -87,15 +86,7 @@ message DescendantLocator {
 }
 
 message Locator {
-  optional StringLocator name = 1;
-  optional StringLocator role = 2;
-  optional StringLocator description = 3;
-  optional StringLocator text = 4;
-  repeated string has_state = 5;
-  repeated string not_has_state = 6;
-  optional IndexLocator index_in_parent = 7;
-  optional AscendantLocator ascendant = 8;
-  repeated DescendantLocator descendants = 9;
+  string selector = 1;
 }
 
 message FindElementsResponse {
