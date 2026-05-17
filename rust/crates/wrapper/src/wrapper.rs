@@ -9,14 +9,13 @@ use windows::{
 };
 
 use crate::{
-    bindings,
     runtime::JabRuntime,
     types::{AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, WindowInfo},
     utils::utf16_to_string,
 };
 
 type VmId = std::os::raw::c_long;
-type JObject = bindings::Java_Object;
+type JObject = jab_sys::Java_Object;
 
 #[derive(Debug)]
 pub struct JavaObject {
@@ -28,7 +27,7 @@ pub struct JavaObject {
 impl Drop for JavaObject {
     fn drop(&mut self) {
         unsafe {
-            bindings::ReleaseJavaObject(self.vm_id, self.jobject);
+            jab_sys::ReleaseJavaObject(self.vm_id, self.jobject);
         }
     }
 }
@@ -62,13 +61,13 @@ impl JabWrapper {
 
             hwnds
                 .into_iter()
-                .filter(|&hwnd| bindings::IsJavaWindow(hwnd.0 as _) != 0)
+                .filter(|&hwnd| jab_sys::IsJavaWindow(hwnd.0 as _) != 0)
                 .map(|hwnd| WindowInfo {
                     hwnd: hwnd.0 as u64,
                     title: {
                         let len = GetWindowTextLengthW(hwnd);
                         if len > 0 {
-                            let mut buf: Vec<bindings::wchar_t> = vec![0; (len + 1) as usize];
+                            let mut buf: Vec<jab_sys::wchar_t> = vec![0; (len + 1) as usize];
                             GetWindowTextW(hwnd, &mut buf);
                             utf16_to_string(&buf)
                         } else {
@@ -83,9 +82,9 @@ impl JabWrapper {
     pub fn get_root_obj_from_window(&self, window: WindowInfo) -> Result<JavaObject, String> {
         unsafe {
             let mut vm_id: VmId = 0;
-            let mut jobject: bindings::AccessibleContext = 0;
+            let mut jobject: jab_sys::AccessibleContext = 0;
             let result =
-                bindings::GetAccessibleContextFromHWND(window.hwnd as _, &mut vm_id, &mut jobject);
+                jab_sys::GetAccessibleContextFromHWND(window.hwnd as _, &mut vm_id, &mut jobject);
             if result != 0 {
                 Ok(JavaObject {
                     vm_id,
@@ -102,8 +101,8 @@ impl JabWrapper {
 impl JavaObject {
     pub fn get_version_info(&self) -> Result<AccessBridgeVersionInfo, String> {
         unsafe {
-            let mut info: bindings::AccessBridgeVersionInfo = std::mem::zeroed();
-            if bindings::GetVersionInfo(self.vm_id, &mut info) != 0 {
+            let mut info: jab_sys::AccessBridgeVersionInfo = std::mem::zeroed();
+            if jab_sys::GetVersionInfo(self.vm_id, &mut info) != 0 {
                 Ok(info)
             } else {
                 Err("Failed to get version info".to_string())
@@ -113,8 +112,8 @@ impl JavaObject {
 
     pub fn get_obj_info(&self) -> Option<AccessibleContextInfo> {
         unsafe {
-            let mut info: bindings::AccessibleContextInfo = std::mem::zeroed();
-            if bindings::GetAccessibleContextInfo(self.vm_id, self.jobject, &mut info) != 0 {
+            let mut info: jab_sys::AccessibleContextInfo = std::mem::zeroed();
+            if jab_sys::GetAccessibleContextInfo(self.vm_id, self.jobject, &mut info) != 0 {
                 Some(info)
             } else {
                 None
@@ -126,7 +125,7 @@ impl JavaObject {
     /// The caller must verify index is within bounds
     pub unsafe fn get_child_from_obj(&self, index: i32) -> JavaObject {
         unsafe {
-            let child = bindings::GetAccessibleChildFromContext(self.vm_id, self.jobject, index);
+            let child = jab_sys::GetAccessibleChildFromContext(self.vm_id, self.jobject, index);
             JavaObject {
                 vm_id: self.vm_id,
                 jobject: child,
@@ -137,8 +136,8 @@ impl JavaObject {
 
     pub fn get_text(&self) -> Result<String, String> {
         unsafe {
-            let mut text_info: bindings::AccessibleTextInfo = std::mem::zeroed();
-            if bindings::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0) == 0
+            let mut text_info: jab_sys::AccessibleTextInfo = std::mem::zeroed();
+            if jab_sys::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0) == 0
             {
                 return Err("GetAccessibleTextInfo failed".to_string());
             }
@@ -149,15 +148,15 @@ impl JavaObject {
             }
 
             const CHUNK: usize = 4096;
-            let mut text: Vec<bindings::wchar_t> = Vec::with_capacity(total_len);
+            let mut text: Vec<jab_sys::wchar_t> = Vec::with_capacity(total_len);
             let mut start = 0;
 
             while start < total_len {
                 let chunk_len = (total_len - start).min(CHUNK);
                 let end = start + chunk_len - 1;
-                let mut buf: Vec<bindings::wchar_t> = vec![0; chunk_len + 1];
+                let mut buf: Vec<jab_sys::wchar_t> = vec![0; chunk_len + 1];
 
-                if bindings::GetAccessibleTextRange(
+                if jab_sys::GetAccessibleTextRange(
                     self.vm_id,
                     self.jobject,
                     start as i32,
@@ -182,8 +181,8 @@ impl JavaObject {
 
     pub fn get_actions(&self) -> Result<AccessibleActions, String> {
         unsafe {
-            let mut actions: bindings::AccessibleActions = std::mem::zeroed();
-            if bindings::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
+            let mut actions: jab_sys::AccessibleActions = std::mem::zeroed();
+            if jab_sys::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
                 return Err("getAccessibleActions failed".to_string());
             }
             Ok(actions)
@@ -200,12 +199,12 @@ impl JavaObject {
             for i in 0..actions.actionsCount {
                 let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
                 if action_name.to_lowercase() == action {
-                    let mut actions_to_do: bindings::AccessibleActionsToDo = std::mem::zeroed();
+                    let mut actions_to_do: jab_sys::AccessibleActionsToDo = std::mem::zeroed();
                     actions_to_do.actionsCount = 1;
                     actions_to_do.actions[0] = actions.actionInfo[i as usize];
 
                     let mut failure: i32 = 0;
-                    if bindings::doAccessibleActions(
+                    if jab_sys::doAccessibleActions(
                         self.vm_id,
                         self.jobject,
                         &mut actions_to_do,
@@ -228,20 +227,20 @@ impl JavaObject {
 
     pub fn click_element(&self) -> Result<(), String> {
         unsafe {
-            let mut actions: bindings::AccessibleActions = std::mem::zeroed();
-            if bindings::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
+            let mut actions: jab_sys::AccessibleActions = std::mem::zeroed();
+            if jab_sys::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
                 return Err("Failed to get accessible actions".to_string());
             }
 
             for i in 0..actions.actionsCount {
                 let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
                 if action_name.to_lowercase().contains("click") {
-                    let mut actions_to_do: bindings::AccessibleActionsToDo = std::mem::zeroed();
+                    let mut actions_to_do: jab_sys::AccessibleActionsToDo = std::mem::zeroed();
                     actions_to_do.actionsCount = 1;
                     actions_to_do.actions[0] = actions.actionInfo[i as usize];
 
                     let mut failure: i32 = 0;
-                    if bindings::doAccessibleActions(
+                    if jab_sys::doAccessibleActions(
                         self.vm_id,
                         self.jobject,
                         &mut actions_to_do,

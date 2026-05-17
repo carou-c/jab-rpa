@@ -1,0 +1,9 @@
+[package]
+name = "jab-sys"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[build-dependencies]
+bindgen = "0.72.1"
+cc = "1.2.61"

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "rust/crates/sys",
     "rust/crates/wrapper",
     "rust/crates/rpa-server",
 ]

@@ -10,8 +10,6 @@ use windows::Win32::{
     },
 };
 
-use crate::bindings;
-
 fn run_message_pump() {
     unsafe {
         let mut msg = std::mem::zeroed();
@@ -53,7 +51,7 @@ impl JabRuntime {
             }
 
             // Initialize JAB on this thread
-            let init_result = unsafe { bindings::initializeAccessBridge() };
+            let init_result = unsafe { jab_sys::initializeAccessBridge() };
             let success = init_result != 0;
             let _ = init_tx.send(success);
 
@@ -64,7 +62,7 @@ impl JabRuntime {
 
             // Shutdown JAB
             unsafe {
-                bindings::shutdownAccessBridge();
+                jab_sys::shutdownAccessBridge();
             }
         });
 

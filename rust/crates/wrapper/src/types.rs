@@ -1,4 +1,4 @@
-pub use crate::bindings::{
+pub use jab_sys::{
     AccessBridgeVersionInfo, AccessibleActionInfo, AccessibleActions, AccessibleContextInfo,
 };
 pub use crate::wrapper::JavaObject;
