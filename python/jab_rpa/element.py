@@ -49,11 +49,6 @@ class Element:
         return self._element.description
 
     @property
-    def text(self) -> str:
-        """Text content of the element."""
-        return self._element.text
-
-    @property
     def x(self) -> int:
         """Screen X coordinate of the element's bounding box origin."""
         return self._element.x

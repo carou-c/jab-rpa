@@ -66,25 +66,6 @@ message Element {
   int32 depth = 18;
 }
 
-message StringLocator {
-  string find = 1;
-  bool regex = 2;
-}
-
-message IndexLocator {
-  int32 index = 1;
-}
-
-message AscendantLocator {
-  Locator locator = 1;
-  bool is_parent = 2;
-}
-
-message DescendantLocator {
-  Locator locator = 1;
-  bool is_child = 2;
-}
-
 message Locator {
   string selector = 1;
 }

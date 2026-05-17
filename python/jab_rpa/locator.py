@@ -6,10 +6,6 @@ from typing import Any, TYPE_CHECKING
 from .element import Element
 from .proto.jab import (
     Locator as _Locator,
-    StringLocator,
-    IndexLocator,
-    AscendantLocator,
-    DescendantLocator,
 )
 
 if TYPE_CHECKING:
@@ -43,157 +39,17 @@ class Locator:
     def __init__(
         self,
         driver: JabDriver,
-        *,
-        name: str | None = None,
-        role: str | None = None,
-        description: str | None = None,
-        text: str | None = None,
-        has_state: list[str] | None = None,
-        not_has_state: list[str] | None = None,
-        index_in_parent: int | None = None,
-        has_children: list["Locator"] | None = None,
-        has_descendants: list["Locator"] | None = None,
-        name_regex: bool = True,
-        role_regex: bool = False,
-        description_regex: bool = True,
-        text_regex: bool = True,
-        ascendant: AscendantLocator | None = None,
+        selector: str,
     ):
-        """All parameters are keyword-only.
-
-        Args:
-            driver: The ``JabDriver`` instance to query against.
-            name: Element's accessible name (regex by default).
-            role: Element's accessible role (regex by default).
-            description: Element's accessible description (regex by default).
-            text: Element's text content (regex by default).
-            has_state: Required states (e.g. ``["enabled"]``).
-            not_has_state: Forbidden states (e.g. ``["disabled"]``).
-            index_in_parent: Exact index in parent.
-            has_children: Locators that must match at least one child each.
-            has_descendants: Locators that must match at least one descendant each.
-            name_regex: If False, match ``name`` exactly.
-            role_regex: If False, match ``role`` exactly.
-            description_regex: If False, match ``description`` exactly.
-            text_regex: If False, match ``text`` exactly.
-            ascendant: Internal — used by ``child()`` and ``descendant()``.
-        """
+        """ """
         self._driver: JabDriver = driver
+        self._locator: _Locator = _Locator(selector)
 
-        has_state: list[str] = has_state or []
-        not_has_state: list[str] = not_has_state or []
-        has_children: list[Locator] = has_children or []
-        has_descendants: list[Locator] = has_descendants or []
-
-        self._locator: _Locator = _Locator(
-            name=StringLocator(name, name_regex) if name is not None else None,
-            role=StringLocator(role, role_regex) if role is not None else None,
-            description=StringLocator(description, description_regex)
-            if description is not None
-            else None,
-            text=StringLocator(text, text_regex) if text is not None else None,
-            has_state=has_state,
-            not_has_state=not_has_state,
-            index_in_parent=IndexLocator(index_in_parent)
-            if index_in_parent is not None
-            else None,
-            ascendant=ascendant,
-            descendants=[
-                DescendantLocator(locator._locator, True) for locator in has_children
-            ]
-            + [
-                DescendantLocator(locator._locator, False)
-                for locator in has_descendants
-            ],
-        )
-
-    def child(
+    def locator(
         self,
-        *,
-        name: str | None = None,
-        role: str | None = None,
-        description: str | None = None,
-        text: str | None = None,
-        has_state: list[str] | None = None,
-        not_has_state: list[str] | None = None,
-        index_in_parent: int | None = None,
-        has_children: list["Locator"] | None = None,
-        has_descendants: list["Locator"] | None = None,
-        name_regex: bool = True,
-        role_regex: bool = False,
-        description_regex: bool = True,
-        text_regex: bool = True,
+        selector: str,
     ) -> "Locator":
-        """Narrow the search to direct children of the current locator.
-
-        Creates a new ``Locator`` that matches elements whose direct
-        parent matches the current locator. Accepts the same keyword
-        arguments as ``Locator.__init__``.
-
-        Returns:
-            A new ``Locator`` with the parent constraint applied.
-        """
-        return Locator(
-            self._driver,
-            name=name,
-            role=role,
-            description=description,
-            text=text,
-            has_state=has_state,
-            not_has_state=not_has_state,
-            index_in_parent=index_in_parent,
-            has_children=has_children,
-            has_descendants=has_descendants,
-            name_regex=name_regex,
-            role_regex=role_regex,
-            description_regex=description_regex,
-            text_regex=text_regex,
-            ascendant=AscendantLocator(self._locator, True),
-        )
-
-    def descendant(
-        self,
-        *,
-        name: str | None = None,
-        role: str | None = None,
-        description: str | None = None,
-        text: str | None = None,
-        has_state: list[str] | None = None,
-        not_has_state: list[str] | None = None,
-        index_in_parent: int | None = None,
-        has_children: list["Locator"] | None = None,
-        has_descendants: list["Locator"] | None = None,
-        name_regex: bool = True,
-        role_regex: bool = False,
-        description_regex: bool = True,
-        text_regex: bool = True,
-    ) -> "Locator":
-        """Narrow the search to descendants of the current locator.
-
-        Creates a new ``Locator`` that matches elements with any ancestor
-        (not just the direct parent) matching the current locator. Accepts
-        the same keyword arguments as ``Locator.__init__``.
-
-        Returns:
-            A new ``Locator`` with the ancestor constraint applied.
-        """
-        return Locator(
-            self._driver,
-            name=name,
-            role=role,
-            description=description,
-            text=text,
-            has_state=has_state,
-            not_has_state=not_has_state,
-            index_in_parent=index_in_parent,
-            has_children=has_children,
-            has_descendants=has_descendants,
-            name_regex=name_regex,
-            role_regex=role_regex,
-            description_regex=description_regex,
-            text_regex=text_regex,
-            ascendant=AscendantLocator(self._locator, False),
-        )
+        return Locator(self._driver, self._locator.selector + " " + selector)
 
     def to_dict(self) -> dict[str, Any]:
         """All locator criteria as a dictionary."""

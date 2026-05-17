@@ -141,6 +141,36 @@ impl JabServiceTrait for JabService {
         }))
     }
 
+    async fn get_version_info(
+        &self,
+        _request: Request<GetVersionInfoRequest>,
+    ) -> Result<Response<GetVersionInfoResponse>, Status> {
+        let tree_lock = self.ctx_tree.lock().unwrap();
+
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => {
+                return Ok(Response::new(GetVersionInfoResponse {
+                    version_info: None,
+                    error_message: "No window selected. Call SelectWindow first.".to_string(),
+                }));
+            }
+        };
+
+        let root = tree.root();
+
+        match root.obj.get_version_info() {
+            Ok(version_info) => Ok(Response::new(GetVersionInfoResponse {
+                version_info: Some(version_info.into()),
+                error_message: String::new(),
+            })),
+            Err(e) => Ok(Response::new(GetVersionInfoResponse {
+                version_info: None,
+                error_message: e,
+            })),
+        }
+    }
+
     async fn find_elements(
         &self,
         request: Request<FindElementsRequest>,
@@ -247,36 +277,6 @@ impl JabServiceTrait for JabService {
             })),
             Err(e) => Ok(Response::new(ClickElementResponse {
                 success: false,
-                error_message: e,
-            })),
-        }
-    }
-
-    async fn get_version_info(
-        &self,
-        _request: Request<GetVersionInfoRequest>,
-    ) -> Result<Response<GetVersionInfoResponse>, Status> {
-        let tree_lock = self.ctx_tree.lock().unwrap();
-
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => {
-                return Ok(Response::new(GetVersionInfoResponse {
-                    version_info: None,
-                    error_message: "No window selected. Call SelectWindow first.".to_string(),
-                }));
-            }
-        };
-
-        let root = tree.root();
-
-        match root.obj.get_version_info() {
-            Ok(version_info) => Ok(Response::new(GetVersionInfoResponse {
-                version_info: Some(version_info.into()),
-                error_message: String::new(),
-            })),
-            Err(e) => Ok(Response::new(GetVersionInfoResponse {
-                version_info: None,
                 error_message: e,
             })),
         }

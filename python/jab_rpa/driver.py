@@ -207,58 +207,10 @@ class JabDriver:
         """
         return self.__client.get_version_info()
 
-    def locator(
-        self,
-        *,
-        name: str | None = None,
-        role: str | None = None,
-        description: str | None = None,
-        text: str | None = None,
-        has_state: list[str] | None = None,
-        not_has_state: list[str] | None = None,
-        index_in_parent: int | None = None,
-        has_children: list["Locator"] | None = None,
-        has_descendants: list["Locator"] | None = None,
-        name_regex: bool = True,
-        role_regex: bool = False,
-        description_regex: bool = True,
-        text_regex: bool = True,
-    ) -> Locator:
+    def locator(self, selector: str) -> Locator:
         """Build a locator to find elements in the accessibility tree.
-
-        All criteria are keyword-only.
-
-        Args:
-            name: Element's accessible name.
-            role: Element's accessible role (e.g. ``"push button"``).
-            description: Element's accessible description.
-            text: Element's text content.
-            has_state: Element must have all of these states (e.g. ``["enabled"]``).
-            not_has_state: Element must not have any of these states.
-            index_in_parent: Exact index in parent's children list.
-            has_children: List of ``Locator`` that must match at least one child each.
-            has_descendants: List of ``Locator`` that must match at least one descendant each.
-            name_regex: If True, treat ``name`` as a regex pattern.
-            role_regex: If True, treat ``role`` as a regex pattern.
-            description_regex: If True, treat ``description`` as a regex pattern.
-            text_regex: If True, treat ``text`` as a regex pattern.
 
         Returns:
             A ``Locator`` bound to this driver.
         """
-        return Locator(
-            self,
-            name=name,
-            role=role,
-            description=description,
-            text=text,
-            has_state=has_state,
-            not_has_state=not_has_state,
-            index_in_parent=index_in_parent,
-            has_children=has_children,
-            has_descendants=has_descendants,
-            name_regex=name_regex,
-            role_regex=role_regex,
-            description_regex=description_regex,
-            text_regex=text_regex,
-        )
+        return Locator(self, selector)
