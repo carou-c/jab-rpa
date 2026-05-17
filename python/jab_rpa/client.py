@@ -43,8 +43,8 @@ class JabRpaClient:
         Returns:
             List of ``WindowInfo`` objects with hwnd and title.
         """
-        req = jab.ListJavaWindowsRequest()
-        res: jab.ListJavaWindowsResponse = self.__stub.list_java_windows(req)
+        req = jab.Empty()
+        res: jab.RepeatedWindowInfo = self.__stub.list_java_windows(req)
         return res.windows
 
     def select_window(self, window_info: WindowInfo) -> None:
@@ -52,29 +52,13 @@ class JabRpaClient:
 
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
-
-        Raises:
-            JabRpaRemoteError: If the server fails to select the window.
         """
-        req = jab.SelectWindowRequest(window_info)
-        res: jab.SelectWindowResponse = self.__stub.select_window(req)
-        if not res.success:
-            raise JabRpaRemoteError(
-                f"Error calling select_window({req}): {res.error_message}"
-            )
+        self.__stub.select_window(window_info)
 
     def refresh_tree(self) -> None:
-        """Rebuild the cached accessibility tree on the server.
-
-        Raises:
-            JabRpaRemoteError: If the server fails to refresh the tree.
-        """
-        req = jab.RefreshTreeRequest()
-        res: jab.RefreshTreeResponse = self.__stub.refresh_tree(req)
-        if not res.success:
-            raise JabRpaRemoteError(
-                f"Error calling refresh_tree({req}): {res.error_message}"
-            )
+        """Rebuild the cached accessibility tree on the server."""
+        req = jab.Empty()
+        self.__stub.refresh_tree(req)
 
     def find_elements(self, locator: jab.Locator) -> list[jab.Element]:
         """Find elements matching a structured locator.
@@ -84,16 +68,8 @@ class JabRpaClient:
 
         Returns:
             List of matching ``jab.Element`` protobuf messages.
-
-        Raises:
-            JabRpaRemoteError: If the server returns an error.
         """
-        req = jab.FindElementsRequest(locator)
-        res: jab.FindElementsResponse = self.__stub.find_elements(req)
-        if res.error_message:
-            raise JabRpaRemoteError(
-                f"Error calling find_elements({req}): {res.error_message}"
-            )
+        res: jab.RepeatedElement = self.__stub.find_elements(locator)
         return res.elements
 
     def get_element_from_handle(self, handle: int) -> jab.Element | None:
@@ -104,33 +80,21 @@ class JabRpaClient:
 
         Returns:
             The ``jab.Element`` if found, or ``None`` if the handle is stale.
-
-        Raises:
-            JabRpaRemoteError: If the server returns an error.
         """
-        req = jab.GetElementFromHandleRequest(handle)
-        res: jab.GetElementFromHandleResponse = self.__stub.get_element_from_handle(req)
-        if res.error_message:
-            raise JabRpaRemoteError(
-                f"Error calling get_element_from_handle({req}): {res.error_message}"
-            )
-        return res.element
+        req = jab.ElementHandle(handle)
+        try:
+            res: jab.Element = self.__stub.get_element_from_handle(req)
+        except grpc.RpcError:
+            res: None = None
+        return res
 
     def click_element(self, element: jab.Element) -> None:
         """Perform an accessible action click via the JAB API.
 
         Args:
             element: The ``jab.Element`` to click.
-
-        Raises:
-            JabRpaRemoteError: If the server fails to click.
         """
-        req = jab.ClickElementRequest(element.handle)
-        res: jab.ClickElementResponse = self.__stub.click_element(req)
-        if not res.success:
-            raise JabRpaRemoteError(
-                f"Error calling click_element({req}): {res.error_message}"
-            )
+        self.__stub.click_element(element)
 
     def get_version_info(self) -> VersionInfo | None:
         """Retrieve JAB bridge and server version info.
@@ -138,10 +102,33 @@ class JabRpaClient:
         Returns:
             ``VersionInfo`` if available, or ``None``.
         """
-        req = jab.GetVersionInfoRequest()
-        res: jab.GetVersionInfoResponse = self.__stub.get_version_info(req)
-        if res.error_message:
-            raise JabRpaRemoteError(
-                f"Error calling get_version_info({req}): {res.error_message}"
-            )
-        return res.version_info
+        req = jab.Empty()
+        res: jab.VersionInfo = self.__stub.get_version_info(req)
+        return res
+
+    def get_element_text(self, element: jab.Element) -> str:
+        """Get the accessible text from an element.
+
+        Args:
+            element: The ``jab.Element`` to get text.
+        """
+        res: jab.Text = self.__stub.get_element_text(element)
+        return res.text
+
+    def get_element_actions(self, element: jab.Element) -> list[jab.Action]:
+        """Get the available accessible actions from an element.
+
+        Args:
+            element: The ``jab.Element`` to get actions.
+        """
+        res: jab.Actions = self.__stub.get_element_actions(element)
+        return res.actions
+
+    def do_action_on_element(self, element: jab.Element, action: jab.Action) -> None:
+        """Performs an accessible action on an element.
+
+        Args:
+            element: The ``jab.Element`` to perform the action.
+            action: The ``jab.Action`` to perform.
+        """
+        self.__stub.do_action_on_element(jab.DoActionRequest(element, action))

@@ -20,8 +20,8 @@ pub enum GetNodesError {
     Lexing(#[from] LexingError),
     #[error("Parse error: {0}")]
     Parse(String),
-    #[error("No relative context: {0}")]
-    NoRelativeContext(String),
+    // #[error("No relative context: {0}")]
+    // NoRelativeContext(String),
 }
 
 impl From<Vec<Simple<'_, Token>>> for GetNodesError {

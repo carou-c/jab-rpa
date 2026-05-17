@@ -3,46 +3,49 @@ syntax = "proto3";
 package jab;
 
 service JabService {
-  rpc ListJavaWindows(ListJavaWindowsRequest) returns (ListJavaWindowsResponse);
-  rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
-  rpc RefreshTree(RefreshTreeRequest) returns (RefreshTreeResponse);
-  rpc FindElements(FindElementsRequest) returns (FindElementsResponse);
-  rpc GetElementFromHandle(GetElementFromHandleRequest) returns (GetElementFromHandleResponse);
-  rpc ClickElement(ClickElementRequest) returns (ClickElementResponse);
-  rpc GetVersionInfo(GetVersionInfoRequest) returns (GetVersionInfoResponse);
+  rpc ListJavaWindows (Empty) returns (RepeatedWindowInfo);
+  rpc SelectWindow (WindowInfo) returns (Empty);
+  rpc RefreshTree (Empty) returns (Empty);
+  rpc GetVersionInfo (Empty) returns (VersionInfo);
+  rpc FindElements (Locator) returns (RepeatedElement);
+  rpc GetElementFromHandle (ElementHandle) returns (Element);
+  rpc ClickElement (Element) returns (Empty);
+  rpc GetElementText (Element) returns (Text);
+  rpc GetElementActions (Element) returns (Actions);
+  rpc DoActionOnElement (DoActionRequest) returns (Empty);
   // rpc SubscribeCallbacks(SubscribeCallbacksRequest) returns (stream CallbackEvent);
 }
 
-message ListJavaWindowsRequest {}
+message Empty {}
+
+message Text {
+  string text = 1;
+}
+
+message Action {
+  string name = 1;
+}
+
+message Actions {
+  repeated Action actions = 1;
+}
+
+message DoActionRequest {
+  Element element = 1;
+  Action action = 2;
+}
 
 message WindowInfo {
   uint64 hwnd = 1;
   string title = 2;
 }
 
-message ListJavaWindowsResponse {
+message RepeatedWindowInfo {
   repeated WindowInfo windows = 1;
 }
 
-message SelectWindowRequest {
-  WindowInfo window_info = 1;
-}
-
-message SelectWindowResponse {
-  bool success = 1;
-  string error_message = 2;
-}
-
-message RefreshTreeRequest {
-}
-
-message RefreshTreeResponse {
-  bool success = 1;
-  string error_message = 2;
-}
-
-message FindElementsRequest {
-  Locator locator = 1;
+message Locator {
+  string selector = 1;
 }
 
 message Element {
@@ -66,43 +69,17 @@ message Element {
   int32 depth = 18;
 }
 
-message Locator {
-  string selector = 1;
-}
-
-message FindElementsResponse {
+message RepeatedElement {
   repeated Element elements = 1;
-  string error_message = 2;
 }
 
-message GetElementFromHandleRequest {
+message ElementHandle {
   uint64 handle = 1;
 }
-
-message GetElementFromHandleResponse {
-  Element element = 1;
-  string error_message = 2;
-}
-
-message ClickElementRequest {
-  uint64 handle = 1;
-}
-
-message ClickElementResponse {
-  bool success = 1;
-  string error_message = 2;
-}
-
-message GetVersionInfoRequest {}
 
 message VersionInfo {
   string vm_version = 1;
   string bridge_java_class_version = 2;
   string bridge_java_dll_version = 3;
   string bridge_win_dll_version = 4;
-}
-
-message GetVersionInfoResponse {
-  VersionInfo version_info = 1;
-  string error_message = 2;
 }
