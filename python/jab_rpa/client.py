@@ -6,10 +6,6 @@ from grpc._channel import Channel
 from .proto import jab
 
 
-class JabRpaRemoteError(Exception):
-    """Raised when a gRPC call to the JAB server returns an error."""
-
-
 class JabRpaClient:
     """Low-level gRPC client for the JAB server.
 

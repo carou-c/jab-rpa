@@ -85,7 +85,9 @@ class JabDriver:
             server_timeout=self.__server_timeout,
             step=self.__server_step,
         )
+        self.__server.start()
         self._client: JabRpaClient = JabRpaClient()
+        self._client.start()
 
         wait_start = time.monotonic()
         while time.monotonic() - wait_start <= self.__window_timeout:

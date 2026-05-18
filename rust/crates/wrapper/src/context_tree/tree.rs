@@ -99,7 +99,7 @@ impl ContextNode {
             node.children_count = info.childrenCount;
             node.index_in_parent = info.indexInParent;
 
-            node.children.reserve(node.children_count as usize);
+            node.children.reserve(node.children_count.max(0) as usize);
         }
         node
     }

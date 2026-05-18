@@ -71,6 +71,11 @@ impl JabRuntime {
             Err(_) => panic!("Message pump thread crashed during initialization"),
         };
 
+        let new = Self {
+            message_pump_handle: Some(pump_handle),
+            message_pump_thread_id: thread_id,
+        };
+
         // Wait for initialization to complete
         match init_rx.recv() {
             Ok(true) => {}
@@ -78,10 +83,7 @@ impl JabRuntime {
             Err(_) => panic!("Message pump thread crashed during initialization"),
         }
 
-        Self {
-            message_pump_handle: Some(pump_handle),
-            message_pump_thread_id: thread_id,
-        }
+        new
     }
 }
 

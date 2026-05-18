@@ -91,6 +91,11 @@ class JabRpaServer:
                 )
 
             time.sleep(self.__step)
+        else:
+            raise TimeoutError(
+                f"Timeout ({self.__server_timeout} seconds) passed while waiting"
+                " for JAB gRPC server to start"
+            )
 
         self.__server_proc = server_proc
 

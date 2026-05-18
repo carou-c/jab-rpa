@@ -273,6 +273,7 @@ wheels = [
 name = "jab-rpa"
 source = { editable = "." }
 dependencies = [
+    { name = "betterproto2" },
     { name = "grpcio" },
     { name = "grpcio-tools" },
     { name = "pyautogui" },
@@ -293,6 +294,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "betterproto2", specifier = ">=0.9.1" },
     { name = "grpcio", specifier = ">=1.80.0" },
     { name = "grpcio-tools", specifier = ">=1.80.0" },
     { name = "pyautogui", specifier = ">=0.9.54" },
