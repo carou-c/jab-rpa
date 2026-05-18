@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
+
+import grpc
 import pyautogui
 
 from .proto.jab import Element as _Element
+from .types import Action
 
 if TYPE_CHECKING:
     from .driver import JabDriver
@@ -99,7 +102,12 @@ class Element:
         Returns:
             List of child ``Element`` objects.
         """
-        return self._driver.get_children(self)
+        children: list[Element] = []
+        for handle in self._element.children_handles:
+            child = self._driver._client.get_element_from_handle(handle)
+            if child is not None:
+                children.append(Element(child, self._driver))
+        return children
 
     def parent(self) -> "Element | None":
         """Get the parent of this element.
@@ -107,12 +115,47 @@ class Element:
         Returns:
             The parent ``Element`` or ``None`` if this is the root.
         """
-        return self._driver.get_parent(self)
+        handle = self._element.parent_handle
+        parent = None
+        if handle is not None:
+            parent = self._driver._client.get_element_from_handle(handle)
+        if parent is not None:
+            return Element(parent, self._driver)
+
+    def get_accessible_text(self) -> str | None:
+        """Get the accessible text of this element.
+
+        Returns:
+            The accessible text of this element, or `None` if getting the
+            accessible text failed (usually because the element doesn't implment
+            the AccessibleText interface).
+        """
+        try:
+            return self._driver._client.get_element_text(self._element)
+        except grpc.RpcError:
+            return None
+
+    def get_accessible_actions(self) -> list[Action]:
+        """Get the accessible actions of this element.
+
+        Returns:
+            The accessible actions of this element, or `None` if getting the
+            accessible actions failed (usually because the element doesn't implment
+            the AccessibleActions interface).
+        """
+        try:
+            return self._driver._client.get_element_actions(self._element)
+        except grpc.RpcError:
+            return []
+
+    def do_accessible_action(self, action: Action) -> None:
+        """Performs an accessible action on this element."""
+        self._driver._client.do_action_on_element(self._element, action)
 
     def accessible_click(self) -> None:
         """Click using the JAB accessibility API (not pyautogui).
         This does not move the mouse."""
-        self._driver.accessible_click(self)
+        self._driver._client.click_element(self._element)
 
     def click(self, clicks: int = 1, interval: int | float | None = None) -> None:
         """Click at the element's center using pyautogui.

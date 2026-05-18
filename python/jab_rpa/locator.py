@@ -64,7 +64,10 @@ class Locator:
         Returns:
             List of matching ``Element`` objects (may be empty).
         """
-        return self._driver.matching(self)
+        return [
+            Element(el, self._driver)
+            for el in self._driver._client.find_elements(self._locator)
+        ]
 
     def first_matching(self) -> Element:
         """Find the first element matching this locator.
@@ -79,61 +82,6 @@ class Locator:
         if not matching:
             raise LocatorNotFound(f"Element with locator = {self._locator!r} not found")
         return matching[0]
-
-    def accessible_click(self) -> None:
-        """Click the first matching element using the JAB accessibility API
-        (not pyautogui). This does not move the mouse.
-
-        Shortcut for ``self.first_matching().accessible_click()``.
-
-        Raises:
-            LocatorNotFound: If no element matches.
-        """
-        self.first_matching().accessible_click()
-
-    def click(self, clicks: int = 1, interval: int | float | None = None) -> None:
-        """Click the first matching element's center using pyautogui.
-
-        Moves the mouse to the center of the element's bounding box
-        and performs a pyautogui click.
-
-        Shortcut for ``self.first_matching().click(clicks, interval)``.
-
-        Args:
-            clicks: Number of clicks.
-            interval: Seconds between clicks.
-
-        Raises:
-            LocatorNotFound: If no element matches.
-        """
-        self.first_matching().click(clicks, interval)
-
-    def click_and_type(
-        self,
-        text: str,
-        clicks: int = 1,
-        interval_text: int | float | None = None,
-        interval_clicks: int | float | None = None,
-    ) -> None:
-        """Click then type into the first matching element.
-
-        Moves the mouse to the element's center, clicks, then types
-        the given text using pyautogui.
-
-        Shortcut for ``self.first_matching().click_and_type(...)``.
-
-        Args:
-            text: Text to type.
-            clicks: Number of clicks before typing.
-            interval_text: Seconds between keystrokes.
-            interval_clicks: Seconds between clicks.
-
-        Raises:
-            LocatorNotFound: If no element matches.
-        """
-        self.first_matching().click_and_type(
-            text, clicks, interval_text, interval_clicks
-        )
 
     def wait_for(
         self,

@@ -8,12 +8,13 @@ Provides a single import target for types used across the package:
 - **Locator** — structured locator query builder
 """
 
-from .proto.jab import WindowInfo, VersionInfo
+from .proto.jab import Action, WindowInfo, VersionInfo
 
 from .element import Element
 from .locator import Locator
 
 __all__ = [
+    "Action",
     "WindowInfo",
     "VersionInfo",
     "Element",

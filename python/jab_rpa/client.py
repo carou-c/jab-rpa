@@ -4,7 +4,6 @@ import grpc
 from grpc._channel import Channel
 
 from .proto import jab
-from .types import WindowInfo, VersionInfo
 
 
 class JabRpaRemoteError(Exception):
@@ -37,7 +36,7 @@ class JabRpaClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
-    def list_java_windows(self) -> list[WindowInfo]:
+    def list_java_windows(self) -> list[jab.WindowInfo]:
         """List all Java windows detected by the JAB server.
 
         Returns:
@@ -47,7 +46,7 @@ class JabRpaClient:
         res: jab.RepeatedWindowInfo = self.__stub.list_java_windows(req)
         return res.windows
 
-    def select_window(self, window_info: WindowInfo) -> None:
+    def select_window(self, window_info: jab.WindowInfo) -> None:
         """Set the active window to build the accessibility tree from.
 
         Args:
@@ -96,7 +95,7 @@ class JabRpaClient:
         """
         self.__stub.click_element(element)
 
-    def get_version_info(self) -> VersionInfo | None:
+    def get_version_info(self) -> jab.VersionInfo | None:
         """Retrieve JAB bridge and server version info.
 
         Returns:

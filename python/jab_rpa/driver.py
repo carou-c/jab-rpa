@@ -13,7 +13,7 @@ from .server import (
     _INIT_SERVER_STEP,
 )
 from .client import JabRpaClient
-from .types import VersionInfo, WindowInfo, Element, Locator
+from .types import VersionInfo, WindowInfo, Locator
 
 _WAIT_FOR_WINDOW_TIMEOUT: int = 60
 _WAIT_FOR_WINDOW_STEP: int = 5
@@ -85,13 +85,13 @@ class JabDriver:
             server_timeout=self.__server_timeout,
             step=self.__server_step,
         )
-        self.__client: JabRpaClient = JabRpaClient()
+        self._client: JabRpaClient = JabRpaClient()
 
         wait_start = time.monotonic()
         while time.monotonic() - wait_start <= self.__window_timeout:
             windows = [
                 window
-                for window in self.__client.list_java_windows()
+                for window in self._client.list_java_windows()
                 if re.search(self.__window_title, window.title)
             ]
             if windows:
@@ -105,7 +105,7 @@ class JabDriver:
 
         SetForegroundWindow(window_info.hwnd)
         ShowWindow(window_info.hwnd, SW_SHOWMAXIMIZED)
-        self.__client.select_window(window_info)
+        self._client.select_window(window_info)
 
     def __enter__(self) -> Self:
         self.start()
@@ -113,67 +113,11 @@ class JabDriver:
 
     def stop(self) -> None:
         """Stop the client and terminate the server."""
-        self.__client.stop()
+        self._client.stop()
         self.__server.stop()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
-
-    def get_children(self, element: Element) -> list[Element]:
-        """Get the direct children of an element.
-
-        Args:
-            element: The element to query.
-
-        Returns:
-            List of child ``Element`` objects.
-        """
-        children: list[Element] = []
-        for handle in element._element.children_handles:
-            child = self.__client.get_element_from_handle(handle)
-            if child is not None:
-                children.append(Element(child, self))
-        return children
-
-    def get_parent(self, element: Element) -> Element | None:
-        """Get the parent of an element.
-
-        Args:
-            element: The element to query.
-
-        Returns:
-            The parent ``Element`` or ``None`` if the element has no parent.
-        """
-        handle = element._element.parent_handle
-        parent = None
-        if handle is not None:
-            parent = self.__client.get_element_from_handle(handle)
-        if parent is not None:
-            return Element(parent, self)
-
-    def accessible_click(self, element: Element) -> None:
-        """Click an element using the JAB accessibility API directly.
-
-        Unlike ``Element.click()`` this does not use ``pyautogui`` —
-        it sends the click action through the Java Access Bridge.
-
-        Args:
-            element: The element to click.
-        """
-        self.__client.click_element(element._element)
-
-    def matching(self, locator: Locator) -> list[Element]:
-        """Find elements matching a structured locator.
-
-        Args:
-            locator: A ``Locator`` instance describing the search criteria.
-
-        Returns:
-            List of matching ``Element`` objects (may be empty).
-        """
-        return [
-            Element(el, self) for el in self.__client.find_elements(locator._locator)
-        ]
 
     def list_java_windows(self) -> list[WindowInfo]:
         """List all Java windows currently detected by the server.
@@ -181,7 +125,7 @@ class JabDriver:
         Returns:
             List of ``WindowInfo`` with hwnd and title.
         """
-        return self.__client.list_java_windows()
+        return self._client.list_java_windows()
 
     def select_window(self, window_info: WindowInfo) -> None:
         """Set the active window to build the accessibility tree from.
@@ -189,7 +133,7 @@ class JabDriver:
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
         """
-        return self.__client.select_window(window_info)
+        return self._client.select_window(window_info)
 
     def refresh_tree(self) -> None:
         """Rebuild the cached accessibility tree on the server.
@@ -197,7 +141,7 @@ class JabDriver:
         Call this after UI changes (e.g. a dialog opens) so subsequent
         locator queries see the updated tree.
         """
-        return self.__client.refresh_tree()
+        return self._client.refresh_tree()
 
     def get_version_info(self) -> VersionInfo | None:
         """Get version info for the JAB bridge and server.
@@ -205,7 +149,7 @@ class JabDriver:
         Returns:
             ``VersionInfo`` if available, or ``None``.
         """
-        return self.__client.get_version_info()
+        return self._client.get_version_info()
 
     def locator(self, selector: str) -> Locator:
         """Build a locator to find elements in the accessibility tree.
