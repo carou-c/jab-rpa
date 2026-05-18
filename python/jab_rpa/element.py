@@ -127,7 +127,7 @@ class Element:
 
         Returns:
             The accessible text of this element, or `None` if getting the
-            accessible text failed (usually because the element doesn't implment
+            accessible text failed (usually because the element doesn't implement
             the AccessibleText interface).
         """
         try:
@@ -140,7 +140,7 @@ class Element:
 
         Returns:
             The accessible actions of this element, or `None` if getting the
-            accessible actions failed (usually because the element doesn't implment
+            accessible actions failed (usually because the element doesn't implement
             the AccessibleActions interface).
         """
         try:

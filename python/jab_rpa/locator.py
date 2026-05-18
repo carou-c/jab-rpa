@@ -21,19 +21,20 @@ class LocatorNotFound(Exception):
 
 
 class Locator:
-    """Structured locator query for finding elements in the JAB accessibility tree.
+    """Selector-based query for finding elements in the JAB accessibility tree.
 
-    Builds a query by specifying element attributes. All criteria are
-    keyword-only and combine as AND conditions. String criteria supports
-    regex matching.
+    Uses a CSS-selector-like syntax to describe element attributes — role,
+    states, pseudo-classes, and attribute comparisons — all in a single string.
 
-    Usually created via ``JabDriver.locator()``, then chained with ``.child()``
-    or ``.descendant()`` for hierarchical navigation:
+    Usually created via ``JabDriver.locator()``. Call ``.locator()`` again
+    on the result to extend the query with a descendant combinator (space):
 
-        btn = (driver
-               .locator(role="dialog")
-               .child(role="push button", name="Confirm")
-               .wait_for())
+        btn = driver.locator("push_button[name='Clear']").wait_for()
+        btn.click()
+
+        # Chaining adds a descendant combinator:
+        btn = driver.locator("dialog").locator("push_button").wait_for()
+        # Equivalent to: driver.locator("dialog push_button")
     """
 
     def __init__(
@@ -41,7 +42,13 @@ class Locator:
         driver: JabDriver,
         selector: str,
     ):
-        """ """
+        """Wrap a driver and a selector string.
+
+        Args:
+            driver: The ``JabDriver`` instance.
+            selector: A CSS-selector-like query string (e.g.
+                ``"push_button[name='Clear']"``).
+        """
         self._driver: JabDriver = driver
         self._locator: _Locator = _Locator(selector)
 

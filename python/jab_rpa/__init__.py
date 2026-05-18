@@ -9,7 +9,7 @@ The public API is composed of three classes:
 Typical usage:
 
     with JabDriver("MyApp.*") as driver:
-        btn = driver.locator(role="push button", name="Clear").wait_for()
+        btn = driver.locator("push_button[name='Clear']").wait_for()
         btn.click()
 """
 

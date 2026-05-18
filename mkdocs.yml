@@ -16,6 +16,7 @@ plugins:
 nav:
   - Overview: index.md
   - Quickstart: quickstart.md
+  - Selector syntax: selectors.md
   - API Reference:
       - JabDriver: api/driver.md
       - Locator: api/locator.md
