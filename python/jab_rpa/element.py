@@ -139,9 +139,7 @@ class Element:
         """Get the accessible actions of this element.
 
         Returns:
-            The accessible actions of this element, or `None` if getting the
-            accessible actions failed (usually because the element doesn't implement
-            the AccessibleActions interface).
+            The accessible actions of this element
         """
         try:
             return self._driver._client.get_element_actions(self._element)
@@ -157,7 +155,7 @@ class Element:
         This does not move the mouse."""
         self._driver._client.click_element(self._element)
 
-    def click(self, clicks: int = 1, interval: int | float | None = None) -> None:
+    def click(self, clicks: int = 1, interval: int | float = 0.0) -> None:
         """Click at the element's center using pyautogui.
 
         Moves the mouse to the center of the element's bounding box
@@ -167,7 +165,6 @@ class Element:
             clicks: Number of clicks (default 1).
             interval: Seconds between clicks (default 0).
         """
-        interval = interval or 0.0
         center_x = self.x + (self.width / 2)
         center_y = self.y + (self.height / 2)
         pyautogui.click(center_x, center_y, clicks, interval)
@@ -176,8 +173,8 @@ class Element:
         self,
         text: str,
         clicks: int = 1,
-        interval_text: int | float | None = None,
-        interval_clicks: int | float | None = None,
+        interval_text: int | float = 0.0,
+        interval_clicks: int | float = 0.0,
     ) -> None:
         """Click then type text into the element.
 
@@ -190,8 +187,6 @@ class Element:
             interval_text: Seconds between keystrokes.
             interval_clicks: Seconds between clicks.
         """
-        interval_text = interval_text or 0.0
-        interval_clicks = interval_clicks or 0.0
         center_x = self.x + (self.width / 2)
         center_y = self.y + (self.height / 2)
         pyautogui.click(center_x, center_y, clicks, interval_clicks)

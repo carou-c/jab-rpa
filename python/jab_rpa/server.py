@@ -85,7 +85,7 @@ class JabRpaServer:
             if (status := server_proc.poll()) is not None:
                 raise ServerStoppedError(
                     "JAB gRPC server process stopped before listening.\n"
-                    f"Exit code: {status}"
+                    f"Exit code: {status}\n"
                     f"stderr: {server_proc.stderr.read() if server_proc.stderr is not None else None}\n"
                     f"stdout: {server_proc.stdout.read() if server_proc.stdout is not None else None}\n"
                 )

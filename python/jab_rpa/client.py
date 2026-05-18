@@ -13,9 +13,6 @@ class JabRpaClient:
     Not intended for direct use — accessed through ``JabDriver``.
     """
 
-    def __init__(self) -> None:
-        pass
-
     def start(self) -> None:
         """Open an insecure gRPC channel to ``127.0.0.1:50051`` and create the service stub."""
         self.__channel: Channel = grpc.insecure_channel("127.0.0.1:50051")
@@ -77,10 +74,11 @@ class JabRpaClient:
             The ``jab.Element`` if found, or ``None`` if the handle is stale.
         """
         req = jab.ElementHandle(handle)
+        res: jab.Element | None
         try:
-            res: jab.Element = self.__stub.get_element_from_handle(req)
+            res = self.__stub.get_element_from_handle(req)
         except grpc.RpcError:
-            res: None = None
+            res = None
         return res
 
     def click_element(self, element: jab.Element) -> None:

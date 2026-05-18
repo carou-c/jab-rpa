@@ -144,7 +144,7 @@ impl ContextNode {
 
 impl ContextTree {
     pub fn root(&self) -> &ContextNode {
-        &self.nodes[&ROOT_HANDLE]
+        self.nodes.get(&ROOT_HANDLE).expect("Root node missing")
     }
 
     pub fn into_root(mut self) -> JavaObject {

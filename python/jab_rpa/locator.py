@@ -50,17 +50,17 @@ class Locator:
                 ``"push_button[name='Clear']"``).
         """
         self._driver: JabDriver = driver
-        self._locator: _Locator = _Locator(selector)
+        self._selector: str = selector
 
     def locator(
         self,
         selector: str,
     ) -> "Locator":
-        return Locator(self._driver, self._locator.selector + " " + selector)
+        return Locator(self._driver, self._selector + " " + selector)
 
     def to_dict(self) -> dict[str, Any]:
         """All locator criteria as a dictionary."""
-        return self._locator.to_dict()
+        return _Locator(self._selector).to_dict()
 
     def __str__(self) -> str:
         return f"Locator {self.to_dict()}"
@@ -73,7 +73,7 @@ class Locator:
         """
         return [
             Element(el, self._driver)
-            for el in self._driver._client.find_elements(self._locator)
+            for el in self._driver._client.find_elements(_Locator(self._selector))
         ]
 
     def first_matching(self) -> Element:
@@ -87,8 +87,19 @@ class Locator:
         """
         matching = self.matching()
         if not matching:
-            raise LocatorNotFound(f"Element with locator = {self._locator!r} not found")
+            raise LocatorNotFound(
+                f"Element with locator = {_Locator(self._selector)!r} not found"
+            )
         return matching[0]
+
+    def exists(self) -> bool:
+        """Check if an element matching this locator exists.
+
+        Returns:
+            ``True`` if an element mathcing this locator exists,
+            ``False`` else
+        """
+        return not not self.matching()
 
     def wait_for(
         self,
@@ -118,5 +129,5 @@ class Locator:
             time.sleep(sleep_step)
             self._driver.refresh_tree()
         raise LocatorNotFound(
-            f"Element with locator = {self._locator!r} not found within timeout {timeout!r}"
+            f"Element with locator = {_Locator(self._selector)!r} not found within timeout {timeout!r}"
         )

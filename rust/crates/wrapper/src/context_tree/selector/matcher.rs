@@ -263,7 +263,7 @@ fn matches_pseudo_class(
 }
 
 fn matches_nth_child(node: &ContextNode, n: i32) -> bool {
-    node.index_in_parent - 1 == n
+    node.index_in_parent + 1 == n
 }
 
 fn matches_nth_last_child(tree: &ContextTree, node: &ContextNode, n: i32) -> bool {
