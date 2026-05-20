@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Selector syntax - jab-rpa</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Selector syntax";
+        var mkdocs_page_input_path = "selectors.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> jab-rpa
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../quickstart/">Quickstart</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Selector syntax</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#quick-examples">Quick examples</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#role-matching">Role matching</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#state-classes">State classes</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#attribute-selectors">Attribute selectors</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#string-attributes">String attributes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#integer-attributes">Integer attributes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#boolean-attributes">Boolean attributes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pseudo-classes">Pseudo-classes</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#combinators">Combinators</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#relative-selectors">Relative selectors</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#alternatives">Alternatives</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#chaining-via-locator">Chaining via .locator()</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/driver/">JabDriver</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/locator/">Locator</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/element/">Element</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/server/">JabRpaServer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/client/">JabRpaClient</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">jab-rpa</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Selector syntax</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/carou-c/jab-rpa/edit/master/docs/selectors.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="selector-syntax">Selector syntax</h1>
+<p>Locators in jab-rpa use a CSS-selector-like syntax to describe elements in the
+Java accessibility tree. The selector is a single string passed to
+<code>JabDriver.locator()</code>.</p>
+<h2 id="quick-examples">Quick examples</h2>
+<pre><code class="language-python"># By role
+driver.locator(&quot;push_button&quot;)
+
+# By role and attribute
+driver.locator(&quot;push_button[name='Clear']&quot;)
+
+# By state class
+driver.locator(&quot;.enabled.focusable&quot;)
+
+# Chaining (descendant combinator)
+driver.locator(&quot;dialog&quot;).locator(&quot;push_button&quot;)
+</code></pre>
+<hr />
+<h2 id="role-matching">Role matching</h2>
+<p>The role is written as the first identifier in the selector. Spaces in the JAB
+role name are replaced with underscores and the comparison is case-insensitive.</p>
+<table>
+<thead>
+<tr>
+<th>JAB role</th>
+<th>Selector</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>push button</code></td>
+<td><code>push_button</code></td>
+</tr>
+<tr>
+<td><code>check box</code></td>
+<td><code>check_box</code></td>
+</tr>
+<tr>
+<td><code>radio button</code></td>
+<td><code>radio_button</code></td>
+</tr>
+<tr>
+<td><code>page tab</code></td>
+<td><code>page_tab</code></td>
+</tr>
+</tbody>
+</table>
+<p>Write <code>*</code> to explicitly match any role (equivalent to omitting the role). A
+selector with no role (or with <code>*</code>) matches elements of any role.</p>
+<h2 id="state-classes">State classes</h2>
+<p>Prefix a state name with <code>.</code> to require that the element has that state.
+Multiple states are AND-ed together.</p>
+<pre><code class="language-python">driver.locator(&quot;.enabled&quot;)           # any enabled element
+driver.locator(&quot;.enabled.focusable&quot;) # enabled AND focusable
+</code></pre>
+<p>States are lowercased and spaces replaced with underscores, matching the same
+transformation applied to roles.</p>
+<h2 id="attribute-selectors">Attribute selectors</h2>
+<h3 id="string-attributes">String attributes</h3>
+<pre><code class="language-python">[ name  =  &quot;value&quot; ]    # exact match
+[ name ~= &quot;word&quot;   ]    # contains word (whitespace-separated)
+[ name ^= &quot;prefix&quot; ]    # starts with
+[ name $= &quot;suffix&quot; ]    # ends with
+[ name *= &quot;substr&quot; ]    # contains substring
+</code></pre>
+<p>Supported string attribute names: <code>name</code>, <code>description</code>, <code>states</code>,
+<code>states_en_us</code>, <code>text</code>, <code>actions</code>.</p>
+<p><strong>Flags</strong> — add before the closing <code>]</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>i</code></td>
+<td>Case-insensitive</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Interpret value as regex</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">driver.locator(&quot;[name='clear' i]&quot;)          # case-insensitive
+driver.locator(&quot;[name='button[0-9]+' r]&quot;)   # regex
+</code></pre>
+<h3 id="integer-attributes">Integer attributes</h3>
+<pre><code class="language-python">[ x == 100 ]   # equal
+[ x != 100 ]   # not equal
+[ x &lt; 100]     # less than
+[ x &lt;= 100]    # less or equal
+[ x &gt; 100]     # greater than
+[ x &gt;= 100]    # greater or equal
+</code></pre>
+<p>Supported integer attribute names: <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>,
+<code>children_count</code>, <code>depth</code>.</p>
+<h3 id="boolean-attributes">Boolean attributes</h3>
+<pre><code class="language-python">[accessible_action]    # element has accessible actions
+[accessible_text]      # element supports AccessibleText
+[accessible_selection] # element supports accessible selection
+</code></pre>
+<h2 id="pseudo-classes">Pseudo-classes</h2>
+<table>
+<thead>
+<tr>
+<th>Selector</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:scope</code></td>
+<td>Matches the reference element (used inside <code>:has()</code>)</td>
+</tr>
+<tr>
+<td><code>:not(</code><em>selector</em><code>)</code></td>
+<td>Inverse — elements not matching the inner selector (relative selectors not allowed)</td>
+</tr>
+<tr>
+<td><code>:has(</code><em>selector</em><code>)</code></td>
+<td>Elements containing a matching descendant — supports relative selectors (<code>&gt;</code>, <code>+</code>, <code>~</code>) and bare <code>:scope</code> for flexible tree traversal</td>
+</tr>
+<tr>
+<td><code>:nth-child(</code><em>n</em><code>)</code></td>
+<td>Match by 1-indexed position in parent</td>
+</tr>
+<tr>
+<td><code>:nth-last-child(</code><em>n</em><code>)</code></td>
+<td>Match by 1-indexed position from end of parent</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">driver.locator(&quot;push_button:not([name='Cancel'])&quot;)
+driver.locator(&quot;dialog:has(push_button[name='Confirm'])&quot;)
+driver.locator(&quot;page_tab:nth-child(1)&quot;)  # first tab
+</code></pre>
+<h2 id="combinators">Combinators</h2>
+<p>Separate compound selectors with a combinator to navigate the tree hierarchy.</p>
+<table>
+<thead>
+<tr>
+<th>Combinator</th>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Child</td>
+<td><code>&gt;</code></td>
+<td>Direct child</td>
+</tr>
+<tr>
+<td>Descendant</td>
+<td>(space)</td>
+<td>Any descendant</td>
+</tr>
+<tr>
+<td>Next sibling</td>
+<td><code>+</code></td>
+<td>Immediately following sibling</td>
+</tr>
+<tr>
+<td>Subsequent sibling</td>
+<td><code>~</code></td>
+<td>Any following sibling</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">driver.locator(&quot;dialog &gt; push_button&quot;)         # direct child
+driver.locator(&quot;dialog push_button&quot;)           # any descendant
+driver.locator(&quot;label + text_field&quot;)           # next sibling
+driver.locator(&quot;label ~ text_field&quot;)           # any subsequent sibling
+</code></pre>
+<h2 id="relative-selectors">Relative selectors</h2>
+<p>A combinator at the start of a selector (before any compound) makes it a
+<strong>relative selector</strong>. Relative selectors are <strong>only</strong> valid inside <code>:has()</code> —
+they are rejected at the top level.</p>
+<pre><code class="language-python">driver.locator(&quot;dialog:has(&gt; push_button)&quot;)        # immediate child
+driver.locator(&quot;dialog:has(+ label)&quot;)              # adjacent sibling
+driver.locator(&quot;dialog:has(~ text_field)&quot;)         # any following sibling
+driver.locator(&quot;dialog:has( push_button)&quot;)         # any descendant (space)
+</code></pre>
+<p>You can also use <code>:scope</code> explicitly inside <code>:has()</code> to refer to the context
+element:</p>
+<pre><code class="language-python">driver.locator(&quot;dialog:has(:scope &gt; push_button)&quot;)  # same as &gt; push_button
+</code></pre>
+<h2 id="alternatives">Alternatives</h2>
+<p>Separate multiple selectors with <code>,</code> — an element matching <strong>any</strong> of the
+alternatives is returned.</p>
+<pre><code class="language-python">driver.locator(&quot;push_button, check_box, radio_button&quot;)
+</code></pre>
+<h2 id="chaining-via-locator">Chaining via <code>.locator()</code></h2>
+<p>Calling <code>.locator()</code> on an existing <code>Locator</code> concatenates the selectors with a
+space (the descendant combinator):</p>
+<pre><code class="language-python"># Chaining (descendant combinator)
+driver.locator(&quot;dialog&quot;).locator(&quot;push_button&quot;)
+
+# Wildcard (matches any role)
+driver.locator(&quot;*&quot;)
+driver.locator(&quot;*[name='Clear']&quot;)
+
+# Relative selectors inside :has()
+driver.locator(&quot;dialog:has(&gt; push_button)&quot;)  # immediate child
+driver.locator(&quot;dialog:has(+ label)&quot;)        # adjacent sibling
+</code></pre>
+<p>This is useful for building queries step by step:</p>
+<pre><code class="language-python">container = driver.locator(&quot;dialog&quot;)
+btn = container.locator(&quot;push_button[name='Confirm']&quot;)
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../quickstart/" class="btn btn-neutral float-left" title="Quickstart"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../api/driver/" class="btn btn-neutral float-right" title="JabDriver">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/carou-c/jab-rpa" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../quickstart/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../api/driver/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

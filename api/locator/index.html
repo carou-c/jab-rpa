@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Locator - jab-rpa</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Locator";
+        var mkdocs_page_input_path = "api/locator.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> jab-rpa
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../quickstart/">Quickstart</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../selectors/">Selector syntax</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../driver/">JabDriver</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Locator</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator">Locator</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.__init__">__init__</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.accessible_click">accessible_click</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.click">click</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.click_and_type">click_and_type</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.do_accessible_action">do_accessible_action</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.exists">exists</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.first_matching">first_matching</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.matching">matching</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.to_dict">to_dict</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.wait_for">wait_for</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.LocatorNotFound">LocatorNotFound</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../element/">Element</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../server/">JabRpaServer</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../client/">JabRpaClient</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">jab-rpa</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">API Reference</li>
+      <li class="breadcrumb-item active">Locator</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/carou-c/jab-rpa/edit/master/docs/api/locator.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="locator">Locator</h1>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<a id="jab_rpa.locator.Locator"></a>
+    <div class="doc doc-contents first">
+
+
+
+        <p>Selector-based query for finding elements in the JAB accessibility tree.</p>
+<p>Uses a CSS-selector-like syntax to describe element attributes — role,
+states, pseudo-classes, and attribute comparisons — all in a single string.</p>
+<p>Usually created via <code>JabDriver.locator()</code>. Call <code>.locator()</code> again
+on the result to extend the query with a descendant combinator (space):</p>
+<pre><code>btn = driver.locator("push_button[name='Clear']").wait_for()
+btn.click()
+
+# Chaining adds a descendant combinator:
+btn = driver.locator("dialog").locator("push_button").wait_for()
+# Equivalent to: driver.locator("dialog push_button")
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.__init__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__init__</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span><span class="n">driver</span><span class="p">:</span> <span class="n">JabDriver</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Wrap a driver and a selector string.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>driver</code></b>
+                  (<code><a class="autorefs autorefs-internal" title="jab_rpa.driver.JabDriver" href="../driver/#jab_rpa.driver.JabDriver">JabDriver</a></code>)
+              –
+              <div class="doc-md-description">
+                <p>The <code>JabDriver</code> instance.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>A CSS-selector-like query string (e.g.
+<code>"push_button[name='Clear']"</code>).</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.accessible_click" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">accessible_click</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">accessible_click</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Click using the JAB accessibility API (not pyautogui).
+This does not move the mouse.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.click" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">click</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click</span><span class="p">(</span><span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Click at the first matching element's center using pyautogui.</p>
+<p>Moves the mouse to the center of the first matching element's bounding box
+and performs a pyautogui click.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>clicks</code></b>
+                  (<code><span title="int">int</span></code>, default:
+                      <code>1</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Number of clicks (default 1).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>interval</code></b>
+                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
+                      <code>0.0</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Seconds between clicks (default 0).</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.click_and_type" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">click_and_type</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click_and_type</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">interval_text</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">interval_clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Click then type text into the first matching element.</p>
+<p>Moves the mouse to the first matching element's center, clicks, then types
+the given text using pyautogui.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>text</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>Text to type after clicking.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>clicks</code></b>
+                  (<code><span title="int">int</span></code>, default:
+                      <code>1</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Number of clicks before typing.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>interval_text</code></b>
+                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
+                      <code>0.0</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Seconds between keystrokes.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>interval_clicks</code></b>
+                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
+                      <code>0.0</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Seconds between clicks.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.do_accessible_action" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">do_accessible_action</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_accessible_action</span><span class="p">(</span><span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Performs an accessible action on the first matching element.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.exists" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">exists</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">exists</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Check if an element matching this locator exists.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="bool">bool</span></code>
+              –
+              <div class="doc-md-description">
+                <p><code>True</code> if an element mathcing this locator exists,</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="bool">bool</span></code>
+              –
+              <div class="doc-md-description">
+                <p><code>False</code> else</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.first_matching" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">first_matching</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">first_matching</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Element</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Find the first element matching this locator.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a></code>
+              –
+              <div class="doc-md-description">
+                <p>The first matching <code>Element</code>.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><a class="autorefs autorefs-internal" title="jab_rpa.locator.LocatorNotFound" href="#jab_rpa.locator.LocatorNotFound">LocatorNotFound</a></code>
+              –
+              <div class="doc-md-description">
+                <p>If no element matches.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.matching" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">matching</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">matching</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Element</span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Find all elements matching this locator.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a>]</code>
+              –
+              <div class="doc-md-description">
+                <p>List of matching <code>Element</code> objects (may be empty).</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.to_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_dict</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">to_dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>All locator criteria as a dictionary.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.wait_for" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">wait_for</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">wait_for</span><span class="p">(</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_WAIT_FOR_TIMEOUT</span><span class="p">,</span>
+    <span class="n">sleep_step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_WAIT_FOR_STEP</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Element</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Poll the accessibility tree until a matching element appears.</p>
+<p>Repeatedly calls <code>matching()</code> and refreshes the tree between
+attempts. Useful for waiting for dialogs or dynamic content.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>timeout</code></b>
+                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
+                      <code><span title="jab_rpa.locator._WAIT_FOR_TIMEOUT">_WAIT_FOR_TIMEOUT</span></code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Maximum seconds to wait.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>sleep_step</code></b>
+                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
+                      <code><span title="jab_rpa.locator._WAIT_FOR_STEP">_WAIT_FOR_STEP</span></code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Seconds between polling attempts.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a></code>
+              –
+              <div class="doc-md-description">
+                <p>The first matching <code>Element</code>.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><a class="autorefs autorefs-internal" title="jab_rpa.locator.LocatorNotFound" href="#jab_rpa.locator.LocatorNotFound">LocatorNotFound</a></code>
+              –
+              <div class="doc-md-description">
+                <p>If no element matches within the timeout.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<a id="jab_rpa.locator.LocatorNotFound"></a>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+
+        <p>Raised when a locator query returns no matching elements.</p>
+
+
+
+
+
+
+
+
+    </div>
+
+
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../driver/" class="btn btn-neutral float-left" title="JabDriver"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../element/" class="btn btn-neutral float-right" title="Element">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/carou-c/jab-rpa" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../driver/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../element/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
