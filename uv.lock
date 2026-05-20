@@ -180,12 +180,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "betterproto2", specifier = ">=0.9.1" },
-    { name = "grpcio", specifier = ">=1.80.0" },
-    { name = "pyautogui", specifier = ">=0.9.54" },
+    { name = "betterproto2", specifier = ">=0.9.1,<0.10" },
+    { name = "grpcio", specifier = ">=1.80.0,<2.0" },
+    { name = "pyautogui", specifier = ">=0.9.54,<0.10" },
     { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=311" },
-    { name = "types-pyautogui", specifier = ">=0.9.3.20260508" },
-    { name = "types-pywin32", specifier = ">=311.0.0.20260508" },
+    { name = "types-pyautogui" },
+    { name = "types-pywin32" },
 ]
 
 [package.metadata.requires-dev]

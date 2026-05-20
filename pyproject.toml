@@ -18,12 +18,12 @@ classifiers = [
 ]
 authors = [{ name = "carou-c", email = "carolcorrea555@gmail.com" }]
 dependencies = [
-    "grpcio>=1.80.0",
-    "pyautogui>=0.9.54",
-    "betterproto2>=0.9.1",
-    "types-pyautogui>=0.9.3.20260508",
+    "grpcio>=1.80.0,<2.0",
+    "pyautogui>=0.9.54,<0.10",
+    "betterproto2>=0.9.1,<0.10",
+    "types-pyautogui",
     "pywin32>=311 ; sys_platform == 'win32'",
-    "types-pywin32>=311.0.0.20260508",
+    "types-pywin32",
 ]
 
 [dependency-groups]
