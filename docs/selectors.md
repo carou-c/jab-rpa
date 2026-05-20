@@ -34,7 +34,8 @@ role name are replaced with underscores and the comparison is case-insensitive.
 | `radio button` | `radio_button` |
 | `page tab`     | `page_tab`     |
 
-A selector with no role matches elements of any role.
+Write `*` to explicitly match any role (equivalent to omitting the role). A
+selector with no role (or with `*`) matches elements of any role.
 
 ## State classes
 
@@ -100,13 +101,13 @@ Supported integer attribute names: `x`, `y`, `width`, `height`,
 
 ## Pseudo-classes
 
-| Selector                 | Description                                          |
-| ------------------------ | ---------------------------------------------------- |
-| `:scope`                 | Matches the reference element (used inside `:has()`) |
-| `:not(`_selector_`)`     | Inverse — elements not matching the inner selector   |
-| `:has(`_selector_`)`     | Elements that contain a matching descendant          |
-| `:nth-child(`_n_`)`      | Match by 1-indexed position in parent                |
-| `:nth-last-child(`_n_`)` | Match by 1-indexed position from end of parent       |
+| Selector                 | Description                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `:scope`                 | Matches the reference element (used inside `:has()`)                                                                                  |
+| `:not(`_selector_`)`     | Inverse — elements not matching the inner selector (relative selectors not allowed)                                                   |
+| `:has(`_selector_`)`     | Elements containing a matching descendant — supports relative selectors (`>`, `+`, `~`) and bare `:scope` for flexible tree traversal |
+| `:nth-child(`_n_`)`      | Match by 1-indexed position in parent                                                                                                 |
+| `:nth-last-child(`_n_`)` | Match by 1-indexed position from end of parent                                                                                        |
 
 ```python
 driver.locator("push_button:not([name='Cancel'])")
@@ -132,6 +133,26 @@ driver.locator("label + text_field")           # next sibling
 driver.locator("label ~ text_field")           # any subsequent sibling
 ```
 
+## Relative selectors
+
+A combinator at the start of a selector (before any compound) makes it a
+**relative selector**. Relative selectors are **only** valid inside `:has()` —
+they are rejected at the top level.
+
+```python
+driver.locator("dialog:has(> push_button)")        # immediate child
+driver.locator("dialog:has(+ label)")              # adjacent sibling
+driver.locator("dialog:has(~ text_field)")         # any following sibling
+driver.locator("dialog:has( push_button)")         # any descendant (space)
+```
+
+You can also use `:scope` explicitly inside `:has()` to refer to the context
+element:
+
+```python
+driver.locator("dialog:has(:scope > push_button)")  # same as > push_button
+```
+
 ## Alternatives
 
 Separate multiple selectors with `,` — an element matching **any** of the
@@ -147,9 +168,16 @@ Calling `.locator()` on an existing `Locator` concatenates the selectors with a
 space (the descendant combinator):
 
 ```python
-# These two are equivalent:
+# Chaining (descendant combinator)
 driver.locator("dialog").locator("push_button")
-driver.locator("dialog push_button")
+
+# Wildcard (matches any role)
+driver.locator("*")
+driver.locator("*[name='Clear']")
+
+# Relative selectors inside :has()
+driver.locator("dialog:has(> push_button)")  # immediate child
+driver.locator("dialog:has(+ label)")        # adjacent sibling
 ```
 
 This is useful for building queries step by step:
