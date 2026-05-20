@@ -15,6 +15,12 @@ enum CompoundItem {
     Pseudo(PseudoClassSelector),
 }
 
+#[derive(Clone)]
+enum CompoundRole {
+    Any,
+    Role(String),
+}
+
 enum PseudoArg {
     Int(i32),
     Selector(Selector),
@@ -236,34 +242,39 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             pseudo_class_selector.map(CompoundItem::Pseudo),
         ));
 
-        let compound_selector = choice((
-            ident_val
-                .or_not()
-                .then(compound_item.repeated().collect::<Vec<_>>())
-                .try_map(|(role, items): (Option<String>, Vec<CompoundItem>), span| {
-                    if role.is_none() && items.is_empty() {
-                        Err(Simple::new(None, span))
-                    } else {
-                        let mut states = Vec::new();
-                        let mut attrs = Vec::new();
-                        let mut pseudo_classes = Vec::new();
-                        for item in items {
-                            match item {
-                                CompoundItem::State(s) => states.push(s),
-                                CompoundItem::Attr(a) => attrs.push(a),
-                                CompoundItem::Pseudo(p) => pseudo_classes.push(p),
-                            }
-                        }
-                        Ok(CompoundSelector::Compound {
-                            role,
-                            states,
-                            attrs,
-                            pseudo_classes,
-                        })
-                    }
-                }),
-            just(Token::Star).map(|_| CompoundSelector::Any),
+        let role = choice((
+            just(Token::Star).to(CompoundRole::Any),
+            ident_val.map(CompoundRole::Role),
         ));
+
+        let compound_selector = role
+            .or_not()
+            .then(compound_item.clone().repeated().collect::<Vec<_>>())
+            .try_map(|(role, items), span| {
+                if role.is_none() && items.is_empty() {
+                    Err(Simple::new(None, span))
+                } else {
+                    let mut states = Vec::new();
+                    let mut attrs = Vec::new();
+                    let mut pseudo_classes = Vec::new();
+                    for item in items {
+                        match item {
+                            CompoundItem::State(s) => states.push(s),
+                            CompoundItem::Attr(a) => attrs.push(a),
+                            CompoundItem::Pseudo(p) => pseudo_classes.push(p),
+                        }
+                    }
+                    Ok(CompoundSelector {
+                        role: match role {
+                            Some(CompoundRole::Role(name)) => Some(name),
+                            _ => None,
+                        },
+                        states,
+                        attrs,
+                        pseudo_classes,
+                    })
+                }
+            });
 
         let explicit_combinator = choice((
             just(Token::Gt).to(Combinator::Child),

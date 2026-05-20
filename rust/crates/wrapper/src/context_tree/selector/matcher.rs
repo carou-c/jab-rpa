@@ -50,7 +50,7 @@ fn matches_complex(
                 return true;
             };
 
-            scope_selector = CompoundSelector::Compound {
+            scope_selector = CompoundSelector {
                 role: None,
                 states: Vec::new(),
                 attrs: Vec::new(),
@@ -151,15 +151,12 @@ fn matches_compound(
     relative_to: Option<&ContextNode>,
     tree: &ContextTree,
 ) -> bool {
-    let CompoundSelector::Compound {
+    let CompoundSelector {
         role,
         states,
         attrs,
         pseudo_classes,
-    } = compound
-    else {
-        return true;
-    };
+    } = compound;
 
     if let Some(role) = role
         && &node.role != role

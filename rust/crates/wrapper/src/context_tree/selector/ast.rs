@@ -18,24 +18,17 @@ impl ComplexSelector {
         if self.head.is_some() {
             return true;
         }
-        if let CompoundSelector::Compound {
-            role: _,
-            states: _,
-            attrs: _,
-            pseudo_classes,
-        } = &self.last
-            && pseudo_classes.contains(&PseudoClassSelector::Scope)
+        if self
+            .last
+            .pseudo_classes
+            .contains(&PseudoClassSelector::Scope)
         {
             return true;
         }
-        self.body.iter().any(|(compound, _)| match compound {
-            CompoundSelector::Compound {
-                role: _,
-                states: _,
-                attrs: _,
-                pseudo_classes,
-            } => pseudo_classes.contains(&PseudoClassSelector::Scope),
-            _ => false,
+        self.body.iter().any(|(compound, _)| {
+            compound
+                .pseudo_classes
+                .contains(&PseudoClassSelector::Scope)
         })
     }
 }
@@ -49,14 +42,11 @@ pub enum Combinator {
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]
-pub enum CompoundSelector {
-    Compound {
-        role: Option<String>,
-        states: Vec<String>,
-        attrs: Vec<AttrSelector>,
-        pseudo_classes: Vec<PseudoClassSelector>,
-    },
-    Any,
+pub struct CompoundSelector {
+    pub role: Option<String>,
+    pub states: Vec<String>,
+    pub attrs: Vec<AttrSelector>,
+    pub pseudo_classes: Vec<PseudoClassSelector>,
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]

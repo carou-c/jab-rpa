@@ -46,39 +46,36 @@ impl fmt::Display for Combinator {
 
 impl fmt::Display for CompoundSelector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Compound {
-                role,
-                states,
-                attrs,
-                pseudo_classes,
-            } => {
-                let role = match role.as_ref() {
-                    Some(r) => r,
-                    None => "",
-                };
+        let role = match self.role.as_ref() {
+            Some(r) => r,
+            None => "",
+        };
 
-                let states = if !states.is_empty() {
-                    &format!(".{}", states.join("."))
-                } else {
-                    ""
-                };
+        let states = if !self.states.is_empty() {
+            &format!(".{}", self.states.join("."))
+        } else {
+            ""
+        };
 
-                let attrs = attrs
-                    .iter()
-                    .map(|attr| format!("[{}]", attr))
-                    .collect::<Vec<_>>()
-                    .join("");
+        let attrs = self
+            .attrs
+            .iter()
+            .map(|attr| format!("[{}]", attr))
+            .collect::<Vec<_>>()
+            .join("");
 
-                let pseudo_classes = pseudo_classes
-                    .iter()
-                    .map(|pseudo_class| format!("{}", pseudo_class))
-                    .collect::<Vec<_>>()
-                    .join("");
+        let pseudo_classes = self
+            .pseudo_classes
+            .iter()
+            .map(|pseudo_class| format!("{}", pseudo_class))
+            .collect::<Vec<_>>()
+            .join("");
 
-                write!(f, "{}{}{}{}", role, states, attrs, pseudo_classes)
-            }
-            Self::Any => write!(f, "*"),
+        let display = format!("{}{}{}{}", role, states, attrs, pseudo_classes);
+        if display.is_empty() {
+            write!(f, "*")
+        } else {
+            write!(f, "{}", display)
         }
     }
 }
