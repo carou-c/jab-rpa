@@ -4,6 +4,7 @@ import time
 from typing import Any, TYPE_CHECKING
 
 from .element import Element
+from .types import Action
 from .proto.jab import (
     Locator as _Locator,
 )
@@ -131,3 +132,44 @@ class Locator:
         raise LocatorNotFound(
             f"Element with locator = {_Locator(self._selector)!r} not found within timeout {timeout!r}"
         )
+
+    def do_accessible_action(self, action: Action) -> None:
+        """Performs an accessible action on the first matching element."""
+        self.first_matching().do_accessible_action(action)
+
+    def accessible_click(self) -> None:
+        """Click using the JAB accessibility API (not pyautogui).
+        This does not move the mouse."""
+        self.first_matching().accessible_click()
+
+    def click(self, clicks: int = 1, interval: int | float = 0.0) -> None:
+        """Click at the first matching element's center using pyautogui.
+
+        Moves the mouse to the center of the first matching element's bounding box
+        and performs a pyautogui click.
+
+        Args:
+            clicks: Number of clicks (default 1).
+            interval: Seconds between clicks (default 0).
+        """
+        self.first_matching().click(clicks, interval)
+
+    def click_and_type(
+        self,
+        text: str,
+        clicks: int = 1,
+        interval_text: int | float = 0.0,
+        interval_clicks: int | float = 0.0,
+    ) -> None:
+        """Click then type text into the first matching element.
+
+        Moves the mouse to the first matching element's center, clicks, then types
+        the given text using pyautogui.
+
+        Args:
+            text: Text to type after clicking.
+            clicks: Number of clicks before typing.
+            interval_text: Seconds between keystrokes.
+            interval_clicks: Seconds between clicks.
+        """
+        self.first_matching().click_and_type(text, clicks, interval_text, interval_clicks)

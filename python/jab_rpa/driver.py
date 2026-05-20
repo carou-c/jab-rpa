@@ -107,6 +107,7 @@ class JabDriver:
 
         SetForegroundWindow(window_info.hwnd)
         ShowWindow(window_info.hwnd, SW_SHOWMAXIMIZED)
+        self.window_info: WindowInfo = window_info
         self._client.select_window(window_info)
 
     def __enter__(self) -> Self:
@@ -129,12 +130,13 @@ class JabDriver:
         """
         return self._client.list_java_windows()
 
-    def select_window(self, window_info: WindowInfo) -> None:
+    def switch_window(self, window_info: WindowInfo) -> None:
         """Set the active window to build the accessibility tree from.
 
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
         """
+        self.window_info: WindowInfo = window_info
         return self._client.select_window(window_info)
 
     def refresh_tree(self) -> None:
