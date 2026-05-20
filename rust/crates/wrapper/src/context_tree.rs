@@ -1,5 +1,8 @@
+mod matcher;
+mod node;
 mod tree;
-mod selector;
 
-pub use tree::{ContextNode, ContextTree};
-pub use selector::{GetNodesError, Locator};
+pub use self::{node::ContextNode, tree::ContextTree};
+
+pub(crate) type NodeHandle = u64;
+pub(crate) const ROOT_HANDLE: NodeHandle = 0;

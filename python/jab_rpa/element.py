@@ -153,7 +153,7 @@ class Element:
     def accessible_click(self) -> None:
         """Click using the JAB accessibility API (not pyautogui).
         This does not move the mouse."""
-        self._driver._client.click_element(self._element)
+        self._driver._client.accessible_click(self._element)
 
     def click(self, clicks: int = 1, interval: int | float = 0.0) -> None:
         """Click at the element's center using pyautogui.

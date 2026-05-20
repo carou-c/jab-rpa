@@ -15,16 +15,14 @@ pub enum LexingError {
 }
 
 #[derive(Debug, Error)]
-pub enum GetNodesError {
+pub enum SelectorParseError {
     #[error("Lexing error: {0}")]
     Lexing(#[from] LexingError),
     #[error("Parse error: {0}")]
     Parse(String),
-    // #[error("No relative context: {0}")]
-    // NoRelativeContext(String),
 }
 
-impl From<Vec<Simple<'_, Token>>> for GetNodesError {
+impl From<Vec<Simple<'_, Token>>> for SelectorParseError {
     fn from(simple: Vec<Simple<'_, Token>>) -> Self {
         Self::Parse(
             simple

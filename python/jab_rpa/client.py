@@ -64,6 +64,18 @@ class JabRpaClient:
         res: jab.RepeatedElement = self.__stub.find_elements(locator)
         return res.elements
 
+    def find_element(self, locator: jab.Locator) -> jab.Element:
+        """Find one element matching a structured locator.
+
+        Args:
+            locator: A ``jab.Locator`` protobuf message.
+
+        Returns:
+            A matching ``jab.Element`` protobuf message.
+        """
+        res: jab.Element = self.__stub.find_element(locator)
+        return res
+
     def get_element_from_handle(self, handle: int) -> jab.Element | None:
         """Resolve a numeric handle to a full element description.
 
@@ -81,13 +93,13 @@ class JabRpaClient:
             res = None
         return res
 
-    def click_element(self, element: jab.Element) -> None:
+    def accessible_click(self, element: jab.Element) -> None:
         """Perform an accessible action click via the JAB API.
 
         Args:
             element: The ``jab.Element`` to click.
         """
-        self.__stub.click_element(element)
+        self.__stub.accessible_click(element)
 
     def get_version_info(self) -> jab.VersionInfo | None:
         """Retrieve JAB bridge and server version info.

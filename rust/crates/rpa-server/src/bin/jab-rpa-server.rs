@@ -1,6 +1,6 @@
 use jab_rpa_server::JabService;
-use jab_wrapper::wrapper::JabWrapper;
 use jab_rpa_server::proto::jab_service_server::JabServiceServer;
+use jab_wrapper::wrapper::JabWrapper;
 use tonic::transport::Server;
 
 #[tokio::main]

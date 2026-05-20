@@ -5,8 +5,8 @@ pub mod proto {
 use std::sync::{Mutex, MutexGuard};
 use tonic::{Request, Response, Status};
 
-use jab_wrapper::context_tree::Locator;
 use jab_wrapper::context_tree::{ContextNode, ContextTree};
+use jab_wrapper::selector::{Locator, Selector};
 use jab_wrapper::types::{AccessBridgeVersionInfo, WindowInfo};
 use jab_wrapper::utils::utf16_to_string;
 use jab_wrapper::wrapper::JabWrapper;
@@ -170,14 +170,48 @@ impl JabServiceTrait for JabService {
             None => return no_window_selected!(),
         };
 
-        let nodes = match tree.get_nodes(&req.clone().into()) {
-            Ok(nodes) => nodes,
+        let locator: Locator = req.into();
+        let selector: Selector = match locator.parse() {
+            Ok(selector) => selector,
             Err(e) => return Err(Status::invalid_argument(e.to_string())),
         };
+
+        let nodes = tree.get_nodes(&selector);
 
         let elements = nodes.into_iter().map(Into::into).collect();
 
         Ok(Response::new(proto::RepeatedElement { elements }))
+    }
+
+    async fn find_element(
+        &self,
+        request: Request<proto::Locator>,
+    ) -> Result<Response<proto::Element>, Status> {
+        let req = request.into_inner();
+
+        let tree_lock = self.get_tree_lock()?;
+        let tree = match tree_lock.as_ref() {
+            Some(tree) => tree,
+            None => return no_window_selected!(),
+        };
+
+        let locator: Locator = req.into();
+        let selector: Selector = match locator.parse() {
+            Ok(selector) => selector,
+            Err(e) => return Err(Status::invalid_argument(e.to_string())),
+        };
+
+        let node = match tree.get_node(&selector) {
+            Some(node) => node,
+            None => {
+                return Err(Status::not_found(format!(
+                    "No element matches selector {}",
+                    selector
+                )));
+            }
+        };
+
+        Ok(Response::new(node.into()))
     }
 
     async fn get_element_from_handle(
@@ -200,7 +234,7 @@ impl JabServiceTrait for JabService {
         Ok(Response::new(node.into()))
     }
 
-    async fn click_element(
+    async fn accessible_click(
         &self,
         request: Request<proto::Element>,
     ) -> Result<Response<proto::Empty>, Status> {
@@ -217,7 +251,7 @@ impl JabServiceTrait for JabService {
             None => return no_element_with_handle!(req.handle),
         };
 
-        match node.obj.click_element() {
+        match node.obj.accessible_click() {
             Ok(()) => Ok(Response::new(proto::Empty {})),
             Err(e) => Err(Status::unknown(e)),
         }

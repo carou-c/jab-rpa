@@ -8,8 +8,9 @@ service JabService {
   rpc RefreshTree (Empty) returns (Empty);
   rpc GetVersionInfo (Empty) returns (VersionInfo);
   rpc FindElements (Locator) returns (RepeatedElement);
+  rpc FindElement (Locator) returns (Element);
   rpc GetElementFromHandle (ElementHandle) returns (Element);
-  rpc ClickElement (Element) returns (Empty);
+  rpc AccessibleClick (Element) returns (Empty);
   rpc GetElementText (Element) returns (Text);
   rpc GetElementActions (Element) returns (Actions);
   rpc DoActionOnElement (DoActionRequest) returns (Empty);

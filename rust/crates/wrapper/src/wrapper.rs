@@ -10,27 +10,12 @@ use windows::{
 
 use crate::{
     runtime::JabRuntime,
-    types::{AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, WindowInfo},
+    types::{
+        AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, JavaObject, VmId,
+        WindowInfo,
+    },
     utils::utf16_to_string,
 };
-
-type VmId = std::os::raw::c_long;
-type JObject = jab_sys::Java_Object;
-
-#[derive(Debug)]
-pub struct JavaObject {
-    vm_id: VmId,
-    jobject: JObject,
-    runtime: Arc<JabRuntime>,
-}
-
-impl Drop for JavaObject {
-    fn drop(&mut self) {
-        unsafe {
-            jab_sys::ReleaseJavaObject(self.vm_id, self.jobject);
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct JabWrapper {
@@ -137,8 +122,7 @@ impl JavaObject {
     pub fn get_text(&self) -> Result<String, String> {
         unsafe {
             let mut text_info: jab_sys::AccessibleTextInfo = std::mem::zeroed();
-            if jab_sys::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0) == 0
-            {
+            if jab_sys::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0) == 0 {
                 return Err("GetAccessibleTextInfo failed".to_string());
             }
 
@@ -214,8 +198,8 @@ impl JavaObject {
                         return Ok(());
                     } else {
                         return Err(format!(
-                            "Failed to perform click action, failure index: {}",
-                            failure
+                            "Failed to perform {} action, failure index: {}",
+                            action, failure
                         ));
                     }
                 }
@@ -225,7 +209,7 @@ impl JavaObject {
         Err(format!("No {:?} action found for element", action))
     }
 
-    pub fn click_element(&self) -> Result<(), String> {
+    pub fn accessible_click(&self) -> Result<(), String> {
         unsafe {
             let mut actions: jab_sys::AccessibleActions = std::mem::zeroed();
             if jab_sys::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {

@@ -1,5 +1,5 @@
-use super::ast::*;
-use crate::context_tree::{ContextNode, ContextTree};
+use super::{ContextNode, ContextTree};
+use crate::selector::ast::*;
 
 pub fn matches_selector(
     node: &ContextNode,
