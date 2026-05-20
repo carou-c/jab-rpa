@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
+use std::thread;
 
 use windows::{
     Win32::{
@@ -9,13 +10,29 @@ use windows::{
 };
 
 use crate::{
+    context_tree::ContextTree,
     runtime::JabRuntime,
     types::{
-        AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, JavaObject, VmId,
+        AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, JObject, VmId,
         WindowInfo,
     },
     utils::utf16_to_string,
 };
+
+#[derive(Debug)]
+pub struct JavaObject {
+    pub(crate) vm_id: VmId,
+    pub(crate) jobject: JObject,
+    pub(crate) runtime: Arc<JabRuntime>,
+}
+
+impl Drop for JavaObject {
+    fn drop(&mut self) {
+        unsafe {
+            jab_sys::ReleaseJavaObject(self.vm_id, self.jobject);
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct JabWrapper {
@@ -28,6 +45,33 @@ impl JabWrapper {
         Self {
             runtime: Arc::new(JabRuntime::new()),
         }
+    }
+
+    pub fn spawn_tree_updater(
+        &self,
+        tree: &Arc<RwLock<Option<ContextTree>>>,
+    ) -> thread::JoinHandle<()> {
+        let rx = self.runtime.cb_rx.clone();
+        let weak = Arc::downgrade(tree);
+        thread::spawn(move || {
+            while let Ok(event) = rx.recv() {
+                let Some(tree) = weak.upgrade() else {
+                    return;
+                };
+                let mut events = vec![event];
+                while let Ok(next) = rx.try_recv() {
+                    events.push(next);
+                }
+                let Ok(mut tree_writer) = tree.write() else {
+                    continue;
+                };
+                if let Some(t) = tree_writer.as_mut() {
+                    for e in events {
+                        t.apply_event(e);
+                    }
+                }
+            }
+        })
     }
 
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {

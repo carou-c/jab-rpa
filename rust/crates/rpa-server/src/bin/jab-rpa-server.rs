@@ -8,8 +8,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wrapper = JabWrapper::new();
 
     // Wait for JAB init
-    std::thread::sleep(std::time::Duration::from_secs(2));
-
     let service = JabService::new(wrapper);
 
     let addr = "127.0.0.1:50051".parse()?;

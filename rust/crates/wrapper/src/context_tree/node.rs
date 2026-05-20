@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use super::NodeHandle;
-use crate::types::JavaObject;
 use crate::utils::utf16_to_string;
+use crate::wrapper::JavaObject;
 
 #[derive(Debug)]
 pub struct ContextNode {
@@ -25,11 +25,12 @@ pub struct ContextNode {
     pub index_in_parent: i32,
     pub parent: Option<NodeHandle>,
     pub depth: i32,
-    text_cache: OnceLock<String>,
-    actions_cache: OnceLock<Vec<String>>,
-    action_names_cache: OnceLock<String>,
-    states_cache: OnceLock<String>,
-    states_en_us_cache: OnceLock<String>,
+    pub(super) text_cache: OnceLock<String>,
+    pub(super) actions_cache: OnceLock<Vec<String>>,
+    pub(super) action_names_cache: OnceLock<String>,
+    pub(super) states_cache: OnceLock<String>,
+    pub(super) states_en_us_cache: OnceLock<String>,
+    pub(super) subtree: Vec<NodeHandle>,
 }
 
 impl ContextNode {
@@ -64,6 +65,7 @@ impl ContextNode {
             action_names_cache: OnceLock::new(),
             states_cache: OnceLock::new(),
             states_en_us_cache: OnceLock::new(),
+            subtree: Vec::new(),
         };
 
         if let Some(info) = node.obj.get_obj_info() {

@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-use crate::runtime::JabRuntime;
-
 pub use jab_sys::{
     AccessBridgeVersionInfo, AccessibleActionInfo, AccessibleActions, AccessibleContextInfo,
 };
@@ -28,18 +24,3 @@ impl WindowInfo {
 
 pub(crate) type VmId = std::os::raw::c_long;
 pub(crate) type JObject = jab_sys::Java_Object;
-
-#[derive(Debug)]
-pub struct JavaObject {
-    pub(crate) vm_id: VmId,
-    pub(crate) jobject: JObject,
-    pub(crate) runtime: Arc<JabRuntime>,
-}
-
-impl Drop for JavaObject {
-    fn drop(&mut self) {
-        unsafe {
-            jab_sys::ReleaseJavaObject(self.vm_id, self.jobject);
-        }
-    }
-}

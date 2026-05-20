@@ -276,11 +276,25 @@ fn matches_pseudo_class(
 
             node.handle == relative_to.handle
         }
-        PseudoClassSelector::Has(inner) => tree
-            .nodes
-            .values()
-            .filter(|candidate| candidate.handle > node.handle)
-            .any(|candidate| matches_selector(candidate, inner, Some(node), tree)),
+        PseudoClassSelector::Has(inner) => {
+            if inner.alternatives.iter().any(|complex| {
+                (complex.head == Some(Combinator::NextSibling))
+                    || (complex.head == Some(Combinator::SubsequentSibling))
+            }) {
+                node.parent
+                    .and_then(|h| tree.nodes.get(&h))
+                    .unwrap_or(node)
+                    .subtree
+                    .iter()
+                    .filter_map(|handle| tree.nodes.get(handle))
+                    .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
+            } else {
+                node.subtree
+                    .iter()
+                    .filter_map(|handle| tree.nodes.get(handle))
+                    .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
+            }
+        }
         PseudoClassSelector::Not(inner) => !matches_selector(node, inner, relative_to, tree),
         PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n),
         PseudoClassSelector::NthLastChild(n) => matches_nth_last_child(tree, node, *n),

@@ -2,7 +2,8 @@ pub mod proto {
     tonic::include_proto!("jab");
 }
 
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::thread;
 use tonic::{Request, Response, Status};
 
 use jab_wrapper::context_tree::{ContextNode, ContextTree};
@@ -66,22 +67,36 @@ impl From<proto::Locator> for Locator {
 
 pub struct JabService {
     wrapper: JabWrapper,
-    ctx_tree: Mutex<Option<ContextTree>>,
+    ctx_tree: Arc<RwLock<Option<ContextTree>>>,
+    _updater: thread::JoinHandle<()>,
 }
 
 impl JabService {
     pub fn new(wrapper: JabWrapper) -> Self {
+        let ctx_tree = Arc::new(RwLock::new(None));
+        let updater = wrapper.spawn_tree_updater(&ctx_tree);
         Self {
             wrapper,
-            ctx_tree: Mutex::new(None),
+            ctx_tree,
+            _updater: updater,
         }
     }
 }
 
 impl JabService {
     #[inline]
-    fn get_tree_lock(&self) -> Result<MutexGuard<'_, Option<ContextTree>>, Status> {
-        self.ctx_tree.lock().map_err(|e| {
+    fn read_tree(&self) -> Result<RwLockReadGuard<'_, Option<ContextTree>>, Status> {
+        self.ctx_tree.read().map_err(|e| {
+            Status::internal(format!(
+                "The service's context tree mutex was poisoned: {}",
+                e
+            ))
+        })
+    }
+
+    #[inline]
+    fn write_tree(&self) -> Result<RwLockWriteGuard<'_, Option<ContextTree>>, Status> {
+        self.ctx_tree.write().map_err(|e| {
             Status::internal(format!(
                 "The service's context tree mutex was poisoned: {}",
                 e
@@ -113,8 +128,14 @@ impl JabServiceTrait for JabService {
 
         match result {
             Ok(root) => {
+                // Clean up possible old tree
+                let mut tree_lock = self.write_tree()?;
+                if let Some(tree) = tree_lock.take() {
+                    drop(tree)
+                };
+
+                // Build tree
                 let tree = ContextTree::from_root(root, None);
-                let mut tree_lock = self.get_tree_lock()?;
                 *tree_lock = Some(tree);
 
                 Ok(Response::new(proto::Empty {}))
@@ -127,7 +148,7 @@ impl JabServiceTrait for JabService {
         &self,
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::Empty>, Status> {
-        let mut tree_lock = self.get_tree_lock()?;
+        let mut tree_lock = self.write_tree()?;
         let root_obj = match tree_lock.take() {
             Some(tree) => tree.into_root(),
             None => return no_window_selected!(),
@@ -143,7 +164,7 @@ impl JabServiceTrait for JabService {
         &self,
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::VersionInfo>, Status> {
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
@@ -164,7 +185,7 @@ impl JabServiceTrait for JabService {
     ) -> Result<Response<proto::RepeatedElement>, Status> {
         let req = request.into_inner();
 
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
             None => return no_window_selected!(),
@@ -189,7 +210,7 @@ impl JabServiceTrait for JabService {
     ) -> Result<Response<proto::Element>, Status> {
         let req = request.into_inner();
 
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
             None => return no_window_selected!(),
@@ -220,7 +241,7 @@ impl JabServiceTrait for JabService {
     ) -> Result<Response<proto::Element>, Status> {
         let req = request.into_inner();
 
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
             None => return no_window_selected!(),
@@ -239,7 +260,7 @@ impl JabServiceTrait for JabService {
         request: Request<proto::Element>,
     ) -> Result<Response<proto::Empty>, Status> {
         let req = request.into_inner();
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
@@ -262,7 +283,7 @@ impl JabServiceTrait for JabService {
         request: Request<proto::Element>,
     ) -> Result<Response<proto::Text>, Status> {
         let req = request.into_inner();
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
@@ -284,7 +305,7 @@ impl JabServiceTrait for JabService {
         request: Request<proto::Element>,
     ) -> Result<Response<proto::Actions>, Status> {
         let req = request.into_inner();
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
@@ -313,7 +334,7 @@ impl JabServiceTrait for JabService {
             None => return Err(Status::invalid_argument("Missing action")),
         };
 
-        let tree_lock = self.get_tree_lock()?;
+        let tree_lock = self.read_tree()?;
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,

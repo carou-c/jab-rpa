@@ -1,6 +1,7 @@
 use std::sync::mpsc;
 use std::thread;
 
+use crossbeam::channel;
 use windows::Win32::Foundation::{LPARAM, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{PostThreadMessageW, WM_QUIT};
 use windows::Win32::{
@@ -9,6 +10,8 @@ use windows::Win32::{
         DispatchMessageW, GetMessageW, PM_NOREMOVE, PeekMessageW, TranslateMessage,
     },
 };
+
+use crate::callbacks::{CallbackChangeEvent, shutdown_event_channel, subscribe_events};
 
 fn run_message_pump() {
     unsafe {
@@ -32,6 +35,7 @@ fn run_message_pump() {
 pub(crate) struct JabRuntime {
     message_pump_handle: Option<thread::JoinHandle<()>>,
     message_pump_thread_id: u32,
+    pub(crate) cb_rx: channel::Receiver<CallbackChangeEvent>,
 }
 
 impl JabRuntime {
@@ -39,6 +43,7 @@ impl JabRuntime {
         // Channel to synchronize initialization
         let (init_tx, init_rx) = mpsc::channel();
         let (thread_id_tx, thread_id_rx) = mpsc::channel();
+        let (cb_channel_tx, cb_channel_rx) = mpsc::channel();
 
         // Start Windows message pump in dedicated thread (same thread will call initializeAccessBridge)
         let pump_handle = thread::spawn(move || {
@@ -56,25 +61,22 @@ impl JabRuntime {
             let _ = init_tx.send(success);
 
             if success {
+                let rx = unsafe { subscribe_events() };
+                let _ = cb_channel_tx.send(rx);
+
                 // Run message pump loop
                 run_message_pump();
             }
 
+            shutdown_event_channel();
+
             // Shutdown JAB
-            unsafe {
-                jab_sys::shutdownAccessBridge();
+            if success {
+                unsafe {
+                    jab_sys::shutdownAccessBridge();
+                }
             }
         });
-
-        let thread_id = match thread_id_rx.recv() {
-            Ok(thread_id) => thread_id,
-            Err(_) => panic!("Message pump thread crashed during initialization"),
-        };
-
-        let new = Self {
-            message_pump_handle: Some(pump_handle),
-            message_pump_thread_id: thread_id,
-        };
 
         // Wait for initialization to complete
         match init_rx.recv() {
@@ -83,7 +85,20 @@ impl JabRuntime {
             Err(_) => panic!("Message pump thread crashed during initialization"),
         }
 
-        new
+        let thread_id = match thread_id_rx.recv() {
+            Ok(thread_id) => thread_id,
+            Err(_) => panic!("Message pump thread crashed during initialization"),
+        };
+        let cb_rx = match cb_channel_rx.recv() {
+            Ok(cb_rx) => cb_rx,
+            Err(_) => panic!("Message pump thread crashed during initialization"),
+        };
+
+        Self {
+            message_pump_handle: Some(pump_handle),
+            message_pump_thread_id: thread_id,
+            cb_rx,
+        }
     }
 }
 
