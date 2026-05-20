@@ -153,8 +153,6 @@ impl ContextTree {
 
                 node.states = new_state.clone();
                 node.states_cache = OnceLock::new();
-                node.states_en_us = new_state;
-                node.states_en_us_cache = OnceLock::new();
                 node.actions_cache = OnceLock::new();
                 node.action_names_cache = OnceLock::new();
             }

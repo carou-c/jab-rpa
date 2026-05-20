@@ -60,6 +60,7 @@ class JabRpaServer:
             stderr=subprocess.PIPE,
             text=True,
         )
+        self.__server_proc = server_proc
 
         q: queue.Queue[str] = queue.Queue()
 
@@ -96,8 +97,6 @@ class JabRpaServer:
                 f"Timeout ({self.__server_timeout} seconds) passed while waiting"
                 " for JAB gRPC server to start"
             )
-
-        self.__server_proc = server_proc
 
     def __enter__(self) -> Self:
         self.start()
