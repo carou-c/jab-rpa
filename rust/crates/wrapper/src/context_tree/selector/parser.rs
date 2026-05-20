@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use chumsky::extra;
 use chumsky::prelude::*;
 use regex::Regex;
@@ -19,7 +21,7 @@ enum PseudoArg {
 }
 
 pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<'src>> {
-    recursive(|selector| {
+    let selector = recursive(|selector| {
         let ws0 = any()
             .filter(|t: &Token| matches!(t, Token::Whitespace))
             .repeated()
@@ -194,7 +196,13 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                         _ => Err(Simple::new(None, span)),
                     },
                     "has" => match arg {
-                        Some(PseudoArg::Selector(s)) => Ok(PseudoClassSelector::Has(Box::new(s))),
+                        Some(PseudoArg::Selector(s)) => {
+                            if s.alternatives.iter().all(ComplexSelector::is_relative) {
+                                Ok(PseudoClassSelector::Has(Box::new(s)))
+                            } else {
+                                Err(Simple::new(None, span))
+                            }
+                        }
                         _ => Err(Simple::new(None, span)),
                     },
                     "not" => match arg {
@@ -221,27 +229,34 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             pseudo_class_selector.map(CompoundItem::Pseudo),
         ));
 
-        let compound_selector = ident_val
-            .or_not()
-            .then(compound_item.repeated().collect::<Vec<_>>())
-            .map(|(role, items): (Option<String>, Vec<CompoundItem>)| {
-                let mut states = Vec::new();
-                let mut attrs = Vec::new();
-                let mut pseudo_classes = Vec::new();
-                for item in items {
-                    match item {
-                        CompoundItem::State(s) => states.push(s),
-                        CompoundItem::Attr(a) => attrs.push(a),
-                        CompoundItem::Pseudo(p) => pseudo_classes.push(p),
+        let compound_selector = choice((
+            ident_val
+                .or_not()
+                .then(compound_item.repeated().collect::<Vec<_>>())
+                .try_map(|(role, items): (Option<String>, Vec<CompoundItem>), span| {
+                    if role.is_none() && items.is_empty() {
+                        Err(Simple::new(None, span))
+                    } else {
+                        let mut states = Vec::new();
+                        let mut attrs = Vec::new();
+                        let mut pseudo_classes = Vec::new();
+                        for item in items {
+                            match item {
+                                CompoundItem::State(s) => states.push(s),
+                                CompoundItem::Attr(a) => attrs.push(a),
+                                CompoundItem::Pseudo(p) => pseudo_classes.push(p),
+                            }
+                        }
+                        Ok(CompoundSelector::Compound {
+                            role,
+                            states,
+                            attrs,
+                            pseudo_classes,
+                        })
                     }
-                }
-                CompoundSelector {
-                    role,
-                    states,
-                    attrs,
-                    pseudo_classes,
-                }
-            });
+                }),
+            just(Token::Star).map(|_| CompoundSelector::Any),
+        ));
 
         let explicit_combinator = choice((
             just(Token::Gt).to(Combinator::Child),
@@ -254,8 +269,10 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             .then_ignore(ws0)
             .or(ws1.to(Combinator::Descendant));
 
-        let complex_selector = compound_selector
+        let complex_selector = combinator
             .clone()
+            .or_not()
+            .then(compound_selector.clone())
             .then(
                 combinator
                     .then(compound_selector.clone())
@@ -263,16 +280,22 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                     .collect::<Vec<_>>(),
             )
             .map(
-                |(first, tail): (CompoundSelector, Vec<(Combinator, CompoundSelector)>)| {
+                |((head, first), tail): (
+                    (Option<Combinator>, CompoundSelector),
+                    Vec<(Combinator, CompoundSelector)>,
+                )| {
                     let mut body = Vec::with_capacity(tail.len());
                     let mut current = first;
 
-                    for (combinator, next) in tail {
+                    for (combinator, next) in tail.into_iter() {
                         body.push((current, combinator));
                         current = next;
                     }
 
+                    body.reverse();
+
                     ComplexSelector {
+                        head,
                         body,
                         last: current,
                     }
@@ -283,6 +306,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             .separated_by(ws0.ignore_then(just(Token::Comma)).then_ignore(ws0))
             .collect::<Vec<_>>()
             .map(|alternatives| Selector { alternatives })
-            .then_ignore(end())
-    })
+    });
+
+    selector.then_ignore(end())
 }

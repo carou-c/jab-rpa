@@ -7,14 +7,21 @@ pub fn matches_selector(
     relative_to: Option<&ContextNode>,
     tree: &ContextTree,
 ) -> bool {
-    selector
-        .alternatives
-        .iter()
-        .any(|complex| matches_complex(node, &complex.body, &complex.last, relative_to, tree))
+    selector.alternatives.iter().any(|complex| {
+        matches_complex(
+            node,
+            &complex.head,
+            &complex.body,
+            &complex.last,
+            relative_to,
+            tree,
+        )
+    })
 }
 
 fn matches_complex(
     node: &ContextNode,
+    complex_head: &Option<Combinator>,
     complex_body: &[(CompoundSelector, Combinator)],
     complex_last: &CompoundSelector,
     relative_to: Option<&ContextNode>,
@@ -24,8 +31,33 @@ fn matches_complex(
         return false;
     }
 
-    let Some((compound, combinator)) = complex_body.first() else {
-        return true;
+    // Strangely mystical assignment
+    // Basically moves the selector rightwise
+    //
+    // head [body_n, ..., body_0] last =>
+    // head [body_n, ..., body_1] body_0.compound
+    //
+    // Some(head) [] last =>
+    // None [] :scope
+    //
+    // None [] last =>
+    // <End Recursion>
+    let scope_selector;
+    let (compound, combinator, head) = match complex_body.first() {
+        Some((compound, combinator)) => (compound, combinator, complex_head),
+        None => {
+            let Some(head) = complex_head else {
+                return true;
+            };
+
+            scope_selector = CompoundSelector::Compound {
+                role: None,
+                states: Vec::new(),
+                attrs: Vec::new(),
+                pseudo_classes: vec![PseudoClassSelector::Scope],
+            };
+            (&scope_selector, head, &None)
+        }
     };
 
     match combinator {
@@ -34,7 +66,7 @@ fn matches_complex(
             let Some(p) = tree.nodes.get(&p_h) else {
                 return false;
             };
-            matches_complex(p, &complex_body[1..], compound, relative_to, tree)
+            matches_complex(p, head, &complex_body[1..], compound, relative_to, tree)
         }
         Combinator::Descendant => {
             let mut current = node;
@@ -46,7 +78,14 @@ fn matches_complex(
                     return false;
                 };
                 current = p;
-                if matches_complex(current, &complex_body[1..], compound, relative_to, tree) {
+                if matches_complex(
+                    current,
+                    head,
+                    &complex_body[1..],
+                    compound,
+                    relative_to,
+                    tree,
+                ) {
                     return true;
                 }
             }
@@ -68,7 +107,14 @@ fn matches_complex(
             let Some(sibling) = tree.nodes.get(sibling_handle) else {
                 return false;
             };
-            matches_complex(sibling, &complex_body[1..], compound, relative_to, tree)
+            matches_complex(
+                sibling,
+                head,
+                &complex_body[1..],
+                compound,
+                relative_to,
+                tree,
+            )
         }
         Combinator::SubsequentSibling => {
             let Some(p_h) = node.parent else { return false };
@@ -82,7 +128,14 @@ fn matches_complex(
                 let Some(sibling) = tree.nodes.get(sibling_handle) else {
                     continue;
                 };
-                if matches_complex(sibling, &complex_body[1..], compound, relative_to, tree) {
+                if matches_complex(
+                    sibling,
+                    head,
+                    &complex_body[1..],
+                    compound,
+                    relative_to,
+                    tree,
+                ) {
                     return true;
                 }
             }
@@ -98,25 +151,35 @@ fn matches_compound(
     relative_to: Option<&ContextNode>,
     tree: &ContextTree,
 ) -> bool {
-    if let Some(role) = &compound.role
+    let CompoundSelector::Compound {
+        role,
+        states,
+        attrs,
+        pseudo_classes,
+    } = compound
+    else {
+        return true;
+    };
+
+    if let Some(role) = role
         && &node.role != role
     {
         return false;
     }
 
-    for state in &compound.states {
+    for state in states {
         if !node.states.iter().any(|s| s == state) {
             return false;
         }
     }
 
-    for attr in &compound.attrs {
+    for attr in attrs {
         if !matches_attribute(node, attr) {
             return false;
         }
     }
 
-    for pseudo in &compound.pseudo_classes {
+    for pseudo in pseudo_classes {
         if !matches_pseudo_class(node, pseudo, relative_to, tree) {
             return false;
         }
@@ -216,46 +279,11 @@ fn matches_pseudo_class(
 
             node.handle == relative_to.handle
         }
-        PseudoClassSelector::Has(inner) => {
-            let alternatives: Vec<_> = inner
-                .alternatives
-                .iter()
-                .map(|complex| {
-                    if complex
-                        .body
-                        .last()
-                        .map(|(c, _)| c)
-                        .unwrap_or(&complex.last)
-                        .pseudo_classes
-                        .contains(&PseudoClassSelector::Scope)
-                    {
-                        complex.clone()
-                    } else {
-                        let mut complex = complex.clone();
-                        complex.body.insert(
-                            0,
-                            (
-                                CompoundSelector {
-                                    role: None,
-                                    states: Vec::new(),
-                                    attrs: Vec::new(),
-                                    pseudo_classes: vec![PseudoClassSelector::Scope],
-                                },
-                                Combinator::Descendant,
-                            ),
-                        );
-                        complex
-                    }
-                })
-                .collect();
-
-            let selector = Selector { alternatives };
-
-            tree.nodes
-                .values()
-                .filter(|candidate| candidate.handle > node.handle)
-                .any(|candidate| matches_selector(candidate, &selector, Some(node), tree))
-        }
+        PseudoClassSelector::Has(inner) => tree
+            .nodes
+            .values()
+            .filter(|candidate| candidate.handle > node.handle)
+            .any(|candidate| matches_selector(candidate, inner, Some(node), tree)),
         PseudoClassSelector::Not(inner) => !matches_selector(node, inner, relative_to, tree),
         PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n),
         PseudoClassSelector::NthLastChild(n) => matches_nth_last_child(tree, node, *n),

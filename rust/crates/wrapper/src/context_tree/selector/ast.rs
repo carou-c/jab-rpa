@@ -8,8 +8,36 @@ pub struct Selector {
 #[derive(Debug, Clone, PartialEq, Hash)]
 // Right-to-left
 pub struct ComplexSelector {
+    pub head: Option<Combinator>,
     pub body: Vec<(CompoundSelector, Combinator)>,
     pub last: CompoundSelector,
+}
+
+impl ComplexSelector {
+    pub fn is_relative(&self) -> bool {
+        if self.head.is_some() {
+            return true;
+        }
+        if let CompoundSelector::Compound {
+            role: _,
+            states: _,
+            attrs: _,
+            pseudo_classes,
+        } = &self.last
+            && pseudo_classes.contains(&PseudoClassSelector::Scope)
+        {
+            return true;
+        }
+        self.body.iter().any(|(compound, _)| match compound {
+            CompoundSelector::Compound {
+                role: _,
+                states: _,
+                attrs: _,
+                pseudo_classes,
+            } => pseudo_classes.contains(&PseudoClassSelector::Scope),
+            _ => false,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
@@ -21,11 +49,14 @@ pub enum Combinator {
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]
-pub struct CompoundSelector {
-    pub role: Option<String>,
-    pub states: Vec<String>,
-    pub attrs: Vec<AttrSelector>,
-    pub pseudo_classes: Vec<PseudoClassSelector>,
+pub enum CompoundSelector {
+    Compound {
+        role: Option<String>,
+        states: Vec<String>,
+        attrs: Vec<AttrSelector>,
+        pseudo_classes: Vec<PseudoClassSelector>,
+    },
+    Any,
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]

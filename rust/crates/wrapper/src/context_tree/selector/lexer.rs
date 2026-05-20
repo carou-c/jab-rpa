@@ -20,6 +20,9 @@ pub enum Token {
     #[token(":")]
     Colon,
 
+    #[token("*")]
+    Star,
+
     #[token("[")]
     LBracket,
 
