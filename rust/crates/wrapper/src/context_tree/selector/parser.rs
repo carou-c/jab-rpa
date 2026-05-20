@@ -196,17 +196,24 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                         _ => Err(Simple::new(None, span)),
                     },
                     "has" => match arg {
-                        Some(PseudoArg::Selector(s)) => {
-                            if s.alternatives.iter().all(ComplexSelector::is_relative) {
-                                Ok(PseudoClassSelector::Has(Box::new(s)))
-                            } else {
-                                Err(Simple::new(None, span))
+                        Some(PseudoArg::Selector(mut s)) => {
+                            for complex in s.alternatives.iter_mut() {
+                                if !complex.is_relative() {
+                                    complex.head = Some(Combinator::Descendant)
+                                }
                             }
+                            Ok(PseudoClassSelector::Has(Box::new(s)))
                         }
                         _ => Err(Simple::new(None, span)),
                     },
                     "not" => match arg {
-                        Some(PseudoArg::Selector(s)) => Ok(PseudoClassSelector::Not(Box::new(s))),
+                        Some(PseudoArg::Selector(s)) => {
+                            if s.alternatives.iter().any(ComplexSelector::is_relative) {
+                                Err(Simple::new(None, span))
+                            } else {
+                                Ok(PseudoClassSelector::Not(Box::new(s)))
+                            }
+                        }
                         _ => Err(Simple::new(None, span)),
                     },
                     "nth-child" => match arg {
@@ -308,5 +315,13 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             .map(|alternatives| Selector { alternatives })
     });
 
-    selector.then_ignore(end())
+    selector
+        .try_map(|s, span| {
+            if s.alternatives.iter().any(ComplexSelector::is_relative) {
+                Err(Simple::new(None, span))
+            } else {
+                Ok(s)
+            }
+        })
+        .then_ignore(end())
 }

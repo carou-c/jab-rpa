@@ -17,6 +17,10 @@ impl fmt::Display for Selector {
 
 impl fmt::Display for ComplexSelector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(head) = &self.head {
+            write!(f, "{}", head)?;
+        }
+
         let body = self
             .body
             .iter()
