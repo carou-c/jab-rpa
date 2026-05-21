@@ -74,6 +74,13 @@ impl JabWrapper {
         })
     }
 
+    pub fn is_java_window(&self, hwnd: HWND) -> bool {
+        unsafe {
+            (IsWindow(Some(hwnd)).0 != 0)
+                && (jab_sys::IsJavaWindow(hwnd.0 as *mut _) != 0)
+        }
+    }
+
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {
         unsafe {
             let mut hwnds: Vec<HWND> = Vec::new();
@@ -92,7 +99,7 @@ impl JabWrapper {
                 .into_iter()
                 .filter(|&hwnd| jab_sys::IsJavaWindow(hwnd.0 as _) != 0)
                 .map(|hwnd| WindowInfo {
-                    hwnd: hwnd.0 as u64,
+                    hwnd,
                     title: {
                         let len = GetWindowTextLengthW(hwnd);
                         if len > 0 {
@@ -108,12 +115,16 @@ impl JabWrapper {
         }
     }
 
-    pub fn get_root_obj_from_window(&self, window: WindowInfo) -> Result<JavaObject, String> {
+    /// # Safety
+    /// The one calling this must make sure the hwnd exists
+    /// and the window it points to is a Java window with
+    /// the right bitness
+    pub unsafe fn get_root_obj_from_hwnd(&self, hwnd: HWND) -> Result<JavaObject, String> {
         unsafe {
             let mut vm_id: VmId = 0;
             let mut jobject: jab_sys::AccessibleContext = 0;
             let result =
-                jab_sys::GetAccessibleContextFromHWND(window.hwnd as _, &mut vm_id, &mut jobject);
+                jab_sys::GetAccessibleContextFromHWND(hwnd.0 as _, &mut vm_id, &mut jobject);
             if result != 0 {
                 Ok(JavaObject {
                     vm_id,

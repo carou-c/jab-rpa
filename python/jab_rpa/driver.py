@@ -68,6 +68,12 @@ class JabDriver:
         self.__window_timeout: int = window_timeout
         self.__server_step: int = server_step
         self.__window_step: int = window_step
+        self.__server: JabRpaServer = JabRpaServer(
+            server_path=self.__server_path,
+            server_timeout=self.__server_timeout,
+            step=self.__server_step,
+        )
+        self._client: JabRpaClient = JabRpaClient()
 
     def start(self) -> None:
         """Start the server and connect to the target window.
@@ -80,13 +86,7 @@ class JabDriver:
             WindowNotFound: If no matching window appears within the timeout.
             ServerStoppedError: If the server process exits prematurely.
         """
-        self.__server: JabRpaServer = JabRpaServer(
-            server_path=self.__server_path,
-            server_timeout=self.__server_timeout,
-            step=self.__server_step,
-        )
         self.__server.start()
-        self._client: JabRpaClient = JabRpaClient()
         self._client.start()
 
         wait_start = time.monotonic()

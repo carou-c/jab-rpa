@@ -10,6 +10,7 @@ prost = "0.14"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tonic-prost = "0.14"
 jab-wrapper = { path = "../wrapper" }
+windows = "0.62.2"
 
 [build-dependencies]
 tonic-prost-build = { version = "0.14" }

@@ -540,6 +540,7 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
+ "windows",
 ]
 
 [[package]]

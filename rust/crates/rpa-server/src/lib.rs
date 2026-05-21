@@ -6,6 +6,8 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::thread;
 use tonic::{Request, Response, Status};
 
+use windows::Win32::Foundation::HWND;
+
 use jab_wrapper::context_tree::{ContextNode, ContextTree};
 use jab_wrapper::selector::{Locator, Selector};
 use jab_wrapper::types::{AccessBridgeVersionInfo, WindowInfo};
@@ -34,15 +36,9 @@ macro_rules! no_element_with_handle {
 impl From<WindowInfo> for proto::WindowInfo {
     fn from(w: WindowInfo) -> Self {
         Self {
-            hwnd: w.get_hwnd(),
+            hwnd: w.hwnd.0 as _,
             title: w.title,
         }
-    }
-}
-
-impl From<proto::WindowInfo> for WindowInfo {
-    fn from(w: proto::WindowInfo) -> Self {
-        unsafe { Self::new(w.hwnd, w.title) }
     }
 }
 
@@ -124,7 +120,17 @@ impl JabServiceTrait for JabService {
         request: Request<proto::WindowInfo>,
     ) -> Result<Response<proto::Empty>, Status> {
         let req = request.into_inner();
-        let result = self.wrapper.get_root_obj_from_window(req.into());
+
+        let hwnd = HWND(req.hwnd as _);
+
+        if !self.wrapper.is_java_window(hwnd) {
+            return Err(Status::invalid_argument(format!(
+                "{:?} does not contain a hwnd to a valid Java window",
+                req
+            )));
+        }
+
+        let result = unsafe { self.wrapper.get_root_obj_from_hwnd(hwnd) };
 
         match result {
             Ok(root) => {
