@@ -25,12 +25,12 @@ pub struct ContextNode {
     pub index_in_parent: i32,
     pub parent: Option<NodeHandle>,
     pub depth: i32,
-    pub(super) text_cache: OnceLock<String>,
-    pub(super) actions_cache: OnceLock<Vec<String>>,
-    pub(super) action_names_cache: OnceLock<String>,
-    pub(super) states_cache: OnceLock<String>,
-    pub(super) states_en_us_cache: OnceLock<String>,
-    pub(super) subtree: Vec<NodeHandle>,
+    pub(crate) text_cache: OnceLock<String>,
+    pub(crate) actions_cache: OnceLock<Vec<String>>,
+    pub(crate) action_names_cache: OnceLock<String>,
+    pub(crate) states_cache: OnceLock<String>,
+    pub(crate) states_en_us_cache: OnceLock<String>,
+    pub(crate) subtree: Vec<NodeHandle>,
 }
 
 impl ContextNode {

@@ -33,12 +33,12 @@ extern "C" fn on_property_name_change(
     let old_name = unsafe { slice::from_raw_parts(old_name, MAX_STRING_SIZE as usize) };
     let new_name = unsafe { slice::from_raw_parts(new_name, MAX_STRING_SIZE as usize) };
 
-    let old_name = utf16_to_string(old_name);
+    let _old_name = utf16_to_string(old_name);
     let new_name = utf16_to_string(new_name);
     let _ = tx.send(CallbackChangeEvent::Name {
         vm_id,
         source_jobject: source,
-        old_name,
+        _old_name,
         new_name,
     });
 }
@@ -61,12 +61,12 @@ extern "C" fn on_property_description_change(
     let new_description =
         unsafe { slice::from_raw_parts(new_description, MAX_STRING_SIZE as usize) };
 
-    let old_description = utf16_to_string(old_description);
+    let _old_description = utf16_to_string(old_description);
     let new_description = utf16_to_string(new_description);
     let _ = tx.send(CallbackChangeEvent::Description {
         vm_id,
         source_jobject: source,
-        old_description,
+        _old_description,
         new_description,
     });
 }
@@ -87,12 +87,12 @@ extern "C" fn on_property_state_change(
     let old_state = unsafe { slice::from_raw_parts(old_state, MAX_STRING_SIZE as usize) };
     let new_state = unsafe { slice::from_raw_parts(new_state, MAX_STRING_SIZE as usize) };
 
-    let old_state = utf16_to_string(old_state);
+    let _old_state = utf16_to_string(old_state);
     let new_state = utf16_to_string(new_state);
     let _ = tx.send(CallbackChangeEvent::State {
         vm_id,
         source_jobject: source,
-        old_state,
+        _old_state,
         new_state,
     });
 }

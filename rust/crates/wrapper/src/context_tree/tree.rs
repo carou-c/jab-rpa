@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-use std::sync::OnceLock;
 
 use super::{NodeHandle, ROOT_HANDLE, node::ContextNode};
-use crate::callbacks::CallbackChangeEvent;
 use crate::selector::Selector;
 use crate::types::{JObject, VmId};
 use crate::wrapper::JavaObject;
@@ -10,8 +8,8 @@ use crate::wrapper::JavaObject;
 #[derive(Debug)]
 pub struct ContextTree {
     pub nodes: HashMap<NodeHandle, ContextNode>,
-    obj_to_handle: HashMap<JObject, NodeHandle>,
-    vm_id: VmId,
+    pub(crate) obj_to_handle: HashMap<JObject, NodeHandle>,
+    pub(crate) vm_id: VmId,
     next_handle: NodeHandle,
 }
 
@@ -85,95 +83,5 @@ impl ContextTree {
         self.nodes
             .iter()
             .find_map(|(_, node)| self.node_matches(node, selector).then_some(node))
-    }
-
-    pub(crate) fn apply_event(&mut self, event: CallbackChangeEvent) {
-        match event {
-            CallbackChangeEvent::Name {
-                vm_id,
-                source_jobject,
-                old_name: _,
-                new_name,
-            } => {
-                if vm_id != self.vm_id {
-                    return;
-                }
-                let Some(node) = self
-                    .obj_to_handle
-                    .get(&source_jobject)
-                    .and_then(|h| self.nodes.get_mut(h))
-                else {
-                    return;
-                };
-                node.name = new_name;
-            }
-
-            CallbackChangeEvent::Description {
-                vm_id,
-                source_jobject,
-                old_description: _,
-                new_description,
-            } => {
-                if vm_id != self.vm_id {
-                    return;
-                }
-                let Some(node) = self
-                    .obj_to_handle
-                    .get(&source_jobject)
-                    .and_then(|h| self.nodes.get_mut(h))
-                else {
-                    return;
-                };
-
-                node.description = new_description;
-            }
-
-            CallbackChangeEvent::State {
-                vm_id,
-                source_jobject,
-                old_state: _,
-                new_state,
-            } => {
-                if vm_id != self.vm_id {
-                    return;
-                }
-                let Some(node) = self
-                    .obj_to_handle
-                    .get(&source_jobject)
-                    .and_then(|h| self.nodes.get_mut(h))
-                else {
-                    return;
-                };
-
-                let new_state: Vec<_> = new_state
-                    .split(',')
-                    .map(str::to_lowercase)
-                    .map(|s| s.replace(' ', "_"))
-                    .collect();
-
-                node.states = new_state.clone();
-                node.states_cache = OnceLock::new();
-                node.actions_cache = OnceLock::new();
-                node.action_names_cache = OnceLock::new();
-            }
-
-            CallbackChangeEvent::Text {
-                vm_id,
-                source_jobject,
-            } => {
-                if vm_id != self.vm_id {
-                    return;
-                }
-                let Some(node) = self
-                    .obj_to_handle
-                    .get(&source_jobject)
-                    .and_then(|h| self.nodes.get_mut(h))
-                else {
-                    return;
-                };
-
-                node.text_cache = OnceLock::new();
-            }
-        }
     }
 }
