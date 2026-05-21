@@ -33,3 +33,6 @@ impl From<Vec<Simple<'_, Token>>> for SelectorParseError {
         )
     }
 }
+
+#[cfg(test)]
+mod tests;

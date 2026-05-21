@@ -28,3 +28,6 @@ impl Locator {
         Ok(parser().parse(&tokens).into_result()?)
     }
 }
+
+#[cfg(test)]
+mod tests;

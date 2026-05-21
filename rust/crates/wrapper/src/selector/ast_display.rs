@@ -25,7 +25,7 @@ impl fmt::Display for ComplexSelector {
             .body
             .iter()
             .rev()
-            .map(|(c, cs)| format!("{}{}", cs, c))
+            .map(|(compound, combinator)| format!("{}{}", compound, combinator))
             .collect::<Vec<_>>()
             .join("");
 
@@ -95,7 +95,7 @@ impl fmt::Display for AttrSelector {
                     ""
                 };
 
-                write!(f, "{}{}{:?}{}", name, op, value, flags)
+                write!(f, "{}{}{}{}", name, op, value, flags)
             }
             Self::Int { name, op, value } => {
                 let value = match value {
@@ -130,6 +130,15 @@ impl fmt::Display for StringOp {
             Self::Starts => write!(f, "^="),
             Self::Ends => write!(f, "$="),
             Self::Contains => write!(f, "*="),
+        }
+    }
+}
+
+impl fmt::Display for StrMatcher {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Plain(s) => write!(f, "'{}'", s.replace('\'', "\\'")),
+            Self::Regex(r) => write!(f, "'{}' r", r.to_string().replace('\'', "\\'")),
         }
     }
 }
@@ -187,3 +196,6 @@ impl fmt::Display for PseudoClassSelector {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

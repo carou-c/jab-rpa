@@ -322,6 +322,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
 
         complex_selector
             .separated_by(ws0.ignore_then(just(Token::Comma)).then_ignore(ws0))
+            .at_least(1)
             .collect::<Vec<_>>()
             .map(|alternatives| Selector { alternatives })
     });
@@ -336,3 +337,6 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
         })
         .then_ignore(end())
 }
+
+#[cfg(test)]
+mod tests;

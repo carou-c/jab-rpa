@@ -155,3 +155,6 @@ pub enum PseudoClassSelector {
     NthChild(i32),
     NthLastChild(i32),
 }
+
+#[cfg(test)]
+mod tests;
