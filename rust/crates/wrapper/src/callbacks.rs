@@ -2,7 +2,7 @@ use crate::context_tree::ContextTree;
 use std::sync::OnceLock;
 
 pub(crate) use self::{
-    event::CallbackChangeEvent,
+    event::ChangeEvent,
     register::{shutdown_event_channel, subscribe_events},
 };
 
@@ -10,31 +10,34 @@ mod event;
 mod register;
 
 impl ContextTree {
-    pub(crate) fn apply_event(&mut self, event: CallbackChangeEvent) {
-        if event.get_vm_id() != self.vm_id {
+    pub(crate) fn apply_event(&mut self, event: ChangeEvent) {
+        println!("Event Received: {:?}", event);
+
+        let meta = event.get_meta();
+
+        if meta.vm_id != self.vm_id {
             return;
         }
         let Some(node) = self
             .obj_to_handle
-            .get(&event.get_source_jobject())
+            .get(&meta.source)
             .and_then(|h| self.nodes.get_mut(h))
         else {
             return;
         };
 
         match event {
-            CallbackChangeEvent::Name { new_name, .. } => {
-                node.name = new_name;
+            ChangeEvent::Name(_, data) => {
+                node.name = data.new;
             }
 
-            CallbackChangeEvent::Description {
-                new_description, ..
-            } => {
-                node.description = new_description;
+            ChangeEvent::Description(_, data) => {
+                node.description = data.new;
             }
 
-            CallbackChangeEvent::State { new_state, .. } => {
-                let new_state: Vec<_> = new_state
+            ChangeEvent::State(_, data) => {
+                let new_state: Vec<_> = data
+                    .new
                     .split(',')
                     .map(str::to_lowercase)
                     .map(|s| s.replace(' ', "_"))
@@ -46,9 +49,11 @@ impl ContextTree {
                 node.action_names_cache = OnceLock::new();
             }
 
-            CallbackChangeEvent::Text { .. } => {
+            ChangeEvent::Text(_) => {
                 node.text_cache = OnceLock::new();
             }
+
+            _ => (),
         }
     }
 }

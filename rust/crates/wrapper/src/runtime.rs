@@ -11,7 +11,7 @@ use windows::Win32::{
     },
 };
 
-use crate::callbacks::{CallbackChangeEvent, shutdown_event_channel, subscribe_events};
+use crate::callbacks::{ChangeEvent, shutdown_event_channel, subscribe_events};
 
 fn run_message_pump() {
     unsafe {
@@ -35,7 +35,7 @@ fn run_message_pump() {
 pub(crate) struct JabRuntime {
     message_pump_handle: Option<thread::JoinHandle<()>>,
     message_pump_thread_id: u32,
-    pub(crate) cb_rx: channel::Receiver<CallbackChangeEvent>,
+    pub(crate) cb_rx: channel::Receiver<ChangeEvent>,
 }
 
 impl JabRuntime {

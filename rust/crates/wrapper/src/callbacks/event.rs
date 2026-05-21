@@ -1,47 +1,40 @@
 use crate::types::{JObject, VmId};
 
-#[derive(Debug, Clone)]
-pub(crate) enum CallbackChangeEvent {
-    Name {
-        vm_id: VmId,
-        source_jobject: JObject,
-        _old_name: String,
-        new_name: String,
-    },
-    Description {
-        vm_id: VmId,
-        source_jobject: JObject,
-        _old_description: String,
-        new_description: String,
-    },
-    State {
-        vm_id: VmId,
-        source_jobject: JObject,
-        _old_state: String,
-        new_state: String,
-    },
-    Text {
-        vm_id: VmId,
-        source_jobject: JObject,
-    },
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct EventMeta {
+    pub(crate) vm_id: VmId,
+    pub(crate) source: JObject,
 }
 
-impl CallbackChangeEvent {
-    pub(crate) fn get_vm_id(&self) -> VmId {
-        match *self {
-            Self::Name { vm_id, .. } => vm_id,
-            Self::Description { vm_id, .. } => vm_id,
-            Self::State { vm_id, .. } => vm_id,
-            Self::Text { vm_id, .. } => vm_id,
-        }
-    }
+#[derive(Debug, Clone)]
+pub(crate) struct EventData<T> {
+    pub(crate) old: T,
+    pub(crate) new: T,
+}
 
-    pub(crate) fn get_source_jobject(&self) -> JObject {
+#[derive(Debug, Clone)]
+pub(crate) enum ChangeEvent {
+    Name(EventMeta, EventData<String>),
+    Description(EventMeta, EventData<String>),
+    State(EventMeta, EventData<String>),
+    Text(EventMeta),
+    Value(EventMeta, EventData<String>),
+    VisibleData(EventMeta),
+    Child(EventMeta, EventData<JObject>),
+    ActiveDescendent(EventMeta, EventData<JObject>),
+}
+
+impl ChangeEvent {
+    pub(crate) fn get_meta(&self) -> EventMeta {
         match *self {
-            Self::Name { source_jobject, .. } => source_jobject,
-            Self::Description { source_jobject, .. } => source_jobject,
-            Self::State { source_jobject, .. } => source_jobject,
-            Self::Text { source_jobject, .. } => source_jobject,
+            Self::Name(meta, ..)
+            | Self::Description(meta, ..)
+            | Self::State(meta, ..)
+            | Self::Text(meta, ..)
+            | Self::Value(meta, ..)
+            | Self::VisibleData(meta, ..)
+            | Self::Child(meta, ..)
+            | Self::ActiveDescendent(meta, ..) => meta,
         }
     }
 }
