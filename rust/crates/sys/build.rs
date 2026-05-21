@@ -56,6 +56,8 @@ fn main() {
 
     // 2. Tell cargo to rerun if build.rs changed
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=JAB_JAVA_VERSION");
+
 
     // 3. Generate bindings
     let builder = bindgen::Builder::default()
@@ -81,6 +83,7 @@ fn main() {
 
 fn selected_openjdk_dir() -> String {
     match env::var("JAB_JAVA_VERSION") {
+        Ok(n) if n == "latest" => "openjdk/jdk".to_string(),
         Ok(n) => format!("openjdk/jdk{}u", n),
         Err(env::VarError::NotPresent) => "openjdk/jdk8u".to_string(),
         _ => panic!("Failed to get JAB_JAVA_VERSION environment variable"),
