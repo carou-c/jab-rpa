@@ -14,7 +14,6 @@ service JabService {
   rpc GetElementText (Element) returns (Text);
   rpc GetElementActions (Element) returns (Actions);
   rpc DoActionOnElement (DoActionRequest) returns (Empty);
-  // rpc SubscribeCallbacks(SubscribeCallbacksRequest) returns (stream CallbackEvent);
 }
 
 message Empty {}

@@ -96,6 +96,11 @@ class Element:
         """Index of this element within its parent's children list."""
         return self._element.index_in_parent
 
+    @property
+    def depth(self) -> int:
+        """Depth of element within the context tree."""
+        return self._element.index_in_parent
+
     def children(self) -> list["Element"]:
         """Get the direct children of this element.
 
