@@ -58,7 +58,6 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=JAB_JAVA_VERSION");
 
-
     // 3. Generate bindings
     let builder = bindgen::Builder::default()
         .header("openjdk/wrapper.h")

@@ -66,6 +66,41 @@ impl ContextTree {
         }
     }
 
+    pub(crate) fn rebuild_subtree(&mut self, handle: &NodeHandle) {
+        let Some(mut node) = self.nodes.remove(handle) else {
+            return;
+        };
+        for h in node.subtree.drain(..) {
+            let Some(dropped) = self.nodes.remove(&h) else {
+                continue;
+            };
+            self.obj_to_handle.remove(&dropped.obj.jobject);
+        }
+
+        node.children.clear();
+        node.refresh_info();
+        node.children.reserve(node.children_count.max(0) as usize);
+
+        for i in 0..node.children_count {
+            let child_obj = unsafe { node.obj.get_child_from_obj(i) };
+
+            let handle = self.next_handle;
+            self.next_handle += 1;
+            let mut child_node =
+                ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle));
+
+            self.build_subtree(&mut child_node, None);
+            node.subtree.extend(&child_node.subtree);
+            node.subtree.push(handle);
+
+            self.obj_to_handle.insert(child_node.obj.jobject, handle);
+            self.nodes.insert(handle, child_node);
+            node.children.push(handle);
+        }
+
+        self.nodes.insert(*handle, node);
+    }
+
     pub fn node_matches(&self, node: &ContextNode, selector: &Selector) -> bool {
         use super::matcher::matches_selector;
 

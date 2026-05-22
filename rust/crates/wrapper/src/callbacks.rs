@@ -11,46 +11,45 @@ mod register;
 
 impl ContextTree {
     pub(crate) fn apply_event(&mut self, event: ChangeEvent) {
-        println!("Event Received: {:?}", event);
-
-        let meta = event.get_meta();
+        let meta = event.meta();
 
         if meta.vm_id != self.vm_id {
             return;
         }
+
         let Some(node) = self
             .obj_to_handle
-            .get(&meta.source)
-            .and_then(|h| self.nodes.get_mut(h))
+            .iter()
+            .find(|&(&obj, _)| unsafe { jab_sys::IsSameObject(self.vm_id, obj, meta.source) != 0 })
+            .and_then(|(_, h)| self.nodes.get_mut(h))
         else {
             return;
         };
 
-        match event {
+        match &event {
             ChangeEvent::Name(_, data) => {
-                node.name = data.new;
+                node.name = data.new.clone();
             }
 
             ChangeEvent::Description(_, data) => {
-                node.description = data.new;
+                node.description = data.new.clone();
             }
 
-            ChangeEvent::State(_, data) => {
-                let new_state: Vec<_> = data
-                    .new
-                    .split(',')
-                    .map(str::to_lowercase)
-                    .map(|s| s.replace(' ', "_"))
-                    .collect();
-
-                node.states = new_state.clone();
+            ChangeEvent::State(..) => {
                 node.states_cache = OnceLock::new();
                 node.actions_cache = OnceLock::new();
                 node.action_names_cache = OnceLock::new();
+
+                node.refresh_info();
             }
 
             ChangeEvent::Text(_) => {
                 node.text_cache = OnceLock::new();
+            }
+
+            ChangeEvent::Child(..) => {
+                let handle = node.handle;
+                self.rebuild_subtree(&handle);
             }
 
             _ => (),

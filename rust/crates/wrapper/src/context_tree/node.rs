@@ -68,33 +68,36 @@ impl ContextNode {
             subtree: Vec::new(),
         };
 
-        if let Some(info) = node.obj.get_obj_info() {
-            node.name = utf16_to_string(&info.name);
-            node.role = utf16_to_string(&info.role).to_lowercase().replace(' ', "_");
-            node.states = utf16_to_string(&info.states)
-                .split(',')
-                .map(str::to_lowercase)
-                .map(|s| s.replace(' ', "_"))
-                .collect();
-            node.states_en_us = utf16_to_string(&info.states_en_US)
-                .split(',')
-                .map(str::to_lowercase)
-                .map(|s| s.replace(' ', "_"))
-                .collect();
-            node.description = utf16_to_string(&info.description);
-            node.x = info.x;
-            node.y = info.y;
-            node.width = info.width;
-            node.height = info.height;
-            node.accessible_action = info.accessibleAction != 0;
-            node.accessible_text = info.accessibleText != 0;
-            node.accessible_selection = info.accessibleSelection != 0;
-            node.children_count = info.childrenCount;
-            node.index_in_parent = info.indexInParent;
-
-            node.children.reserve(node.children_count.max(0) as usize);
-        }
+        node.refresh_info();
+        node.children.reserve(node.children_count.max(0) as usize);
         node
+    }
+
+    pub fn refresh_info(&mut self) {
+        if let Some(info) = self.obj.get_obj_info() {
+            self.name = utf16_to_string(&info.name);
+            self.role = utf16_to_string(&info.role).to_lowercase().replace(' ', "_");
+            self.states = utf16_to_string(&info.states)
+                .split(',')
+                .map(str::to_lowercase)
+                .map(|s| s.replace(' ', "_"))
+                .collect();
+            self.states_en_us = utf16_to_string(&info.states_en_US)
+                .split(',')
+                .map(str::to_lowercase)
+                .map(|s| s.replace(' ', "_"))
+                .collect();
+            self.description = utf16_to_string(&info.description);
+            self.x = info.x;
+            self.y = info.y;
+            self.width = info.width;
+            self.height = info.height;
+            self.accessible_action = info.accessibleAction != 0;
+            self.accessible_text = info.accessibleText != 0;
+            self.accessible_selection = info.accessibleSelection != 0;
+            self.children_count = info.childrenCount;
+            self.index_in_parent = info.indexInParent;
+        }
     }
 
     pub fn resolve_text(&self) -> &str {

@@ -75,10 +75,7 @@ impl JabWrapper {
     }
 
     pub fn is_java_window(&self, hwnd: HWND) -> bool {
-        unsafe {
-            (IsWindow(Some(hwnd)).0 != 0)
-                && (jab_sys::IsJavaWindow(hwnd.0 as *mut _) != 0)
-        }
+        unsafe { (IsWindow(Some(hwnd)).0 != 0) && (jab_sys::IsJavaWindow(hwnd.0 as *mut _) != 0) }
     }
 
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {

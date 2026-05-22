@@ -1,5 +1,5 @@
-use crate::selector::ast::*;
 use crate::selector::Locator;
+use crate::selector::ast::*;
 
 fn parse(input: &str) -> Selector {
     Locator::new(input).parse().unwrap()

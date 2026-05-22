@@ -9,7 +9,7 @@ use std::{slice, sync::Mutex};
 use crossbeam::channel;
 use jab_sys::{MAX_STRING_SIZE, wchar_t};
 
-use super::event::{ChangeEvent, EventMeta, EventData};
+use super::event::{ChangeEvent, EventData, EventMeta};
 use crate::{
     types::{JObject, VmId},
     utils::utf16_to_string,
@@ -21,7 +21,7 @@ macro_rules! cb {
     (String, $name:ident, $variant:path) => {
         extern "C" fn $name(
             vm_id: VmId,
-            _event: JObject,
+            event: JObject,
             source: JObject,
             old: *mut wchar_t,
             new: *mut wchar_t,
@@ -37,7 +37,11 @@ macro_rules! cb {
                 utf16_to_string(unsafe { slice::from_raw_parts(old, MAX_STRING_SIZE as usize) });
             let new =
                 utf16_to_string(unsafe { slice::from_raw_parts(new, MAX_STRING_SIZE as usize) });
-            let meta = EventMeta { vm_id, source };
+            let meta = EventMeta {
+                vm_id,
+                event,
+                source,
+            };
             let data = EventData { old, new };
 
             let _ = tx.send($variant(meta, data));
@@ -46,7 +50,7 @@ macro_rules! cb {
     (JObject, $name:ident, $variant:path) => {
         extern "C" fn $name(
             vm_id: VmId,
-            _event: JObject,
+            event: JObject,
             source: JObject,
             old: JObject,
             new: JObject,
@@ -58,25 +62,29 @@ macro_rules! cb {
                 return;
             };
 
-            let meta = EventMeta { vm_id, source };
+            let meta = EventMeta {
+                vm_id,
+                event,
+                source,
+            };
             let data = EventData { old, new };
 
             let _ = tx.send($variant(meta, data));
         }
     };
     ($name:ident, $variant:path) => {
-        extern "C" fn $name(
-            vm_id: VmId,
-            _event: JObject,
-            source: JObject,
-        ) {
+        extern "C" fn $name(vm_id: VmId, event: JObject, source: JObject) {
             let Ok(tx) = CALLBACK_TX.lock() else {
                 return;
             };
             let Some(tx) = tx.as_ref() else {
                 return;
             };
-            let meta = EventMeta { vm_id, source };
+            let meta = EventMeta {
+                vm_id,
+                event,
+                source,
+            };
 
             let _ = tx.send($variant(meta));
         }
@@ -90,7 +98,11 @@ cb!(on_text_change, ChangeEvent::Text);
 cb!(String, on_value_change, ChangeEvent::Value);
 cb!(on_visible_data_change, ChangeEvent::VisibleData);
 cb!(JObject, on_child_change, ChangeEvent::Child);
-cb!(JObject, on_active_descendent_change, ChangeEvent::ActiveDescendent);
+cb!(
+    JObject,
+    on_active_descendent_change,
+    ChangeEvent::ActiveDescendent
+);
 
 pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
     let (tx, rx) = channel::unbounded();

@@ -39,14 +39,24 @@ fn test_selector_inequality() {
 #[test]
 fn test_selector_different_alternatives_count() {
     let a = Selector {
-        alternatives: vec![
-            ComplexSelector { head: None, body: vec![], last: compound(Some("a")) },
-        ],
+        alternatives: vec![ComplexSelector {
+            head: None,
+            body: vec![],
+            last: compound(Some("a")),
+        }],
     };
     let b = Selector {
         alternatives: vec![
-            ComplexSelector { head: None, body: vec![], last: compound(Some("a")) },
-            ComplexSelector { head: None, body: vec![], last: compound(Some("b")) },
+            ComplexSelector {
+                head: None,
+                body: vec![],
+                last: compound(Some("a")),
+            },
+            ComplexSelector {
+                head: None,
+                body: vec![],
+                last: compound(Some("b")),
+            },
         ],
     };
     assert_ne!(a, b);
@@ -102,15 +112,35 @@ fn test_combinator_inequality() {
 
 #[test]
 fn test_attr_flags_equality() {
-    assert_eq!(AttrFlags { case_insensitive: true }, AttrFlags { case_insensitive: true });
-    assert_ne!(AttrFlags { case_insensitive: true }, AttrFlags { case_insensitive: false });
+    assert_eq!(
+        AttrFlags {
+            case_insensitive: true
+        },
+        AttrFlags {
+            case_insensitive: true
+        }
+    );
+    assert_ne!(
+        AttrFlags {
+            case_insensitive: true
+        },
+        AttrFlags {
+            case_insensitive: false
+        }
+    );
 }
 
 #[test]
 fn test_pseudo_class_selector_equality() {
     assert_eq!(PseudoClassSelector::Scope, PseudoClassSelector::Scope);
-    assert_eq!(PseudoClassSelector::NthChild(1), PseudoClassSelector::NthChild(1));
-    assert_ne!(PseudoClassSelector::NthChild(1), PseudoClassSelector::NthChild(2));
+    assert_eq!(
+        PseudoClassSelector::NthChild(1),
+        PseudoClassSelector::NthChild(1)
+    );
+    assert_ne!(
+        PseudoClassSelector::NthChild(1),
+        PseudoClassSelector::NthChild(2)
+    );
 }
 
 #[test]
@@ -186,7 +216,10 @@ fn test_int_attr_name_equality() {
 
 #[test]
 fn test_bool_attr_name_equality() {
-    assert_eq!(BoolAttrName::AccessibleAction, BoolAttrName::AccessibleAction);
+    assert_eq!(
+        BoolAttrName::AccessibleAction,
+        BoolAttrName::AccessibleAction
+    );
     assert_ne!(BoolAttrName::AccessibleAction, BoolAttrName::AccessibleText);
 }
 

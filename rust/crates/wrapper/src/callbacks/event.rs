@@ -1,23 +1,39 @@
 use crate::types::{JObject, VmId};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub(crate) struct EventMeta {
-    pub(crate) vm_id: VmId,
-    pub(crate) source: JObject,
+    pub(super) vm_id: VmId,
+    pub(super) event: JObject,
+    pub(super) source: JObject,
 }
 
-#[derive(Debug, Clone)]
+impl Drop for EventMeta {
+    fn drop(&mut self) {
+        unsafe {
+            if self.event != 0 {
+                jab_sys::ReleaseJavaObject(self.vm_id, self.event);
+            }
+            if self.source != 0 {
+                jab_sys::ReleaseJavaObject(self.vm_id, self.source);
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct EventData<T> {
-    pub(crate) old: T,
-    pub(crate) new: T,
+    pub(super) old: T,
+    pub(super) new: T,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) enum ChangeEvent {
     Name(EventMeta, EventData<String>),
     Description(EventMeta, EventData<String>),
+    #[allow(dead_code)]
     State(EventMeta, EventData<String>),
     Text(EventMeta),
+    #[allow(dead_code)]
     Value(EventMeta, EventData<String>),
     VisibleData(EventMeta),
     Child(EventMeta, EventData<JObject>),
@@ -25,8 +41,8 @@ pub(crate) enum ChangeEvent {
 }
 
 impl ChangeEvent {
-    pub(crate) fn get_meta(&self) -> EventMeta {
-        match *self {
+    pub(crate) fn meta(&self) -> &EventMeta {
+        match self {
             Self::Name(meta, ..)
             | Self::Description(meta, ..)
             | Self::State(meta, ..)
@@ -35,6 +51,22 @@ impl ChangeEvent {
             | Self::VisibleData(meta, ..)
             | Self::Child(meta, ..)
             | Self::ActiveDescendent(meta, ..) => meta,
+        }
+    }
+}
+
+impl Drop for ChangeEvent {
+    fn drop(&mut self) {
+        match self {
+            Self::Child(meta, data) | Self::ActiveDescendent(meta, data) => unsafe {
+                if data.old != 0 {
+                    jab_sys::ReleaseJavaObject(meta.vm_id, data.old);
+                }
+                if data.new != 0 {
+                    jab_sys::ReleaseJavaObject(meta.vm_id, data.new);
+                }
+            },
+            _ => (),
         }
     }
 }

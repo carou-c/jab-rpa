@@ -167,7 +167,10 @@ fn test_string_double_quoted() {
 
 #[test]
 fn test_string_with_escape() {
-    assert_tokens(r#""say \"hi\"""#, &[Token::String(r#""say \"hi\"""#.into())]);
+    assert_tokens(
+        r#""say \"hi\"""#,
+        &[Token::String(r#""say \"hi\"""#.into())],
+    );
 }
 
 #[test]
@@ -284,22 +287,28 @@ fn test_comma_separated_alternatives() {
 
 #[test]
 fn test_int_attr_operators() {
-    assert_tokens("[x==5]", &[
-        Token::LBracket,
-        Token::Ident("x".into()),
-        Token::EqEq,
-        Token::Int(5),
-        Token::RBracket,
-    ]);
+    assert_tokens(
+        "[x==5]",
+        &[
+            Token::LBracket,
+            Token::Ident("x".into()),
+            Token::EqEq,
+            Token::Int(5),
+            Token::RBracket,
+        ],
+    );
 }
 
 #[test]
 fn test_bool_attr() {
-    assert_tokens("[accessible_action]", &[
-        Token::LBracket,
-        Token::Ident("accessible_action".into()),
-        Token::RBracket,
-    ]);
+    assert_tokens(
+        "[accessible_action]",
+        &[
+            Token::LBracket,
+            Token::Ident("accessible_action".into()),
+            Token::RBracket,
+        ],
+    );
 }
 
 #[test]
