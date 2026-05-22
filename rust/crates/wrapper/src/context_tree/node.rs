@@ -30,7 +30,6 @@ pub struct ContextNode {
     pub(crate) action_names_cache: OnceLock<String>,
     pub(crate) states_cache: OnceLock<String>,
     pub(crate) states_en_us_cache: OnceLock<String>,
-    pub(crate) subtree: Vec<NodeHandle>,
 }
 
 impl ContextNode {
@@ -65,7 +64,6 @@ impl ContextNode {
             action_names_cache: OnceLock::new(),
             states_cache: OnceLock::new(),
             states_en_us_cache: OnceLock::new(),
-            subtree: Vec::new(),
         };
 
         node.refresh_info();

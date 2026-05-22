@@ -283,13 +283,12 @@ fn matches_pseudo_class(
             }) {
                 node.parent
                     .and_then(|h| tree.nodes.get(&h))
-                    .unwrap_or(node)
-                    .subtree
+                    .map_or_else(|| tree.subtree(node), |parent| tree.subtree(parent))
                     .iter()
                     .filter_map(|handle| tree.nodes.get(handle))
                     .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
             } else {
-                node.subtree
+                tree.subtree(node)
                     .iter()
                     .filter_map(|handle| tree.nodes.get(handle))
                     .any(|candidate| matches_selector(candidate, inner, Some(node), tree))

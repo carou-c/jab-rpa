@@ -57,8 +57,6 @@ impl ContextTree {
                 ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle));
 
             self.build_subtree(&mut child_node, max_depth);
-            node.subtree.extend(&child_node.subtree);
-            node.subtree.push(handle);
 
             self.obj_to_handle.insert(child_node.obj.jobject, handle);
             self.nodes.insert(handle, child_node);
@@ -70,7 +68,7 @@ impl ContextTree {
         let Some(mut node) = self.nodes.remove(handle) else {
             return;
         };
-        for h in node.subtree.drain(..) {
+        for h in self.subtree(&node) {
             let Some(dropped) = self.nodes.remove(&h) else {
                 continue;
             };
@@ -90,8 +88,6 @@ impl ContextTree {
                 ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle));
 
             self.build_subtree(&mut child_node, None);
-            node.subtree.extend(&child_node.subtree);
-            node.subtree.push(handle);
 
             self.obj_to_handle.insert(child_node.obj.jobject, handle);
             self.nodes.insert(handle, child_node);
@@ -99,6 +95,16 @@ impl ContextTree {
         }
 
         self.nodes.insert(*handle, node);
+    }
+
+    pub fn subtree(&self, node: &ContextNode) -> Vec<NodeHandle> {
+        let children = node.children.iter().filter_map(|h| self.nodes.get(h));
+
+        node.children
+            .clone()
+            .into_iter()
+            .chain(children.flat_map(|child| self.subtree(child)))
+            .collect()
     }
 
     pub fn node_matches(&self, node: &ContextNode, selector: &Selector) -> bool {
