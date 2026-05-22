@@ -68,9 +68,9 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.exists">exists</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.first_matching">first_matching</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.find">find</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.matching">matching</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.find_all">find_all</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.to_dict">to_dict</a>
     </li>
@@ -223,7 +223,7 @@ btn = driver.locator("dialog").locator("push_button").wait_for()
 
     <div class="doc doc-contents ">
 
-        <p>Click using the JAB accessibility API (not pyautogui).
+        <p>Click a matching element using the JAB accessibility API (not pyautogui).
 This does not move the mouse.</p>
 
 
@@ -244,8 +244,8 @@ This does not move the mouse.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Click at the first matching element's center using pyautogui.</p>
-<p>Moves the mouse to the center of the first matching element's bounding box
+        <p>Click at a matching element's center using pyautogui.</p>
+<p>Moves the mouse to the center of a matching element's bounding box
 and performs a pyautogui click.</p>
 
 
@@ -307,8 +307,8 @@ and performs a pyautogui click.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Click then type text into the first matching element.</p>
-<p>Moves the mouse to the first matching element's center, clicks, then types
+        <p>Click then type text into a matching element.</p>
+<p>Moves the mouse to a matching element's center, clicks, then types
 the given text using pyautogui.</p>
 
 
@@ -383,7 +383,7 @@ the given text using pyautogui.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Performs an accessible action on the first matching element.</p>
+        <p>Performs an accessible action on a matching element.</p>
 
 
     </div>
@@ -443,17 +443,17 @@ the given text using pyautogui.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.locator.Locator.first_matching" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">first_matching</span>
+<h2 id="jab_rpa.locator.Locator.find" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">find</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">first_matching</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Element</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Element</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Find the first element matching this locator.</p>
+        <p>Find a element matching this locator.</p>
 
 
 <table class="field-list">
@@ -470,7 +470,7 @@ the given text using pyautogui.</p>
                   <code><a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a></code>
               –
               <div class="doc-md-description">
-                <p>The first matching <code>Element</code>.</p>
+                <p>A matching <code>Element</code>.</p>
               </div>
             </li>
         </ul>
@@ -490,7 +490,7 @@ the given text using pyautogui.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><a class="autorefs autorefs-internal" title="jab_rpa.locator.LocatorNotFound" href="#jab_rpa.locator.LocatorNotFound">LocatorNotFound</a></code>
+                  <code>``LocatorNotFound``</code>
               –
               <div class="doc-md-description">
                 <p>If no element matches.</p>
@@ -509,12 +509,12 @@ the given text using pyautogui.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.locator.Locator.matching" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">matching</span>
+<h2 id="jab_rpa.locator.Locator.find_all" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">find_all</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">matching</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Element</span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find_all</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Element</span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -586,7 +586,7 @@ the given text using pyautogui.</p>
     <div class="doc doc-contents ">
 
         <p>Poll the accessibility tree until a matching element appears.</p>
-<p>Repeatedly calls <code>matching()</code> and refreshes the tree between
+<p>Repeatedly calls <code>find()</code> and refreshes the tree between
 attempts. Useful for waiting for dialogs or dynamic content.</p>
 
 
@@ -640,7 +640,7 @@ attempts. Useful for waiting for dialogs or dynamic content.</p>
                   <code><a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a></code>
               –
               <div class="doc-md-description">
-                <p>The first matching <code>Element</code>.</p>
+                <p>a matching <code>Element</code>.</p>
               </div>
             </li>
         </ul>
@@ -660,7 +660,7 @@ attempts. Useful for waiting for dialogs or dynamic content.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><a class="autorefs autorefs-internal" title="jab_rpa.locator.LocatorNotFound" href="#jab_rpa.locator.LocatorNotFound">LocatorNotFound</a></code>
+                  <code>``LocatorNotFound``</code>
               –
               <div class="doc-md-description">
                 <p>If no element matches within the timeout.</p>

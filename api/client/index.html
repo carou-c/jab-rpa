@@ -62,9 +62,11 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient">JabRpaClient</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.click_element">click_element</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.accessible_click">accessible_click</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.do_action_on_element">do_action_on_element</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.find_element">find_element</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.find_elements">find_elements</a>
     </li>
@@ -153,12 +155,12 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.client.JabRpaClient.click_element" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">click_element</span>
+<h2 id="jab_rpa.client.JabRpaClient.accessible_click" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">accessible_click</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click_element</span><span class="p">(</span><span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">accessible_click</span><span class="p">(</span><span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -236,6 +238,73 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
               –
               <div class="doc-md-description">
                 <p>The <code>jab.Action</code> to perform.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.client.JabRpaClient.find_element" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">find_element</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find_element</span><span class="p">(</span><span class="n">locator</span><span class="p">:</span> <span class="n">Locator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">Element</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Find one element matching a structured locator.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>locator</code></b>
+                  (<code><span title="jab_rpa.proto.jab.Locator">Locator</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>A <code>jab.Locator</code> protobuf message.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="jab_rpa.proto.jab.Element">Element</span></code>
+              –
+              <div class="doc-md-description">
+                <p>A matching <code>jab.Element</code> protobuf message.</p>
               </div>
             </li>
         </ul>

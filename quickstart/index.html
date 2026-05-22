@@ -54,12 +54,22 @@
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#interacting-with-elements">Interacting with elements</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#accessible-actions">Accessible actions</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#getting-element-info">Getting element info</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#finding-elements">Finding elements</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#waiting-for-elements">Waiting for elements</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#driver-utilities">Driver utilities</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#traversing-the-tree">Traversing the tree</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#error-handling">Error handling</a>
     </li>
     </ul>
                 </li>
@@ -145,6 +155,19 @@ element.click(clicks=2, interval=0.5)
 # Click and type text
 element.click_and_type(&quot;hello world&quot;)
 </code></pre>
+<h3 id="accessible-actions">Accessible actions</h3>
+<p>Elements may expose additional actions beyond clicking (e.g. "toggle", "expand", "select"):</p>
+<pre><code class="language-python">actions = element.get_accessible_actions()
+for action in actions:
+    print(action.name)
+
+# Perform a specific action by name
+element.do_accessible_action(action)
+</code></pre>
+<p>You can also use these directly on a <code>Locator</code>:</p>
+<pre><code class="language-python">locator.accessible_click()
+locator.do_accessible_action(action)
+</code></pre>
 <h2 id="getting-element-info">Getting element info</h2>
 <pre><code class="language-python">print(element.name)                # Accessible name
 print(element.role)                # e.g. &quot;push_button&quot;
@@ -158,6 +181,17 @@ print(element.index_in_parent)
 print(element.children_count)
 print(element.to_dict())           # All properties as dict
 </code></pre>
+<h2 id="finding-elements">Finding elements</h2>
+<pre><code class="language-python"># Find the first matching element (raises LocatorNotFound if none match)
+element = locator.find()
+
+# Find all matching elements (returns empty list if none match)
+elements = locator.find_all()
+
+# Check if an element exists without fetching it
+if locator.exists():
+    element = locator.find()
+</code></pre>
 <h2 id="waiting-for-elements">Waiting for elements</h2>
 <pre><code class="language-python"># Wait up to 30 seconds (default: 60s)
 element = locator.wait_for(timeout=30)
@@ -165,9 +199,59 @@ element = locator.wait_for(timeout=30)
 # Custom polling interval
 element = locator.wait_for(timeout=60, sleep_step=2)
 </code></pre>
+<h2 id="driver-utilities">Driver utilities</h2>
+<pre><code class="language-python"># List all detected Java windows
+for w in driver.list_java_windows():
+    print(w.hwnd, w.title)
+
+# Switch to a different window
+driver.switch_window(some_window_info)
+
+# Rebuild the accessibility tree (call after UI changes)
+driver.refresh_tree()
+
+# Get JAB bridge and server version info
+info = driver.get_version_info()
+</code></pre>
 <h2 id="traversing-the-tree">Traversing the tree</h2>
 <pre><code class="language-python">children = element.children()
 parent = element.parent()
+</code></pre>
+<h2 id="error-handling">Error handling</h2>
+<p>The library defines three custom exceptions:</p>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>Raised when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>WindowNotFound</code></td>
+<td>No Java window matches the given title pattern</td>
+</tr>
+<tr>
+<td><code>LocatorNotFound</code></td>
+<td>No element matches the locator query</td>
+</tr>
+<tr>
+<td><code>ServerStoppedError</code></td>
+<td>The <code>jab-rpa-server.exe</code> process exits prematurely</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">from jab_rpa import JabDriver
+from jab_rpa.driver import WindowNotFound
+from jab_rpa.locator import LocatorNotFound
+
+try:
+    with JabDriver(&quot;MyApp.*&quot;) as driver:
+        btn = driver.locator(&quot;push_button[name='Clear']&quot;).find()
+except WindowNotFound:
+    print(&quot;Application not running&quot;)
+except LocatorNotFound:
+    print(&quot;Button not found&quot;)
 </code></pre>
               
             </div>
