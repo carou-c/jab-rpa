@@ -10,13 +10,11 @@ Provides a single import target for types used across the package:
 
 from .proto.jab import Action, WindowInfo, VersionInfo
 
-from .element import Element
 from .locator import Locator
 
 __all__ = [
     "Action",
     "WindowInfo",
     "VersionInfo",
-    "Element",
     "Locator",
 ]

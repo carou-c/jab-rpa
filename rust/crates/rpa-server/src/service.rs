@@ -1,20 +1,25 @@
+#![macro_use]
+
 use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
 
-use parking_lot::{RwLock, RwLockReadGuard};
+use parking_lot::MutexGuard;
 use tonic::{Request, Response, Status};
 
 use windows::Win32::Foundation::HWND;
 
 use jab_wrapper::context_tree::ContextTree;
 use jab_wrapper::selector::{Locator, Selector};
-use jab_wrapper::wrapper::JabWrapper;
+use jab_wrapper::wrapper::{JabWrapper, SharedCtxTree};
 
+use crate::DEFAULT_TIMEOUT;
 use crate::proto;
+use crate::utils::{find_node, find_nodes, parse_locator};
 
 pub struct JabService {
     wrapper: JabWrapper,
-    ctx_tree: Arc<RwLock<Option<ContextTree>>>,
+    ctx_tree: Arc<SharedCtxTree>,
     _updater: thread::JoinHandle<()>,
 }
 
@@ -26,18 +31,9 @@ macro_rules! no_window_selected {
     };
 }
 
-macro_rules! no_element_with_handle {
-    ($handle:expr) => {
-        Err(Status::invalid_argument(format!(
-            "No node with handle={}",
-            $handle
-        )))
-    };
-}
-
 impl JabService {
     pub fn new(wrapper: JabWrapper) -> Self {
-        let ctx_tree = Arc::new(RwLock::new(None));
+        let ctx_tree = Arc::new(SharedCtxTree::new());
         let updater = wrapper.spawn_tree_updater(&ctx_tree);
         Self {
             wrapper,
@@ -46,95 +42,47 @@ impl JabService {
         }
     }
 
-    fn find_elements(
+    fn wait_for_selector(
         &self,
-        locator: Locator,
-    ) -> Result<(RwLockReadGuard, Vec<&ContextNode>), Status> {
-        let tree_lock = self.ctx_tree.read();
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
+        selector: &Selector,
+        timeout: Option<Duration>,
+        refresh_before_fail: bool,
+    ) -> Result<MutexGuard<'_, Option<ContextTree>>, Status> {
+        let timeout = timeout.unwrap_or(DEFAULT_TIMEOUT);
+        let condition = |tree: &mut _| find_node(tree, selector).is_err();
 
-        let locator: Locator = req.into();
-        let selector: Selector = match locator.parse() {
-            Ok(selector) => selector,
-            Err(e) => return Err(Status::invalid_argument(e.to_string())),
-        };
+        let mut tree_lock = self.ctx_tree.lock();
+        let wait_result = self
+            .ctx_tree
+            .wait_change_while_for(&mut tree_lock, condition, timeout);
 
-        let nodes = tree.get_nodes(&selector);
+        if !wait_result.timed_out() {
+            return Ok(tree_lock);
+        }
 
-        let elements = nodes.into_iter().map(Into::into).collect();
+        if refresh_before_fail {
+            let root_obj = match tree_lock.take() {
+                Some(tree) => tree.into_root(),
+                None => return no_window_selected!(),
+            };
 
-        Ok(Response::new(proto::RepeatedElement { elements }))
-    }
+            let tree = ContextTree::from_root(root_obj, None);
+            *tree_lock = Some(tree);
+        }
 
-    fn find_element(
-        &self,
-        request: Request<proto::Locator>,
-    ) -> Result<Response<proto::Element>, Status> {
-        let req = request.into_inner();
-
-        let tree_lock = self.ctx_tree.read();
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
-
-        let locator: Locator = req.into();
-        let selector: Selector = match locator.parse() {
-            Ok(selector) => selector,
-            Err(e) => return Err(Status::invalid_argument(e.to_string())),
-        };
-
-        let node = match tree.get_node(&selector) {
-            Some(node) => node,
-            None => {
-                return Err(Status::not_found(format!(
-                    "No element matches selector {}",
-                    selector
-                )));
-            }
-        };
-
-        Ok(Response::new(node.into()))
-    }
-
-    fn get_element_from_handle(
-        &self,
-        request: Request<proto::ElementHandle>,
-    ) -> Result<Response<proto::Element>, Status> {
-        let req = request.into_inner();
-
-        let tree_lock = self.ctx_tree.read();
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
-
-        let node = match tree.nodes.get(&req.handle) {
-            Some(node) => node,
-            None => return no_element_with_handle!(req.handle),
-        };
-
-        Ok(Response::new(node.into()))
+        match find_node(&tree_lock, selector) {
+            Ok(_) => Ok(tree_lock),
+            Err(_) => Err(Status::deadline_exceeded(format!(
+                "No element matched selector {} within timeout of {}ms",
+                selector,
+                timeout.as_millis()
+            ))),
+        }
     }
 }
 
 #[tonic::async_trait]
 impl proto::jab_service_server::JabService for JabService {
-    async fn wait_for(&self) {
-        todo!()
-    }
-
-    async fn race(&self) {
-        todo!()
-    }
-
-    async fn get_info(&self) {
-        todo!()
-    }
-
     async fn list_java_windows(
         &self,
         _request: Request<proto::Empty>,
@@ -167,10 +115,8 @@ impl proto::jab_service_server::JabService for JabService {
         match result {
             Ok(root) => {
                 // Clean up possible old tree
-                let mut tree_lock = self.ctx_tree.write();
-                if let Some(tree) = tree_lock.take() {
-                    drop(tree)
-                };
+                let mut tree_lock = self.ctx_tree.lock();
+                tree_lock.take();
 
                 // Build tree
                 let tree = ContextTree::from_root(root, None);
@@ -186,7 +132,7 @@ impl proto::jab_service_server::JabService for JabService {
         &self,
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::Hwnd>, Status> {
-        let tree_lock = self.ctx_tree.read();
+        let tree_lock = self.ctx_tree.lock();
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
@@ -203,7 +149,7 @@ impl proto::jab_service_server::JabService for JabService {
         &self,
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::Empty>, Status> {
-        let mut tree_lock = self.ctx_tree.write();
+        let mut tree_lock = self.ctx_tree.lock();
         let root_obj = match tree_lock.take() {
             Some(tree) => tree.into_root(),
             None => return no_window_selected!(),
@@ -219,7 +165,7 @@ impl proto::jab_service_server::JabService for JabService {
         &self,
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::VersionInfo>, Status> {
-        let tree_lock = self.ctx_tree.read();
+        let tree_lock = self.ctx_tree.lock();
 
         let tree = match tree_lock.as_ref() {
             Some(tree) => tree,
@@ -234,45 +180,144 @@ impl proto::jab_service_server::JabService for JabService {
         }
     }
 
-    async fn accessible_click(
+    async fn wait_for(
         &self,
-        request: Request<proto::Element>,
+        request: Request<proto::Locator>,
     ) -> Result<Response<proto::Empty>, Status> {
         let req = request.into_inner();
-        let tree_lock = self.ctx_tree.read();
 
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
+        let selector = parse_locator(&Locator {
+            selector: req.selector,
+        })?;
+
+        let _guard = self.wait_for_selector(
+            &selector,
+            req.timeout_ms.map(Duration::from_millis),
+            req.refresh_before_fail,
+        )?;
+
+        Ok(Response::new(proto::Empty {}))
+    }
+
+    async fn race(
+        &self,
+        request: Request<proto::RaceRequest>,
+    ) -> Result<Response<proto::RaceResponse>, Status> {
+        let req = request.into_inner();
+
+        let selectors: Vec<_> = req
+            .selectors
+            .into_iter()
+            .map(|selector| parse_locator(&Locator { selector }))
+            .collect::<Result<_, _>>()?;
+
+        let timeout = req
+            .timeout_ms
+            .map(Duration::from_millis)
+            .unwrap_or(DEFAULT_TIMEOUT);
+
+        let mut winner: Option<usize> = None;
+        let condition = |tree: &mut _| {
+            for (idx, selector) in selectors.iter().enumerate() {
+                if find_node(tree, selector).is_ok() {
+                    winner = Some(idx);
+                    return false;
+                }
+            }
+            true
         };
 
-        let node = match tree.nodes.get(&req.handle) {
-            Some(node) => node,
-            None => return no_element_with_handle!(req.handle),
-        };
+        let mut tree_lock = self.ctx_tree.lock();
+        let wait_result = self
+            .ctx_tree
+            .wait_change_while_for(&mut tree_lock, condition, timeout);
 
-        match node.obj.accessible_click() {
-            Ok(()) => Ok(Response::new(proto::Empty {})),
-            Err(e) => Err(Status::unknown(e)),
+        if !wait_result.timed_out()
+            && let Some(winner) = winner
+        {
+            return Ok(Response::new(proto::RaceResponse {
+                winner: winner as _,
+            }));
         }
+
+        if req.refresh_before_fail {
+            let root_obj = match tree_lock.take() {
+                Some(tree) => tree.into_root(),
+                None => return no_window_selected!(),
+            };
+
+            let tree = ContextTree::from_root(root_obj, None);
+            *tree_lock = Some(tree);
+        }
+
+        for (idx, selector) in selectors.iter().enumerate() {
+            if find_node(&tree_lock, selector).is_ok() {
+                return Ok(Response::new(proto::RaceResponse { winner: idx as _ }));
+            }
+        }
+
+        Err(Status::deadline_exceeded(format!(
+            "No element matched any of selectors {:?} within timeout of {}ms",
+            selectors,
+            timeout.as_millis()
+        )))
+    }
+
+    async fn get_info(
+        &self,
+        request: Request<proto::Locator>,
+    ) -> Result<Response<proto::AccessibleInfo>, Status> {
+        let req = request.into_inner();
+
+        let selector = parse_locator(&Locator {
+            selector: req.selector,
+        })?;
+
+        let tree_lock = self.wait_for_selector(
+            &selector,
+            req.timeout_ms.map(Duration::from_millis),
+            req.refresh_before_fail,
+        )?;
+
+        let node = find_node(&tree_lock, &selector)?;
+        Ok(Response::new(node.into()))
+    }
+
+    async fn get_info_from_all(
+        &self,
+        request: Request<proto::Locator>,
+    ) -> Result<Response<proto::RepeatedAccessibleInfo>, Status> {
+        let req = request.into_inner();
+
+        let selector = parse_locator(&Locator {
+            selector: req.selector,
+        })?;
+
+        let tree_lock = self.ctx_tree.lock();
+        let nodes = find_nodes(&tree_lock, &selector)?;
+
+        Ok(Response::new(proto::RepeatedAccessibleInfo {
+            ac_infos: nodes.into_iter().map(Into::into).collect(),
+        }))
     }
 
     async fn get_text(
         &self,
-        request: Request<proto::Element>,
+        request: Request<proto::Locator>,
     ) -> Result<Response<proto::Text>, Status> {
         let req = request.into_inner();
-        let tree_lock = self.ctx_tree.read();
 
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
+        let selector = parse_locator(&Locator {
+            selector: req.selector,
+        })?;
 
-        let node = match tree.nodes.get(&req.handle) {
-            Some(node) => node,
-            None => return no_element_with_handle!(req.handle),
-        };
+        let tree_lock = self.wait_for_selector(
+            &selector,
+            req.timeout_ms.map(Duration::from_millis),
+            req.refresh_before_fail,
+        )?;
+
+        let node = find_node(&tree_lock, &selector)?;
 
         Ok(Response::new(proto::Text {
             text: node.resolve_text().to_string(),
@@ -281,20 +326,21 @@ impl proto::jab_service_server::JabService for JabService {
 
     async fn get_actions(
         &self,
-        request: Request<proto::Element>,
+        request: Request<proto::Locator>,
     ) -> Result<Response<proto::Actions>, Status> {
         let req = request.into_inner();
-        let tree_lock = self.ctx_tree.read();
 
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
+        let selector = parse_locator(&Locator {
+            selector: req.selector,
+        })?;
 
-        let node = match tree.nodes.get(&req.handle) {
-            Some(node) => node,
-            None => return no_element_with_handle!(req.handle),
-        };
+        let tree_lock = self.wait_for_selector(
+            &selector,
+            req.timeout_ms.map(Duration::from_millis),
+            req.refresh_before_fail,
+        )?;
+
+        let node = find_node(&tree_lock, &selector)?;
 
         Ok(Response::new(node.resolve_actions().into()))
     }
@@ -304,28 +350,30 @@ impl proto::jab_service_server::JabService for JabService {
         request: Request<proto::DoActionRequest>,
     ) -> Result<Response<proto::Empty>, Status> {
         let req = request.into_inner();
-        let handle = match req.element {
-            Some(el) => el.handle,
-            None => return Err(Status::invalid_argument("Missing element")),
+        let Some(locator) = req.locator else {
+            return Err(Status::invalid_argument(
+                "locator argument must be specified",
+            ));
         };
-        let action = match req.action {
-            Some(act) => act.name,
-            None => return Err(Status::invalid_argument("Missing action")),
-        };
-
-        let tree_lock = self.ctx_tree.read();
-
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
+        let Some(action) = req.action else {
+            return Err(Status::invalid_argument(
+                "action argument must be specified",
+            ));
         };
 
-        let node = match tree.nodes.get(&handle) {
-            Some(node) => node,
-            None => return no_element_with_handle!(handle),
-        };
+        let selector = parse_locator(&Locator {
+            selector: locator.selector,
+        })?;
 
-        match node.obj.do_action(action) {
+        let tree_lock = self.wait_for_selector(
+            &selector,
+            locator.timeout_ms.map(Duration::from_millis),
+            locator.refresh_before_fail,
+        )?;
+
+        let node = find_node(&tree_lock, &selector)?;
+
+        match node.obj.do_action(action.name) {
             Ok(()) => Ok(Response::new(proto::Empty {})),
             Err(e) => Err(Status::unknown(e)),
         }

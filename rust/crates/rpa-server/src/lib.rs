@@ -4,4 +4,10 @@ pub mod proto {
 
 mod service;
 mod types;
+mod utils;
+
 pub use service::JabService;
+
+use std::time::Duration;
+
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);

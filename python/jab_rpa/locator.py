@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import time
 from typing import Any, TYPE_CHECKING
 
 from grpc import RpcError
+import pyautogui
 
-from .element import Element
 from .types import Action
 from .proto.jab import (
     Locator as _Locator,
@@ -68,89 +67,54 @@ class Locator:
     def __str__(self) -> str:
         return f"Locator {self.to_dict()}"
 
-    def find_all(self) -> list[Element]:
-        """Find all elements matching this locator.
-
-        Returns:
-            List of matching ``Element`` objects (may be empty).
-        """
-        return [
-            Element(el, self._driver)
-            for el in self._driver._client.find_elements(_Locator(self._selector))
-        ]
-
-    def find(self) -> Element:
-        """Find a element matching this locator.
-
-        Returns:
-            A matching ``Element``.
-
-        Raises:
-            ``LocatorNotFound``: If no element matches.
-        """
-        try:
-            el = self._driver._client.find_element(_Locator(self._selector))
-        except RpcError as e:
-            raise LocatorNotFound(
-                f"Element with locator = {_Locator(self._selector)!r} not found"
-            ) from e
-        return Element(el, self._driver)
-
-    def exists(self) -> bool:
-        """Check if an element matching this locator exists.
-
-        Returns:
-            ``True`` if an element mathcing this locator exists,
-            ``False`` else
-        """
-        try:
-            self.find()
-            return True
-        except LocatorNotFound:
-            return False
-
     def wait_for(
         self,
-        timeout: int | float = _WAIT_FOR_TIMEOUT,
-        sleep_step: int | float = _WAIT_FOR_STEP,
-    ) -> Element:
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
+    ) -> None:
         """Poll the accessibility tree until a matching element appears.
 
-        Repeatedly calls ``find()`` and refreshes the tree between
-        attempts. Useful for waiting for dialogs or dynamic content.
-
         Args:
-            timeout: Maximum seconds to wait.
-            sleep_step: Seconds between polling attempts.
-
-        Returns:
-            a matching ``Element``.
+            timeout_ms: Maximum milliseconds to wait.
 
         Raises:
             ``LocatorNotFound``: If no element matches within the timeout.
         """
-        start = time.monotonic()
-        while time.monotonic() - start <= timeout:
-            try:
-                return self.find()
-            except LocatorNotFound:
-                time.sleep(sleep_step)
-                self._driver.refresh_tree()
+        try:
+            self._driver._client.wait_for(
+                self._selector, timeout_ms, refresh_before_fail
+            )
 
-        raise LocatorNotFound(
-            f"Element with locator = {_Locator(self._selector)!r} not found within timeout {timeout!r}"
+        except RpcError as e:
+            raise LocatorNotFound() from e
+
+    def do_accessible_action(
+        self,
+        action: Action,
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
+    ) -> None:
+        """Performs an accessible action on a matching element."""
+        self._driver._client.do_action(
+            action, self._selector, timeout_ms, refresh_before_fail
         )
 
-    def do_accessible_action(self, action: Action) -> None:
-        """Performs an accessible action on a matching element."""
-        self.find().do_accessible_action(action)
-
-    def accessible_click(self) -> None:
+    def accessible_click(
+        self,
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
+    ) -> None:
         """Click a matching element using the JAB accessibility API (not pyautogui).
         This does not move the mouse."""
-        self.find().accessible_click()
+        self.do_accessible_action(Action("click"), timeout_ms, refresh_before_fail)
 
-    def click(self, clicks: int = 1, interval: int | float = 0.0) -> None:
+    def click(
+        self,
+        clicks: int = 1,
+        interval: int | float = 0.0,
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
+    ) -> None:
         """Click at a matching element's center using pyautogui.
 
         Moves the mouse to the center of a matching element's bounding box
@@ -160,7 +124,12 @@ class Locator:
             clicks: Number of clicks (default 1).
             interval: Seconds between clicks (default 0).
         """
-        self.find().click(clicks, interval)
+        info = self._driver._client.get_info(
+            self._selector, timeout_ms, refresh_before_fail
+        )
+        center_x = info.x + (info.width / 2)
+        center_y = info.y + (info.height / 2)
+        pyautogui.click(center_x, center_y, clicks, interval)
 
     def click_and_type(
         self,
@@ -168,6 +137,8 @@ class Locator:
         clicks: int = 1,
         interval_text: int | float = 0.0,
         interval_clicks: int | float = 0.0,
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
     ) -> None:
         """Click then type text into a matching element.
 
@@ -180,4 +151,10 @@ class Locator:
             interval_text: Seconds between keystrokes.
             interval_clicks: Seconds between clicks.
         """
-        self.find().click_and_type(text, clicks, interval_text, interval_clicks)
+        info = self._driver._client.get_info(
+            self._selector, timeout_ms, refresh_before_fail
+        )
+        center_x = info.x + (info.width / 2)
+        center_y = info.y + (info.height / 2)
+        pyautogui.click(center_x, center_y, clicks, interval_clicks)
+        pyautogui.write(text, interval_text)

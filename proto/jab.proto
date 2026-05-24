@@ -5,8 +5,8 @@ package jab;
 service JabService {
   rpc ListJavaWindows (Empty) returns (RepeatedWindowInfo);
   rpc SelectWindow (WindowInfo) returns (Empty);
-  rpc RefreshTree (Empty) returns (Empty);
   rpc GetSelectedWindowHwnd (Empty) returns (Hwnd);
+  rpc RefreshTree (Empty) returns (Empty);
   rpc GetVersionInfo (Empty) returns (VersionInfo);
   rpc WaitFor (Locator) returns (Empty);
   rpc Race (RaceRequest) returns (RaceResponse);
@@ -58,10 +58,10 @@ message Hwnd {
 
 message Locator {
   string selector = 1;
-  // -1=default
+  // None=default
   // 0=fail fast
   // >0=max wait
-  int32 timeout_ms = 2;
+  optional uint64 timeout_ms = 2;
   // Do refresh_tree after timeout and check a last time
   bool refresh_before_fail = 3;
 }
@@ -85,15 +85,15 @@ message AccessibleInfo {
 }
 
 message RepeatedAccessibleInfo {
-  repeated AccessibleInfo ac_infos;
+  repeated AccessibleInfo ac_infos = 1;
 }
 
 message RaceRequest {
   repeated string selectors = 1;
-  // -1=default
+  // None=default
   // 0=fail fast
   // >0=max wait
-  int32 timeout_ms = 2;
+  optional uint64 timeout_ms = 2;
   // Do refresh_tree after timeout and check a last time
   bool refresh_before_fail = 3;
 }

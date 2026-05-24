@@ -19,14 +19,17 @@ fn test_selector_display_wildcard() {
 
 #[test]
 fn test_selector_display_state_class() {
-    let sel = parse("push_button.enabled");
-    assert_eq!(sel.to_string(), "push_button.enabled");
+    let sel = parse("push_button:require-state(enabled)");
+    assert_eq!(sel.to_string(), "push_button:require-state(enabled)");
 }
 
 #[test]
 fn test_selector_display_multiple_states() {
-    let sel = parse("push_button.enabled.focusable");
-    assert_eq!(sel.to_string(), "push_button.enabled.focusable");
+    let sel = parse("push_button:require-state(enabled):require-state(focusable)");
+    assert_eq!(
+        sel.to_string(),
+        "push_button:require-state(enabled):require-state(focusable)"
+    );
 }
 
 #[test]
@@ -97,8 +100,11 @@ fn test_selector_display_subsequent_sibling() {
 
 #[test]
 fn test_selector_display_complex_compound() {
-    let sel = parse("dialog push_button.enabled[name='OK']");
-    assert_eq!(sel.to_string(), "dialog push_button.enabled[name='OK']");
+    let sel = parse("dialog push_button:require-state(enabled)[name='OK']");
+    assert_eq!(
+        sel.to_string(),
+        "dialog push_button:require-state(enabled)[name='OK']"
+    );
 }
 
 #[test]
@@ -124,7 +130,7 @@ fn test_round_trip_simple() {
     let inputs = vec![
         "push_button",
         "*",
-        "push_button.enabled",
+        "push_button:require-state(enabled)",
         "[name='Clear']",
         "[x==5]",
         "[accessible_action]",

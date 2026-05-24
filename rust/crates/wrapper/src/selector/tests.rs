@@ -15,7 +15,7 @@ fn test_locator_parse_err() {
 
 #[test]
 fn test_locator_pipeline_complex_selector() {
-    let loc = Locator::new("dialog > push_button[name='Clear'].enabled");
+    let loc = Locator::new("dialog > push_button[name='Clear']:require-state(enabled)");
     let result = loc.parse();
     assert!(result.is_ok(), "expected Ok, got: {:?}", result.err());
     let sel = result.unwrap();

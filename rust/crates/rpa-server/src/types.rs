@@ -18,9 +18,7 @@ impl From<WindowInfo> for proto::WindowInfo {
 
 impl From<HWND> for proto::Hwnd {
     fn from(hwnd: HWND) -> Self {
-        Self {
-            hwnd: hwnd.0 as _
-        }
+        Self { hwnd: hwnd.0 as _ }
     }
 }
 
@@ -43,16 +41,16 @@ impl From<proto::Locator> for Locator {
     }
 }
 
-impl From<&ContextNode> for proto::Element {
+impl From<&ContextNode> for proto::AccessibleInfo {
     fn from(node: &ContextNode) -> Self {
         Self {
-            handle: node.handle,
+            // handle: node.handle,
             name: node.name.clone(),
             role: node.role.clone(),
             states: node.states.clone(),
             states_en_us: node.states_en_us.clone(),
             description: node.description.clone(),
-            children_handles: node.children.clone(),
+            // children_handles: node.children.clone(),
             x: node.x,
             y: node.y,
             width: node.width,
@@ -62,7 +60,7 @@ impl From<&ContextNode> for proto::Element {
             accessible_selection: node.accessible_selection,
             children_count: node.children_count,
             index_in_parent: node.index_in_parent,
-            parent_handle: node.parent,
+            // parent_handle: node.parent,
             depth: node.depth,
         }
     }

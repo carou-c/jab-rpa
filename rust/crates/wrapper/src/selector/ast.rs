@@ -1,11 +1,11 @@
 use regex::Regex;
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Selector {
     pub alternatives: Vec<ComplexSelector>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // Right-to-left
 pub struct ComplexSelector {
     pub head: Option<Combinator>,
@@ -18,13 +18,6 @@ impl ComplexSelector {
         if self.head.is_some() {
             return true;
         }
-        if self
-            .last
-            .pseudo_classes
-            .contains(&PseudoClassSelector::Scope)
-        {
-            return true;
-        }
         self.body.iter().any(|(compound, _)| {
             compound
                 .pseudo_classes
@@ -33,7 +26,7 @@ impl ComplexSelector {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Combinator {
     Child,
     Descendant,
@@ -41,14 +34,14 @@ pub enum Combinator {
     SubsequentSibling,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CompoundSelector {
     pub role: Option<String>,
     pub attrs: Vec<AttrSelector>,
     pub pseudo_classes: Vec<PseudoClassSelector>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AttrSelector {
     Str {
         name: StrAttrName,
@@ -66,7 +59,7 @@ pub enum AttrSelector {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StrAttrName {
     Name,
     Description,
@@ -76,7 +69,7 @@ pub enum StrAttrName {
     Actions,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StringOp {
     Eq,
     ContainsWord,
@@ -101,6 +94,8 @@ impl PartialEq for StrMatcher {
     }
 }
 
+impl Eq for StrMatcher {}
+
 impl std::hash::Hash for StrMatcher {
     fn hash<H>(&self, state: &mut H)
     where
@@ -113,12 +108,12 @@ impl std::hash::Hash for StrMatcher {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AttrFlags {
     pub case_insensitive: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IntAttrName {
     X,
     Y,
@@ -128,7 +123,7 @@ pub enum IntAttrName {
     Depth,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IntOp {
     Eq,
     Ne,
@@ -139,14 +134,14 @@ pub enum IntOp {
 }
 
 #[allow(clippy::enum_variant_names)]
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BoolAttrName {
     AccessibleAction,
     AccessibleText,
     AccessibleSelection,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PseudoClassSelector {
     Scope,
     Has(Box<Selector>),

@@ -109,7 +109,6 @@ impl ContextTree {
 
     pub fn node_matches(&self, node: &ContextNode, selector: &Selector) -> bool {
         use super::matcher::matches_selector;
-
         matches_selector(node, selector, None, self)
     }
 

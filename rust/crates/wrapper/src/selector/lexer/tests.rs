@@ -26,11 +26,6 @@ fn test_tilde() {
 }
 
 #[test]
-fn test_dot() {
-    assert_tokens(".", &[Token::Dot]);
-}
-
-#[test]
 fn test_colon() {
     assert_tokens(":", &[Token::Colon]);
 }
@@ -237,11 +232,13 @@ fn test_selector_with_descendant_combinator() {
 #[test]
 fn test_selector_with_state_class() {
     assert_tokens(
-        "push_button.enabled",
+        ":require-state(enabled)",
         &[
-            Token::Ident("push_button".into()),
-            Token::Dot,
+            Token::Colon,
+            Token::Ident("require-state".into()),
+            Token::LParen,
             Token::Ident("enabled".into()),
+            Token::RParen,
         ],
     );
 }

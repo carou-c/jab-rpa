@@ -205,7 +205,12 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                     "has" => match arg {
                         Some(PseudoArg::Selector(mut s)) => {
                             for complex in s.alternatives.iter_mut() {
-                                if !complex.is_relative() {
+                                if !complex.is_relative()
+                                    && !complex
+                                        .last
+                                        .pseudo_classes
+                                        .contains(&PseudoClassSelector::Scope)
+                                {
                                     complex.head = Some(Combinator::Descendant)
                                 }
                             }

@@ -4,7 +4,6 @@ use regex::Regex;
 fn compound(role: Option<&str>) -> CompoundSelector {
     CompoundSelector {
         role: role.map(String::from),
-        states: vec![],
         attrs: vec![],
         pseudo_classes: vec![],
     }
@@ -141,6 +140,14 @@ fn test_pseudo_class_selector_equality() {
         PseudoClassSelector::NthChild(1),
         PseudoClassSelector::NthChild(2)
     );
+    assert_eq!(
+        PseudoClassSelector::RequireState("enabled".into()),
+        PseudoClassSelector::RequireState("enabled".into())
+    );
+    assert_ne!(
+        PseudoClassSelector::RequireState("enabled".into()),
+        PseudoClassSelector::ExcludeState("enabled".into())
+    );
 }
 
 #[test]
@@ -160,7 +167,6 @@ fn test_is_relative_with_scope_in_last() {
         body: vec![],
         last: CompoundSelector {
             role: None,
-            states: vec![],
             attrs: vec![],
             pseudo_classes: vec![PseudoClassSelector::Scope],
         },
@@ -175,7 +181,6 @@ fn test_is_relative_with_scope_in_body() {
         body: vec![(
             CompoundSelector {
                 role: None,
-                states: vec![],
                 attrs: vec![],
                 pseudo_classes: vec![PseudoClassSelector::Scope],
             },

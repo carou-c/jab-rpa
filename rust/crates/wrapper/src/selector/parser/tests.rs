@@ -1,5 +1,5 @@
-use crate::selector::ast::*;
 use crate::selector::Locator;
+use crate::selector::ast::*;
 fn parse(input: &str) -> Selector {
     Locator::new(input).parse().unwrap()
 }
@@ -11,7 +11,6 @@ fn parse_err(input: &str) -> String {
 fn compound(role: Option<&str>) -> CompoundSelector {
     CompoundSelector {
         role: role.map(String::from),
-        states: vec![],
         attrs: vec![],
         pseudo_classes: vec![],
     }
@@ -54,20 +53,19 @@ fn test_role_with_hyphen() {
     assert_eq!(result, expected);
 }
 
-// ---- State classes ----
+// ---- State pseudo-classes ----
 
 #[test]
 fn test_single_state_class() {
-    let result = parse("push_button.enabled");
+    let result = parse("push_button:require-state(enabled)");
     let expected = Selector {
         alternatives: vec![complex(
             None,
             vec![],
             CompoundSelector {
                 role: Some("push_button".into()),
-                states: vec!["enabled".into()],
                 attrs: vec![],
-                pseudo_classes: vec![],
+                pseudo_classes: vec![PseudoClassSelector::RequireState("enabled".into())],
             },
         )],
     };
@@ -76,16 +74,18 @@ fn test_single_state_class() {
 
 #[test]
 fn test_multiple_state_classes() {
-    let result = parse("push_button.enabled.focusable");
+    let result = parse("push_button:require-state(enabled):require-state(focusable)");
     let expected = Selector {
         alternatives: vec![complex(
             None,
             vec![],
             CompoundSelector {
                 role: Some("push_button".into()),
-                states: vec!["enabled".into(), "focusable".into()],
                 attrs: vec![],
-                pseudo_classes: vec![],
+                pseudo_classes: vec![
+                    PseudoClassSelector::RequireState("enabled".into()),
+                    PseudoClassSelector::RequireState("focusable".into()),
+                ],
             },
         )],
     };
@@ -94,16 +94,15 @@ fn test_multiple_state_classes() {
 
 #[test]
 fn test_state_class_without_role() {
-    let result = parse(".enabled");
+    let result = parse(":require-state(enabled)");
     let expected = Selector {
         alternatives: vec![complex(
             None,
             vec![],
             CompoundSelector {
                 role: None,
-                states: vec!["enabled".into()],
                 attrs: vec![],
-                pseudo_classes: vec![],
+                pseudo_classes: vec![PseudoClassSelector::RequireState("enabled".into())],
             },
         )],
     };
@@ -121,7 +120,6 @@ fn test_str_attr_eq() {
             vec![],
             CompoundSelector {
                 role: None,
-                states: vec![],
                 attrs: vec![AttrSelector::Str {
                     name: StrAttrName::Name,
                     op: StringOp::Eq,
@@ -424,10 +422,12 @@ fn test_bool_attr_accessible_selection() {
 #[test]
 fn test_pseudo_scope() {
     let result = parse(":scope");
-    assert!(result.alternatives[0]
-        .last
-        .pseudo_classes
-        .contains(&PseudoClassSelector::Scope));
+    assert!(
+        result.alternatives[0]
+            .last
+            .pseudo_classes
+            .contains(&PseudoClassSelector::Scope)
+    );
 }
 
 #[test]
@@ -604,13 +604,17 @@ fn test_alternatives_with_combinators() {
 
 #[test]
 fn test_complex_compound() {
-    let result = parse("dialog > push_button[name='OK'].enabled");
+    let result = parse("dialog > push_button[name='OK']:require-state(enabled)");
     let alt = &result.alternatives[0];
     assert_eq!(alt.body.len(), 1);
     assert_eq!(alt.body[0].0.role.as_deref(), Some("dialog"));
     assert_eq!(alt.body[0].1, Combinator::Child);
     assert_eq!(alt.last.role.as_deref(), Some("push_button"));
-    assert!(alt.last.states.contains(&"enabled".into()));
+    assert!(
+        alt.last
+            .pseudo_classes
+            .contains(&PseudoClassSelector::RequireState("enabled".into()))
+    );
     assert!(matches!(
         &alt.last.attrs[0],
         AttrSelector::Str {
@@ -630,12 +634,27 @@ fn test_selector_with_multiple_attrs() {
 
 #[test]
 fn test_selector_with_role_and_multiple_attributes() {
-    let result = parse("push_button[name='Clear'].enabled:not(dialog)");
+    let result = parse("push_button[name='Clear']:require-state(enabled):not(dialog)");
     let last = &result.alternatives[0].last;
     assert_eq!(last.role.as_deref(), Some("push_button"));
-    assert!(last.states.contains(&"enabled".into()));
-    assert_eq!(last.attrs.len(), 1);
-    assert_eq!(last.pseudo_classes.len(), 1);
+    assert!(
+        last.pseudo_classes
+            .contains(&PseudoClassSelector::RequireState("enabled".into()))
+    );
+    assert!(
+        last.pseudo_classes
+            .contains(&PseudoClassSelector::Not(Box::new(Selector {
+                alternatives: vec![ComplexSelector {
+                    head: Some(Combinator::Descendant),
+                    body: vec![],
+                    last: CompoundSelector {
+                        role: Some("dialog".into()),
+                        attrs: vec![],
+                        pseudo_classes: vec![],
+                    },
+                }]
+            })))
+    );
 }
 
 // ---- Error cases ----
@@ -649,12 +668,6 @@ fn test_error_empty_input() {
 #[test]
 fn test_error_relative_selector_at_top_level() {
     assert!(Locator::new("> a").parse().is_err());
-}
-
-#[test]
-fn test_error_scope_relative_with_combinator() {
-    // :scope at top level is relative → rejected
-    assert!(Locator::new(":scope").parse().is_err());
 }
 
 #[test]

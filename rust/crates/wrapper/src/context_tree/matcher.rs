@@ -31,7 +31,7 @@ fn matches_complex(
         return false;
     }
 
-    // Strangely mystical assignment
+    // Lil strange assignment
     // Basically moves the selector rightwise
     //
     // head [body_n, ..., body_0] last =>

@@ -34,10 +34,10 @@ pub(crate) enum ChangeEvent {
     State(EventMeta, EventData<String>),
     Text(EventMeta),
     #[allow(dead_code)]
-    Value(EventMeta, EventData<String>),
-    VisibleData(EventMeta),
+    // Value(EventMeta, EventData<String>),
+    // VisibleData(EventMeta),
+    // ActiveDescendent(EventMeta, EventData<JObject>),
     Child(EventMeta, EventData<JObject>),
-    ActiveDescendent(EventMeta, EventData<JObject>),
 }
 
 impl ChangeEvent {
@@ -47,18 +47,20 @@ impl ChangeEvent {
             | Self::Description(meta, ..)
             | Self::State(meta, ..)
             | Self::Text(meta, ..)
-            | Self::Value(meta, ..)
-            | Self::VisibleData(meta, ..)
-            | Self::Child(meta, ..)
-            | Self::ActiveDescendent(meta, ..) => meta,
+            // | Self::Value(meta, ..)
+            // | Self::VisibleData(meta, ..)
+            // | Self::ActiveDescendent(meta, ..)
+            | Self::Child(meta, ..) => meta,
         }
     }
 }
 
 impl Drop for ChangeEvent {
     fn drop(&mut self) {
+        #[allow(clippy::single_match)]
         match self {
-            Self::Child(meta, data) | Self::ActiveDescendent(meta, data) => unsafe {
+            // Self::ActiveDescendent(meta, data) |
+            Self::Child(meta, data) => unsafe {
                 if data.old != 0 {
                     jab_sys::ReleaseJavaObject(meta.vm_id, data.old);
                 }

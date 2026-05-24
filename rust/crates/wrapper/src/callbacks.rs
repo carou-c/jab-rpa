@@ -1,5 +1,6 @@
-use crate::context_tree::ContextTree;
 use std::sync::OnceLock;
+
+use crate::context_tree::ContextTree;
 
 pub(crate) use self::{
     event::ChangeEvent,
@@ -52,8 +53,6 @@ impl ContextTree {
                 let handle = node.handle;
                 self.rebuild_subtree(&handle);
             }
-
-            _ => (),
         }
     }
 }

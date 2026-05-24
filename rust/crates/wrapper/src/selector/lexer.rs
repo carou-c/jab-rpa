@@ -16,7 +16,6 @@ pub enum Token {
 
     // #[token(".")]
     // Dot,
-
     #[token(":")]
     Colon,
 

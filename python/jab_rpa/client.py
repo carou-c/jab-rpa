@@ -47,59 +47,14 @@ class JabRpaClient:
         """
         self.__stub.select_window(window_info)
 
+    def get_selected_window_hwnd(self) -> jab.Hwnd:
+        """Returns the HWND for the selected window."""
+        return self.__stub.get_selected_window_hwnd(jab.Empty())
+
     def refresh_tree(self) -> None:
         """Rebuild the cached accessibility tree on the server."""
         req = jab.Empty()
         self.__stub.refresh_tree(req)
-
-    def find_elements(self, locator: jab.Locator) -> list[jab.Element]:
-        """Find elements matching a structured locator.
-
-        Args:
-            locator: A ``jab.Locator`` protobuf message.
-
-        Returns:
-            List of matching ``jab.Element`` protobuf messages.
-        """
-        res: jab.RepeatedElement = self.__stub.find_elements(locator)
-        return res.elements
-
-    def find_element(self, locator: jab.Locator) -> jab.Element:
-        """Find one element matching a structured locator.
-
-        Args:
-            locator: A ``jab.Locator`` protobuf message.
-
-        Returns:
-            A matching ``jab.Element`` protobuf message.
-        """
-        res: jab.Element = self.__stub.find_element(locator)
-        return res
-
-    def get_element_from_handle(self, handle: int) -> jab.Element | None:
-        """Resolve a numeric handle to a full element description.
-
-        Args:
-            handle: Numeric handle previously returned by the server.
-
-        Returns:
-            The ``jab.Element`` if found, or ``None`` if the handle is stale.
-        """
-        req = jab.ElementHandle(handle)
-        res: jab.Element | None
-        try:
-            res = self.__stub.get_element_from_handle(req)
-        except grpc.RpcError:
-            res = None
-        return res
-
-    def accessible_click(self, element: jab.Element) -> None:
-        """Perform an accessible action click via the JAB API.
-
-        Args:
-            element: The ``jab.Element`` to click.
-        """
-        self.__stub.accessible_click(element)
 
     def get_version_info(self) -> jab.VersionInfo | None:
         """Retrieve JAB bridge and server version info.
@@ -111,29 +66,81 @@ class JabRpaClient:
         res: jab.VersionInfo = self.__stub.get_version_info(req)
         return res
 
-    def get_element_text(self, element: jab.Element) -> str:
+    def wait_for(
+        self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
+    ) -> None:
+        req = jab.Locator(selector, timeout_ms, refresh_before_fail)
+        self.__stub.wait_for(req)
+
+    def race(
+        self, selectors: list[str], timeout_ms: int | None, refresh_before_fail: bool
+    ) -> int:
+        req = jab.RaceRequest(selectors, timeout_ms, refresh_before_fail)
+        res: jab.RaceResponse = self.__stub.race(req)
+        return res.winner
+
+    def get_info(
+        self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
+    ) -> jab.AccessibleInfo:
+        """Get the accessible information from an element.
+
+        Args:
+            element: The ``jab.Element`` to get text.
+        """
+        req = jab.Locator(selector, timeout_ms, refresh_before_fail)
+        res: jab.AccessibleInfo = self.__stub.get_info(req)
+        return res
+
+    def get_info_from_all(
+        self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
+    ) -> list[jab.AccessibleInfo]:
+        """Get the accessible information from all elements matching a selector.
+
+        Args:
+            element: The ``jab.Element`` to get text.
+        """
+        req = jab.Locator(selector, timeout_ms, refresh_before_fail)
+        res: jab.RepeatedAccessibleInfo = self.__stub.get_info_from_all(req)
+        return res.ac_infos
+
+    def get_text(
+        self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
+    ) -> str:
         """Get the accessible text from an element.
 
         Args:
             element: The ``jab.Element`` to get text.
         """
-        res: jab.Text = self.__stub.get_element_text(element)
+        req = jab.Locator(selector, timeout_ms, refresh_before_fail)
+        res: jab.Text = self.__stub.get_text(req)
         return res.text
 
-    def get_element_actions(self, element: jab.Element) -> list[jab.Action]:
+    def get_actions(
+        self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
+    ) -> list[jab.Action]:
         """Get the available accessible actions from an element.
 
         Args:
             element: The ``jab.Element`` to get actions.
         """
-        res: jab.Actions = self.__stub.get_element_actions(element)
+        req = jab.Locator(selector, timeout_ms, refresh_before_fail)
+        res: jab.Actions = self.__stub.get_actions(req)
         return res.actions
 
-    def do_action_on_element(self, element: jab.Element, action: jab.Action) -> None:
+    def do_action(
+        self,
+        action: jab.Action,
+        selector: str,
+        timeout_ms: int | None,
+        refresh_before_fail: bool,
+    ) -> None:
         """Performs an accessible action on an element.
 
         Args:
             element: The ``jab.Element`` to perform the action.
             action: The ``jab.Action`` to perform.
         """
-        self.__stub.do_action_on_element(jab.DoActionRequest(element, action))
+        req = jab.DoActionRequest(
+            jab.Locator(selector, timeout_ms, refresh_before_fail), action
+        )
+        self.__stub.do_action(req)

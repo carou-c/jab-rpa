@@ -95,14 +95,14 @@ cb!(String, on_name_change, ChangeEvent::Name);
 cb!(String, on_description_change, ChangeEvent::Description);
 cb!(String, on_state_change, ChangeEvent::State);
 cb!(on_text_change, ChangeEvent::Text);
-cb!(String, on_value_change, ChangeEvent::Value);
-cb!(on_visible_data_change, ChangeEvent::VisibleData);
 cb!(JObject, on_child_change, ChangeEvent::Child);
-cb!(
-    JObject,
-    on_active_descendent_change,
-    ChangeEvent::ActiveDescendent
-);
+// cb!(String, on_value_change, ChangeEvent::Value);
+// cb!(on_visible_data_change, ChangeEvent::VisibleData);
+// cb!(
+//     JObject,
+//     on_active_descendent_change,
+//     ChangeEvent::ActiveDescendent
+// );
 
 pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
     let (tx, rx) = channel::unbounded();
@@ -117,10 +117,10 @@ pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
         jab_sys::SetPropertyDescriptionChange(Some(on_description_change));
         jab_sys::SetPropertyStateChange(Some(on_state_change));
         jab_sys::SetPropertyTextChange(Some(on_text_change));
-        jab_sys::SetPropertyValueChange(Some(on_value_change));
-        jab_sys::SetPropertyVisibleDataChange(Some(on_visible_data_change));
         jab_sys::SetPropertyChildChange(Some(on_child_change));
-        jab_sys::SetPropertyActiveDescendentChange(Some(on_active_descendent_change));
+        // jab_sys::SetPropertyValueChange(Some(on_value_change));
+        // jab_sys::SetPropertyVisibleDataChange(Some(on_visible_data_change));
+        // jab_sys::SetPropertyActiveDescendentChange(Some(on_active_descendent_change));
         // jab_sys::SetPropertyChildChange(Some(on_property_child_change));
         // jab_sys::SetPropertyVisibleDataChange(Some(on_property_visible_data_change));
         // jab_sys::SetPropertyActiveDescendentChange(Some(on_property_active_descendent_change));

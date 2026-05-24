@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use std::thread;
+use std::{sync::Arc, time::Duration};
 
-use parking_lot::{RwLock, RwLockWriteGuard};
+use parking_lot::{Condvar, Mutex, MutexGuard, WaitTimeoutResult};
 
 use windows::{
     Win32::{
@@ -41,6 +41,42 @@ pub struct JabWrapper {
     runtime: Arc<JabRuntime>,
 }
 
+pub struct SharedCtxTree {
+    tree: Mutex<Option<ContextTree>>,
+    changed: Condvar,
+}
+
+impl SharedCtxTree {
+    pub fn new() -> Self {
+        Self {
+            tree: Mutex::new(None),
+            changed: Condvar::new(),
+        }
+    }
+
+    pub fn lock(&self) -> MutexGuard<'_, Option<ContextTree>> {
+        self.tree.lock()
+    }
+
+    pub fn wait_change_while_for<F>(
+        &self,
+        guard: &mut MutexGuard<Option<ContextTree>>,
+        condition: F,
+        timeout: Duration,
+    ) -> WaitTimeoutResult
+    where
+        F: FnMut(&mut Option<ContextTree>) -> bool,
+    {
+        self.changed.wait_while_for(guard, condition, timeout)
+    }
+}
+
+impl Default for SharedCtxTree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JabWrapper {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
@@ -49,10 +85,7 @@ impl JabWrapper {
         }
     }
 
-    pub fn spawn_tree_updater(
-        &self,
-        tree: &Arc<RwLock<Option<ContextTree>>>,
-    ) -> thread::JoinHandle<()> {
+    pub fn spawn_tree_updater(&self, tree: &Arc<SharedCtxTree>) -> thread::JoinHandle<()> {
         let rx = self.runtime.cb_rx.clone();
         let weak = Arc::downgrade(tree);
         thread::spawn(move || {
@@ -64,14 +97,15 @@ impl JabWrapper {
                 while let Ok(next) = rx.try_recv() {
                     events.push(next);
                 }
-                let mut tree_writer = tree.write();
-                if let Some(t) = tree_writer.as_mut() {
+                let mut tree_lock = tree.lock();
+                if let Some(t) = tree_lock.as_mut() {
                     for e in events {
                         t.apply_event(e);
                     }
                 }
 
-                RwLockWriteGuard::unlock_fair(tree_writer);
+                tree.changed.notify_all();
+                MutexGuard::unlock_fair(tree_lock);
             }
         })
     }
@@ -81,7 +115,7 @@ impl JabWrapper {
     }
 
     pub fn get_hwnd_from_obj(&self, obj: &JavaObject) -> HWND {
-        unsafe { HWND(jab_sys::GetHWNDFromAccessibleContext(obj.vm_id, obj.jobject) as _) }
+        unsafe { HWND(jab_sys::getHWNDFromAccessibleContext(obj.vm_id, obj.jobject) as _) }
     }
 
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {
