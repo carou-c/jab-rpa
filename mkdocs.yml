@@ -20,6 +20,5 @@ nav:
   - API Reference:
       - JabDriver: api/driver.md
       - Locator: api/locator.md
-      - Element: api/element.md
       - JabRpaServer: api/server.md
       - JabRpaClient: api/client.md

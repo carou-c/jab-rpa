@@ -23,8 +23,9 @@ jabswitch -enable
 from jab_rpa import JabDriver
 
 with JabDriver("My Java Application.*") as driver:
-    button = driver.locator("push_button[name='Clear']").wait_for()
-    button.click()
+    locator = driver.locator("push_button[name='Clear']")
+    locator.wait_for()
+    locator.click()
 ```
 
 ### What's happening
@@ -36,21 +37,31 @@ with JabDriver("My Java Application.*") as driver:
    CSS-selector-like syntax (see [Selector syntax](selectors.md)).
 3. `.wait_for()` — polls until a matching element appears in the accessibility
    tree.
-4. `.click()` — moves the mouse to the element's center and clicks via
-   `pyautogui`.
+4. `.click()` — moves the mouse to the matching element's center and clicks via
+    `pyautogui`.
+
+## Waiting for elements
+
+```python
+# Wait up to 30 seconds (default: 60s)
+locator.wait_for(timeout_ms=30_000)
+
+# Wait with no timeout (fail fast if element doesn't exist yet)
+locator.wait_for(timeout_ms=0)
+```
 
 ## Interacting with elements
 
 ```python
 # Accessible click (uses JAB API directly — no mouse movement)
-element.accessible_click()
+locator.accessible_click()
 
 # Coordinate click (uses pyautogui)
-element.click()
-element.click(clicks=2, interval=0.5)
+locator.click()
+locator.click(clicks=2, interval=0.5)
 
 # Click and type text
-element.click_and_type("hello world")
+locator.click_and_type("hello world")
 ```
 
 ### Accessible actions
@@ -58,59 +69,43 @@ element.click_and_type("hello world")
 Elements may expose additional actions beyond clicking (e.g. "toggle", "expand", "select"):
 
 ```python
-actions = element.get_accessible_actions()
+# List available actions
+actions: list[Action] = locator.get_actions()
 for action in actions:
     print(action.name)
 
 # Perform a specific action by name
-element.do_accessible_action(action)
-```
-
-You can also use these directly on a `Locator`:
-
-```python
-locator.accessible_click()
 locator.do_accessible_action(action)
 ```
 
 ## Getting element info
 
 ```python
-print(element.name)                # Accessible name
-print(element.role)                # e.g. "push_button"
-print(element.states)              # Localized states
-print(element.states_en_us)        # en-US states
-print(element.get_accessible_text())  # Accessible text content
-print(element.description)         # Accessible description
-print(element.x, element.y)        # Screen coordinates
-print(element.width, element.height)
-print(element.index_in_parent)
-print(element.children_count)
-print(element.to_dict())           # All properties as dict
+info = locator.get_info()
+
+print(info.name)                # Accessible name
+print(info.role)                # e.g. "push_button"
+print(info.states)              # Localized states
+print(info.states_en_us)        # en-US states
+print(info.description)         # Accessible description
+print(info.x, info.y)           # Screen coordinates
+print(info.width, info.height)
+print(info.index_in_parent)
+print(info.children_count)
+print(info.to_dict())           # All properties as dict
 ```
 
-## Finding elements
+The `Locator` also supports querying across all matching nodes or retrieving specific fields:
 
 ```python
-# Find the first matching element (raises LocatorNotFound if none match)
-element = locator.find()
+# Get info from all matching elements
+all_info = locator.get_info_from_all()
 
-# Find all matching elements (returns empty list if none match)
-elements = locator.find_all()
+# Get accessible text directly
+text = locator.get_text()
 
-# Check if an element exists without fetching it
-if locator.exists():
-    element = locator.find()
-```
-
-## Waiting for elements
-
-```python
-# Wait up to 30 seconds (default: 60s)
-element = locator.wait_for(timeout=30)
-
-# Custom polling interval
-element = locator.wait_for(timeout=60, sleep_step=2)
+# Get available actions
+actions = locator.get_actions()
 ```
 
 ## Driver utilities
@@ -130,12 +125,7 @@ driver.refresh_tree()
 info = driver.get_version_info()
 ```
 
-## Traversing the tree
 
-```python
-children = element.children()
-parent = element.parent()
-```
 
 ## Error handling
 
@@ -154,7 +144,8 @@ from jab_rpa.locator import LocatorNotFound
 
 try:
     with JabDriver("MyApp.*") as driver:
-        btn = driver.locator("push_button[name='Clear']").find()
+        loc = driver.locator("push_button[name='Clear']")
+        loc.wait_for()
 except WindowNotFound:
     print("Application not running")
 except LocatorNotFound:

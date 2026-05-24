@@ -36,8 +36,9 @@ class JabDriver:
     Typical usage:
 
         with JabDriver("MyApp.*") as driver:
-            btn = driver.locator("push_button[name='Clear']").wait_for()
-            btn.click()
+            loc = driver.locator("push_button[name='Clear']")
+            loc.wait_for()
+            loc.click()
     """
 
     def __init__(
@@ -157,6 +158,10 @@ class JabDriver:
 
     def locator(self, selector: str) -> Locator:
         """Build a locator to find elements in the accessibility tree.
+
+        Args:
+            selector: A CSS-selector-like query string (e.g.
+                ``"push_button[name='Clear']"``).
 
         Returns:
             A ``Locator`` bound to this driver.

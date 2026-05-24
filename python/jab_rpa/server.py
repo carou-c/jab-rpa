@@ -51,8 +51,11 @@ class JabRpaServer:
         """Launch the server subprocess and wait for it to become ready.
 
         Reads stdout in a background daemon thread and watches for the
-        server's "listening" message. Raises ``ServerStoppedError`` if
-        the process exits before reporting readiness.
+        server's "listening" message.
+
+        Raises:
+            ServerStoppedError: If the process exits before reporting readiness.
+            TimeoutError: If the server does not become ready within the timeout.
         """
         server_proc = subprocess.Popen(
             [self.__server_path],

@@ -45,10 +45,13 @@ class JabRpaClient:
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
         """
-        self.__stub.select_window(window_info)
 
     def get_selected_window_hwnd(self) -> jab.Hwnd:
-        """Returns the HWND for the selected window."""
+        """Return the HWND for the selected window.
+
+        Returns:
+            ``Hwnd`` message with the window handle.
+        """
         return self.__stub.get_selected_window_hwnd(jab.Empty())
 
     def refresh_tree(self) -> None:
@@ -69,12 +72,33 @@ class JabRpaClient:
     def wait_for(
         self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
     ) -> None:
+        """Block until an element matching the selector appears.
+
+        Args:
+            selector: CSS-like selector string.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait (fail fast),
+                or a positive integer for max milliseconds to wait.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+        """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
         self.__stub.wait_for(req)
 
     def race(
         self, selectors: list[str], timeout_ms: int | None, refresh_before_fail: bool
     ) -> int:
+        """Wait for any of the given selectors to match.
+
+        Args:
+            selectors: List of CSS-like selector strings.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            Index of the first selector that matched.
+        """
         req = jab.RaceRequest(selectors, timeout_ms, refresh_before_fail)
         res: jab.RaceResponse = self.__stub.race(req)
         return res.winner
@@ -82,10 +106,17 @@ class JabRpaClient:
     def get_info(
         self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
     ) -> jab.AccessibleInfo:
-        """Get the accessible information from an element.
+        """Get accessible info from the first element matching a selector.
 
         Args:
-            element: The ``jab.Element`` to get text.
+            selector: CSS-like selector string.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            ``AccessibleInfo`` with name, role, states, coordinates, etc.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
         res: jab.AccessibleInfo = self.__stub.get_info(req)
@@ -94,10 +125,17 @@ class JabRpaClient:
     def get_info_from_all(
         self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
     ) -> list[jab.AccessibleInfo]:
-        """Get the accessible information from all elements matching a selector.
+        """Get accessible info from all elements matching a selector.
 
         Args:
-            element: The ``jab.Element`` to get text.
+            selector: CSS-like selector string.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            List of ``AccessibleInfo`` for every matching element.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
         res: jab.RepeatedAccessibleInfo = self.__stub.get_info_from_all(req)
@@ -106,10 +144,17 @@ class JabRpaClient:
     def get_text(
         self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
     ) -> str:
-        """Get the accessible text from an element.
+        """Get accessible text from the first element matching a selector.
 
         Args:
-            element: The ``jab.Element`` to get text.
+            selector: CSS-like selector string.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            Accessible text content.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
         res: jab.Text = self.__stub.get_text(req)
@@ -118,10 +163,17 @@ class JabRpaClient:
     def get_actions(
         self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
     ) -> list[jab.Action]:
-        """Get the available accessible actions from an element.
+        """Get available accessible actions from the first element matching a selector.
 
         Args:
-            element: The ``jab.Element`` to get actions.
+            selector: CSS-like selector string.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            List of ``Action`` objects.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
         res: jab.Actions = self.__stub.get_actions(req)
@@ -134,11 +186,15 @@ class JabRpaClient:
         timeout_ms: int | None,
         refresh_before_fail: bool,
     ) -> None:
-        """Performs an accessible action on an element.
+        """Perform an accessible action on the first element matching a selector.
 
         Args:
-            element: The ``jab.Element`` to perform the action.
-            action: The ``jab.Action`` to perform.
+            action: The ``Action`` to perform.
+            selector: CSS-like selector string.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
         """
         req = jab.DoActionRequest(
             jab.Locator(selector, timeout_ms, refresh_before_fail), action

@@ -13,8 +13,8 @@ driver.locator("push_button")
 # By role and attribute
 driver.locator("push_button[name='Clear']")
 
-# By state class
-driver.locator(".enabled.focusable")
+# By state pseudo-class
+driver.locator(":require-state(enabled):require-state(focusable)")
 
 # Chaining (descendant combinator)
 driver.locator("dialog").locator("push_button")
@@ -37,14 +37,16 @@ role name are replaced with underscores and the comparison is case-insensitive.
 Write `*` to explicitly match any role (equivalent to omitting the role). A
 selector with no role (or with `*`) matches elements of any role.
 
-## State classes
+## State pseudo-classes
 
-Prefix a state name with `.` to require that the element has that state.
-Multiple states are AND-ed together.
+Use `:require-state()` to require that the element has a given state, and
+`:exclude-state()` to exclude elements with a given state. Multiple states
+are AND-ed together.
 
 ```python
-driver.locator(".enabled")           # any enabled element
-driver.locator(".enabled.focusable") # enabled AND focusable
+driver.locator(":require-state(enabled)")                   # any enabled element
+driver.locator(":require-state(enabled):require-state(focusable)") # enabled AND focusable
+driver.locator(":exclude-state(disabled)")                  # not disabled
 ```
 
 States are lowercased and spaces replaced with underscores, matching the same
@@ -107,12 +109,15 @@ Supported integer attribute names: `x`, `y`, `width`, `height`,
 | `:not(`_selector_`)`     | Inverse — elements not matching the inner selector (relative selectors not allowed)                                                   |
 | `:has(`_selector_`)`     | Elements containing a matching descendant — supports relative selectors (`>`, `+`, `~`) and bare `:scope` for flexible tree traversal |
 | `:nth-child(`_n_`)`      | Match by 1-indexed position in parent                                                                                                 |
-| `:nth-last-child(`_n_`)` | Match by 1-indexed position from end of parent                                                                                        |
+| `:nth-last-child(`_n_`)` | Match by 1-indexed position from end of parent                        |
+| `:require-state(`_s_`)`  | Element has the given state name                                      |
+| `:exclude-state(`_s_`)`  | Element does not have the given state name                            |
 
 ```python
 driver.locator("push_button:not([name='Cancel'])")
 driver.locator("dialog:has(push_button[name='Confirm'])")
 driver.locator("page_tab:nth-child(1)")  # first tab
+driver.locator("push_button:require-state(enabled)") # enabled push button
 ```
 
 ## Combinators
