@@ -6,14 +6,15 @@ service JabService {
   rpc ListJavaWindows (Empty) returns (RepeatedWindowInfo);
   rpc SelectWindow (WindowInfo) returns (Empty);
   rpc RefreshTree (Empty) returns (Empty);
+  rpc GetSelectedWindowHwnd (Empty) returns (Hwnd);
   rpc GetVersionInfo (Empty) returns (VersionInfo);
-  rpc FindElements (Locator) returns (RepeatedElement);
-  rpc FindElement (Locator) returns (Element);
-  rpc GetElementFromHandle (ElementHandle) returns (Element);
-  rpc AccessibleClick (Element) returns (Empty);
-  rpc GetElementText (Element) returns (Text);
-  rpc GetElementActions (Element) returns (Actions);
-  rpc DoActionOnElement (DoActionRequest) returns (Empty);
+  rpc WaitFor (Locator) returns (Empty);
+  rpc Race (RaceRequest) returns (RaceResponse);
+  rpc GetInfo (Locator) returns (AccessibleInfo);
+  rpc GetInfoFromAll (Locator) returns (RepeatedAccessibleInfo);
+  rpc GetText (Locator) returns (Text);
+  rpc GetActions (Locator) returns (Actions);
+  rpc DoAction (DoActionRequest) returns (Empty);
 }
 
 message Empty {}
@@ -31,7 +32,7 @@ message Actions {
 }
 
 message DoActionRequest {
-  Element element = 1;
+  Locator locator = 1;
   Action action = 2;
 }
 
@@ -44,42 +45,60 @@ message RepeatedWindowInfo {
   repeated WindowInfo windows = 1;
 }
 
-message Locator {
-  string selector = 1;
-}
-
-message Element {
-  uint64 handle = 1;
-  string name = 2;
-  string role = 3;
-  repeated string states = 4;
-  repeated string states_en_us = 5;
-  string description = 6;
-  repeated uint64 children_handles = 7;
-  int32 x = 8;
-  int32 y = 9;
-  int32 width = 10;
-  int32 height = 11;
-  bool accessible_action = 12;
-  bool accessible_text = 13;
-  bool accessible_selection = 14;
-  int32 children_count = 15;
-  int32 index_in_parent = 16;
-  optional uint64 parent_handle = 17;
-  int32 depth = 18;
-}
-
-message RepeatedElement {
-  repeated Element elements = 1;
-}
-
-message ElementHandle {
-  uint64 handle = 1;
-}
-
 message VersionInfo {
   string vm_version = 1;
   string bridge_java_class_version = 2;
   string bridge_java_dll_version = 3;
   string bridge_win_dll_version = 4;
 }
+
+message Hwnd {
+  uint64 hwnd = 1;
+}
+
+message Locator {
+  string selector = 1;
+  // -1=default
+  // 0=fail fast
+  // >0=max wait
+  int32 timeout_ms = 2;
+  // Do refresh_tree after timeout and check a last time
+  bool refresh_before_fail = 3;
+}
+
+message AccessibleInfo {
+  string name = 1;
+  string role = 2;
+  repeated string states = 3;
+  repeated string states_en_us = 4;
+  string description = 5;
+  int32 x = 6;
+  int32 y = 7;
+  int32 width = 8;
+  int32 height = 9;
+  bool accessible_action = 10;
+  bool accessible_text = 11;
+  bool accessible_selection = 12;
+  int32 children_count = 13;
+  int32 index_in_parent = 14;
+  int32 depth = 15;
+}
+
+message RepeatedAccessibleInfo {
+  repeated AccessibleInfo ac_infos;
+}
+
+message RaceRequest {
+  repeated string selectors = 1;
+  // -1=default
+  // 0=fail fast
+  // >0=max wait
+  int32 timeout_ms = 2;
+  // Do refresh_tree after timeout and check a last time
+  bool refresh_before_fail = 3;
+}
+
+message RaceResponse {
+  uint32 winner = 1;
+}
+

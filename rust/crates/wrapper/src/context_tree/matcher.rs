@@ -52,7 +52,6 @@ fn matches_complex(
 
             scope_selector = CompoundSelector {
                 role: None,
-                states: Vec::new(),
                 attrs: Vec::new(),
                 pseudo_classes: vec![PseudoClassSelector::Scope],
             };
@@ -153,7 +152,6 @@ fn matches_compound(
 ) -> bool {
     let CompoundSelector {
         role,
-        states,
         attrs,
         pseudo_classes,
     } = compound;
@@ -164,8 +162,13 @@ fn matches_compound(
         return false;
     }
 
-    for state in states {
-        if !node.states.iter().any(|s| s == state) {
+    for pseudo in pseudo_classes.iter().filter(|p| {
+        matches!(
+            p,
+            PseudoClassSelector::RequireState(_) | PseudoClassSelector::ExcludeState(_)
+        )
+    }) {
+        if !matches_pseudo_class(node, pseudo, relative_to, tree) {
             return false;
         }
     }
@@ -176,7 +179,12 @@ fn matches_compound(
         }
     }
 
-    for pseudo in pseudo_classes {
+    for pseudo in pseudo_classes.iter().filter(|p| {
+        !matches!(
+            p,
+            PseudoClassSelector::RequireState(_) | PseudoClassSelector::ExcludeState(_)
+        )
+    }) {
         if !matches_pseudo_class(node, pseudo, relative_to, tree) {
             return false;
         }
@@ -295,6 +303,8 @@ fn matches_pseudo_class(
             }
         }
         PseudoClassSelector::Not(inner) => !matches_selector(node, inner, relative_to, tree),
+        PseudoClassSelector::RequireState(s) => node.states_en_us.contains(s),
+        PseudoClassSelector::ExcludeState(s) => !node.states_en_us.contains(s),
         PseudoClassSelector::NthChild(n) => matches_nth_child(node, *n),
         PseudoClassSelector::NthLastChild(n) => matches_nth_last_child(tree, node, *n),
     }

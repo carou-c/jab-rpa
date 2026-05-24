@@ -1,5 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::thread;
+
+use parking_lot::{RwLock, RwLockWriteGuard};
 
 use windows::{
     Win32::{
@@ -62,20 +64,24 @@ impl JabWrapper {
                 while let Ok(next) = rx.try_recv() {
                     events.push(next);
                 }
-                let Ok(mut tree_writer) = tree.write() else {
-                    continue;
-                };
+                let mut tree_writer = tree.write();
                 if let Some(t) = tree_writer.as_mut() {
                     for e in events {
                         t.apply_event(e);
                     }
                 }
+
+                RwLockWriteGuard::unlock_fair(tree_writer);
             }
         })
     }
 
     pub fn is_java_window(&self, hwnd: HWND) -> bool {
         unsafe { (IsWindow(Some(hwnd)).0 != 0) && (jab_sys::IsJavaWindow(hwnd.0 as *mut _) != 0) }
+    }
+
+    pub fn get_hwnd_from_obj(&self, obj: &JavaObject) -> HWND {
+        unsafe { HWND(jab_sys::GetHWNDFromAccessibleContext(obj.vm_id, obj.jobject) as _) }
     }
 
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {

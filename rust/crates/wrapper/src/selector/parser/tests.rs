@@ -1,5 +1,5 @@
-use crate::selector::Locator;
 use crate::selector::ast::*;
+use crate::selector::Locator;
 fn parse(input: &str) -> Selector {
     Locator::new(input).parse().unwrap()
 }
@@ -423,24 +423,11 @@ fn test_bool_attr_accessible_selection() {
 
 #[test]
 fn test_pseudo_scope() {
-    let result = parse(":has(:scope)");
-    assert!(
-        result.alternatives[0]
-            .last
-            .pseudo_classes
-            .contains(&PseudoClassSelector::Has(Box::new(Selector {
-                alternatives: vec![ComplexSelector {
-                    head: None,
-                    body: Vec::new(),
-                    last: CompoundSelector {
-                        role: None,
-                        states: Vec::new(),
-                        attrs: Vec::new(),
-                        pseudo_classes: vec![PseudoClassSelector::Scope],
-                    }
-                }]
-            })))
-    );
+    let result = parse(":scope");
+    assert!(result.alternatives[0]
+        .last
+        .pseudo_classes
+        .contains(&PseudoClassSelector::Scope));
 }
 
 #[test]

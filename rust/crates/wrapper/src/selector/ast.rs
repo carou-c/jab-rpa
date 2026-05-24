@@ -44,7 +44,6 @@ pub enum Combinator {
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct CompoundSelector {
     pub role: Option<String>,
-    pub states: Vec<String>,
     pub attrs: Vec<AttrSelector>,
     pub pseudo_classes: Vec<PseudoClassSelector>,
 }
@@ -152,6 +151,8 @@ pub enum PseudoClassSelector {
     Scope,
     Has(Box<Selector>),
     Not(Box<Selector>),
+    RequireState(String),
+    ExcludeState(String),
     NthChild(i32),
     NthLastChild(i32),
 }

@@ -10,7 +10,6 @@ use super::lexer::Token;
 pub type ParserError<'src> = extra::Err<Simple<'src, Token>>;
 
 enum CompoundItem {
-    State(String),
     Attr(AttrSelector),
     Pseudo(PseudoClassSelector),
 }
@@ -23,6 +22,7 @@ enum CompoundRole {
 
 enum PseudoArg {
     Int(i32),
+    Str(String),
     Selector(Selector),
 }
 
@@ -182,6 +182,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
 
         let pseudo_arg = choice((
             int_val.map(PseudoArg::Int),
+            ident_val.map(PseudoArg::Str),
             selector.map(PseudoArg::Selector),
         ));
 
@@ -222,6 +223,14 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                         }
                         _ => Err(Simple::new(None, span)),
                     },
+                    "require-state" => match arg {
+                        Some(PseudoArg::Str(s)) => Ok(PseudoClassSelector::RequireState(s)),
+                        _ => Err(Simple::new(None, span)),
+                    },
+                    "exclude-state" => match arg {
+                        Some(PseudoArg::Str(s)) => Ok(PseudoClassSelector::ExcludeState(s)),
+                        _ => Err(Simple::new(None, span)),
+                    },
                     "nth-child" => match arg {
                         Some(PseudoArg::Int(n)) => Ok(PseudoClassSelector::NthChild(n)),
                         _ => Err(Simple::new(None, span)),
@@ -234,10 +243,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                 },
             );
 
-        let class_selector = just(Token::Dot).ignore_then(ident_val);
-
         let compound_item = choice((
-            class_selector.map(CompoundItem::State),
             attr_selector.map(CompoundItem::Attr),
             pseudo_class_selector.map(CompoundItem::Pseudo),
         ));
@@ -254,12 +260,10 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                 if role.is_none() && items.is_empty() {
                     Err(Simple::new(None, span))
                 } else {
-                    let mut states = Vec::new();
                     let mut attrs = Vec::new();
                     let mut pseudo_classes = Vec::new();
                     for item in items {
                         match item {
-                            CompoundItem::State(s) => states.push(s),
                             CompoundItem::Attr(a) => attrs.push(a),
                             CompoundItem::Pseudo(p) => pseudo_classes.push(p),
                         }
@@ -269,7 +273,6 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                             Some(CompoundRole::Role(name)) => Some(name),
                             _ => None,
                         },
-                        states,
                         attrs,
                         pseudo_classes,
                     })

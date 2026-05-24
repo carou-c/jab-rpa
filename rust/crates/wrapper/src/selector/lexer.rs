@@ -14,8 +14,8 @@ pub enum Token {
     #[token("~")]
     Tilde,
 
-    #[token(".")]
-    Dot,
+    // #[token(".")]
+    // Dot,
 
     #[token(":")]
     Colon,

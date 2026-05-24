@@ -51,12 +51,6 @@ impl fmt::Display for CompoundSelector {
             None => "",
         };
 
-        let states = if !self.states.is_empty() {
-            &format!(".{}", self.states.join("."))
-        } else {
-            ""
-        };
-
         let attrs = self
             .attrs
             .iter()
@@ -71,7 +65,7 @@ impl fmt::Display for CompoundSelector {
             .collect::<Vec<_>>()
             .join("");
 
-        let display = format!("{}{}{}{}", role, states, attrs, pseudo_classes);
+        let display = format!("{}{}{}", role, attrs, pseudo_classes);
         if display.is_empty() {
             write!(f, "*")
         } else {
@@ -191,6 +185,8 @@ impl fmt::Display for PseudoClassSelector {
             Self::Scope => write!(f, ":scope"),
             Self::Has(selector) => write!(f, ":has({})", selector),
             Self::Not(selector) => write!(f, ":not({})", selector),
+            Self::RequireState(s) => write!(f, ":require-state({})", s),
+            Self::ExcludeState(s) => write!(f, ":exclude-state({})", s),
             Self::NthChild(n) => write!(f, ":nth-child({})", n),
             Self::NthLastChild(n) => write!(f, ":nth-last-child({})", n),
         }
