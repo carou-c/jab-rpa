@@ -66,21 +66,21 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.do_accessible_action">do_accessible_action</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.exists">exists</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.get_actions">get_actions</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.find">find</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.get_info">get_info</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.find_all">find_all</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.get_info_from_all">get_info_from_all</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.get_text">get_text</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.locator">locator</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.to_dict">to_dict</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.wait_for">wait_for</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.LocatorNotFound">LocatorNotFound</a>
-    </li>
     </ul>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../element/">Element</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../server/">JabRpaServer</a>
                   </li>
@@ -129,11 +129,13 @@
 states, pseudo-classes, and attribute comparisons — all in a single string.</p>
 <p>Usually created via <code>JabDriver.locator()</code>. Call <code>.locator()</code> again
 on the result to extend the query with a descendant combinator (space):</p>
-<pre><code>btn = driver.locator("push_button[name='Clear']").wait_for()
-btn.click()
+<pre><code>loc = driver.locator("push_button[name='Clear']")
+loc.wait_for()
+loc.click()
 
 # Chaining adds a descendant combinator:
-btn = driver.locator("dialog").locator("push_button").wait_for()
+loc = driver.locator("dialog").locator("push_button")
+loc.wait_for()
 # Equivalent to: driver.locator("dialog push_button")
 </code></pre>
 
@@ -165,7 +167,12 @@ btn = driver.locator("dialog").locator("push_button").wait_for()
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span><span class="n">driver</span><span class="p">:</span> <span class="n">JabDriver</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span>
+    <span class="n">driver</span><span class="p">:</span> <span class="n">JabDriver</span><span class="p">,</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span>
+    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -200,6 +207,26 @@ btn = driver.locator("dialog").locator("push_button").wait_for()
 <code>"push_button[name='Clear']"</code>).</p>
               </div>
             </li>
+            <li>
+              <b><code>require_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.locator.AccessibleState">AccessibleState</span>]</code>, default:
+                      <code><span title="set">set</span>()</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must have</p>
+              </div>
+            </li>
+            <li>
+              <b><code>exclude_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.locator.AccessibleState">AccessibleState</span>]</code>, default:
+                      <code><span title="set">set</span>()</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must not have</p>
+              </div>
+            </li>
         </ul>
       </td>
     </tr>
@@ -218,14 +245,56 @@ btn = driver.locator("dialog").locator("push_button").wait_for()
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">accessible_click</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">accessible_click</span><span class="p">(</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Click a matching element using the JAB accessibility API (not pyautogui).
-This does not move the mouse.</p>
+        <p>Click a matching element via the JAB accessibility API.</p>
+<p>This does <strong>not</strong> move the mouse — the click is performed
+programmatically through the accessibility bridge.</p>
 
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
     </div>
 
@@ -239,7 +308,12 @@ This does not move the mouse.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click</span><span class="p">(</span><span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click</span><span class="p">(</span>
+    <span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -276,7 +350,29 @@ and performs a pyautogui click.</p>
 )
               –
               <div class="doc-md-description">
-                <p>Seconds between clicks (default 0).</p>
+                <p>Seconds between clicks (default 0.0).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -302,14 +398,16 @@ and performs a pyautogui click.</p>
     <span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">interval_text</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="n">interval_clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Click then type text into a matching element.</p>
+        <p>Click then type text into a matching element using pyautogui.</p>
 <p>Moves the mouse to a matching element's center, clicks, then types
-the given text using pyautogui.</p>
+the given text.</p>
 
 
 <table class="field-list">
@@ -337,7 +435,7 @@ the given text using pyautogui.</p>
 )
               –
               <div class="doc-md-description">
-                <p>Number of clicks before typing.</p>
+                <p>Number of clicks before typing (default 1).</p>
               </div>
             </li>
             <li>
@@ -347,7 +445,7 @@ the given text using pyautogui.</p>
 )
               –
               <div class="doc-md-description">
-                <p>Seconds between keystrokes.</p>
+                <p>Seconds between keystrokes (default 0.0).</p>
               </div>
             </li>
             <li>
@@ -357,7 +455,29 @@ the given text using pyautogui.</p>
 )
               –
               <div class="doc-md-description">
-                <p>Seconds between clicks.</p>
+                <p>Seconds between clicks (default 0.0).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -378,32 +498,16 @@ the given text using pyautogui.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_accessible_action</span><span class="p">(</span><span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_accessible_action</span><span class="p">(</span>
+    <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Performs an accessible action on a matching element.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="jab_rpa.locator.Locator.exists" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">exists</span>
-
-
-</h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">exists</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Check if an element matching this locator exists.</p>
+        <p>Perform an accessible action on a matching element.</p>
 
 
 <table class="field-list">
@@ -413,87 +517,37 @@ the given text using pyautogui.</p>
   </colgroup>
   <tbody valign="top">
     <tr class="field">
-      <th class="field-name">Returns:</th>
+      <th class="field-name">Parameters:</th>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="bool">bool</span></code>
+              <b><code>action</code></b>
+                  (<code><span title="jab_rpa.types.Action">Action</span></code>)
               –
               <div class="doc-md-description">
-                <p><code>True</code> if an element mathcing this locator exists,</p>
+                <p>The <code>Action</code> to perform (e.g. <code>Action("click")</code>).</p>
               </div>
             </li>
             <li>
-                  <code><span title="bool">bool</span></code>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
               –
               <div class="doc-md-description">
-                <p><code>False</code> else</p>
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
               </div>
             </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="jab_rpa.locator.Locator.find" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">find</span>
-
-
-</h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Element</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Find a element matching this locator.</p>
-
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Returns:</th>
-      <td class="field-body">
-        <ul class="first simple">
             <li>
-                  <code><a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a></code>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
               –
               <div class="doc-md-description">
-                <p>A matching <code>Element</code>.</p>
-              </div>
-            </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Raises:</th>
-      <td class="field-body">
-        <ul class="first simple">
-            <li>
-                  <code>``LocatorNotFound``</code>
-              –
-              <div class="doc-md-description">
-                <p>If no element matches.</p>
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -509,18 +563,59 @@ the given text using pyautogui.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.locator.Locator.find_all" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">find_all</span>
+<h2 id="jab_rpa.locator.Locator.get_actions" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_actions</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find_all</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Element</span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_actions</span><span class="p">(</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Action</span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Find all elements matching this locator.</p>
+        <p>Get available accessible actions from the first matching element.</p>
 
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 <table class="field-list">
   <colgroup>
@@ -533,10 +628,355 @@ the given text using pyautogui.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a>]</code>
+                  <code><span title="list">list</span>[<span title="jab_rpa.types.Action">Action</span>]</code>
               –
               <div class="doc-md-description">
-                <p>List of matching <code>Element</code> objects (may be empty).</p>
+                <p>List of <code>Action</code> objects (each has a <code>name</code> field).</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.get_info" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_info</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info</span><span class="p">(</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get accessible info from the first matching element.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="typing.Any">Any</span></code>
+              –
+              <div class="doc-md-description">
+                <p><code>AccessibleInfo</code> with name, role, states, coordinates, etc.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.get_info_from_all" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_info_from_all</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info_from_all</span><span class="p">(</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get accessible info from all matching elements.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="list">list</span>[<span title="typing.Any">Any</span>]</code>
+              –
+              <div class="doc-md-description">
+                <p>List of <code>AccessibleInfo</code> for every matching element.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.get_text" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_text</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_text</span><span class="p">(</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get accessible text from the first matching element.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="str">str</span></code>
+              –
+              <div class="doc-md-description">
+                <p>Accessible text content.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.locator.Locator.locator" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">locator</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span>
+    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Locator</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Extend the query with a descendant combinator.</p>
+<p>Concatenates the new selector with a space, equivalent to
+a descendant combinator in CSS.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>Additional CSS-like selector to append.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>require_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.locator.AccessibleState">AccessibleState</span>]</code>, default:
+                      <code><span title="set">set</span>()</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must have</p>
+              </div>
+            </li>
+            <li>
+              <b><code>exclude_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.locator.AccessibleState">AccessibleState</span>]</code>, default:
+                      <code><span title="set">set</span>()</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must not have</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><a class="autorefs autorefs-internal" title="jab_rpa.locator.Locator" href="#jab_rpa.locator.Locator">Locator</a></code>
+              –
+              <div class="doc-md-description">
+                <p>A new <code>Locator</code> with the combined selector.</p>
               </div>
             </li>
         </ul>
@@ -578,16 +1018,14 @@ the given text using pyautogui.</p>
 
 </h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">wait_for</span><span class="p">(</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_WAIT_FOR_TIMEOUT</span><span class="p">,</span>
-    <span class="n">sleep_step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_WAIT_FOR_STEP</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Element</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Poll the accessibility tree until a matching element appears.</p>
-<p>Repeatedly calls <code>find()</code> and refreshes the tree between
-attempts. Useful for waiting for dialogs or dynamic content.</p>
+        <p>Block until a matching element appears in the accessibility tree.</p>
 
 
 <table class="field-list">
@@ -601,69 +1039,25 @@ attempts. Useful for waiting for dialogs or dynamic content.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>timeout</code></b>
-                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
-                      <code><span title="jab_rpa.locator._WAIT_FOR_TIMEOUT">_WAIT_FOR_TIMEOUT</span></code>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
 )
               –
               <div class="doc-md-description">
-                <p>Maximum seconds to wait.</p>
+                <p><code>None</code> for default (60s), <code>0</code> for no wait (fail fast),
+or a positive integer for max milliseconds to wait.</p>
               </div>
             </li>
             <li>
-              <b><code>sleep_step</code></b>
-                  (<code><span title="int">int</span> | <span title="float">float</span></code>, default:
-                      <code><span title="jab_rpa.locator._WAIT_FOR_STEP">_WAIT_FOR_STEP</span></code>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
 )
               –
               <div class="doc-md-description">
-                <p>Seconds between polling attempts.</p>
-              </div>
-            </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Returns:</th>
-      <td class="field-body">
-        <ul class="first simple">
-            <li>
-                  <code><a class="autorefs autorefs-internal" title="jab_rpa.element.Element" href="../element/#jab_rpa.element.Element">Element</a></code>
-              –
-              <div class="doc-md-description">
-                <p>a matching <code>Element</code>.</p>
-              </div>
-            </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Raises:</th>
-      <td class="field-body">
-        <ul class="first simple">
-            <li>
-                  <code>``LocatorNotFound``</code>
-              –
-              <div class="doc-md-description">
-                <p>If no element matches within the timeout.</p>
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -684,37 +1078,12 @@ attempts. Useful for waiting for dialogs or dynamic content.</p>
 
 
 </div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<a id="jab_rpa.locator.LocatorNotFound"></a>
-    <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="Exception">Exception</span></code></p>
-
-
-
-        <p>Raised when a locator query returns no matching elements.</p>
-
-
-
-
-
-
-
-
-    </div>
-
-
-</div>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../driver/" class="btn btn-neutral float-left" title="JabDriver"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../element/" class="btn btn-neutral float-right" title="Element">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../server/" class="btn btn-neutral float-right" title="JabRpaServer">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -744,7 +1113,7 @@ attempts. Useful for waiting for dialogs or dynamic content.</p>
       <span><a href="../driver/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../element/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../server/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

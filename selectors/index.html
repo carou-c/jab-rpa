@@ -51,7 +51,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#role-matching">Role matching</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#state-classes">State classes</a>
+    <li class="toctree-l2"><a class="reference internal" href="#state-pseudo-classes">State pseudo-classes</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#attribute-selectors">Attribute selectors</a>
         <ul>
@@ -81,8 +81,6 @@
                   <li class="toctree-l1"><a class="reference internal" href="../api/driver/">JabDriver</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../api/locator/">Locator</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../api/element/">Element</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../api/server/">JabRpaServer</a>
                   </li>
@@ -124,8 +122,8 @@ driver.locator(&quot;push_button&quot;)
 # By role and attribute
 driver.locator(&quot;push_button[name='Clear']&quot;)
 
-# By state class
-driver.locator(&quot;.enabled.focusable&quot;)
+# By state pseudo-class
+driver.locator(&quot;:require-state(enabled):require-state(focusable)&quot;)
 
 # Chaining (descendant combinator)
 driver.locator(&quot;dialog&quot;).locator(&quot;push_button&quot;)
@@ -162,11 +160,13 @@ role name are replaced with underscores and the comparison is case-insensitive.<
 </table>
 <p>Write <code>*</code> to explicitly match any role (equivalent to omitting the role). A
 selector with no role (or with <code>*</code>) matches elements of any role.</p>
-<h2 id="state-classes">State classes</h2>
-<p>Prefix a state name with <code>.</code> to require that the element has that state.
-Multiple states are AND-ed together.</p>
-<pre><code class="language-python">driver.locator(&quot;.enabled&quot;)           # any enabled element
-driver.locator(&quot;.enabled.focusable&quot;) # enabled AND focusable
+<h2 id="state-pseudo-classes">State pseudo-classes</h2>
+<p>Use <code>:require-state()</code> to require that the element has a given state, and
+<code>:exclude-state()</code> to exclude elements with a given state. Multiple states
+are AND-ed together.</p>
+<pre><code class="language-python">driver.locator(&quot;:require-state(enabled)&quot;)                   # any enabled element
+driver.locator(&quot;:require-state(enabled):require-state(focusable)&quot;) # enabled AND focusable
+driver.locator(&quot;:exclude-state(disabled)&quot;)                  # not disabled
 </code></pre>
 <p>States are lowercased and spaces replaced with underscores, matching the same
 transformation applied to roles.</p>
@@ -246,11 +246,20 @@ driver.locator(&quot;[name='button[0-9]+' r]&quot;)   # regex
 <td><code>:nth-last-child(</code><em>n</em><code>)</code></td>
 <td>Match by 1-indexed position from end of parent</td>
 </tr>
+<tr>
+<td><code>:require-state(</code><em>s</em><code>)</code></td>
+<td>Element has the given state name</td>
+</tr>
+<tr>
+<td><code>:exclude-state(</code><em>s</em><code>)</code></td>
+<td>Element does not have the given state name</td>
+</tr>
 </tbody>
 </table>
 <pre><code class="language-python">driver.locator(&quot;push_button:not([name='Cancel'])&quot;)
 driver.locator(&quot;dialog:has(push_button[name='Confirm'])&quot;)
 driver.locator(&quot;page_tab:nth-child(1)&quot;)  # first tab
+driver.locator(&quot;push_button:require-state(enabled)&quot;) # enabled push button
 </code></pre>
 <h2 id="combinators">Combinators</h2>
 <p>Separate compound selectors with a combinator to navigate the tree hierarchy.</p>

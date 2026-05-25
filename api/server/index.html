@@ -54,8 +54,6 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../locator/">Locator</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../element/">Element</a>
-                  </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">JabRpaServer</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.server.JabRpaServer">JabRpaServer</a>
@@ -224,9 +222,38 @@ and provides clean shutdown.</p>
 
         <p>Launch the server subprocess and wait for it to become ready.</p>
 <p>Reads stdout in a background daemon thread and watches for the
-server's "listening" message. Raises <code>ServerStoppedError</code> if
-the process exits before reporting readiness.</p>
+server's "listening" message.</p>
 
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><a class="autorefs autorefs-internal" title="jab_rpa.server.ServerStoppedError" href="#jab_rpa.server.ServerStoppedError">ServerStoppedError</a></code>
+              –
+              <div class="doc-md-description">
+                <p>If the process exits before reporting readiness.</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="TimeoutError">TimeoutError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>If the server does not become ready within the timeout.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
     </div>
 
@@ -289,7 +316,7 @@ the process exits before reporting readiness.</p>
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../element/" class="btn btn-neutral float-left" title="Element"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../locator/" class="btn btn-neutral float-left" title="Locator"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../client/" class="btn btn-neutral float-right" title="JabRpaClient">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -317,7 +344,7 @@ the process exits before reporting readiness.</p>
         </span>
     
     
-      <span><a href="../element/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../locator/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../client/" style="color: #fcfcfc">Next &raquo;</a></span>

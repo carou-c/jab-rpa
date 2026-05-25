@@ -54,31 +54,29 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../locator/">Locator</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../element/">Element</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../server/">JabRpaServer</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">JabRpaClient</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient">JabRpaClient</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.accessible_click">accessible_click</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.do_action">do_action</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.do_action_on_element">do_action_on_element</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_actions">get_actions</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.find_element">find_element</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_info">get_info</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.find_elements">find_elements</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_info_from_all">get_info_from_all</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_element_actions">get_element_actions</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_selected_window_hwnd">get_selected_window_hwnd</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_element_from_handle">get_element_from_handle</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_element_text">get_element_text</a>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_text">get_text</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.get_version_info">get_version_info</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.list_java_windows">list_java_windows</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.race">race</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.refresh_tree">refresh_tree</a>
     </li>
@@ -87,6 +85,8 @@
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.start">start</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.stop">stop</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.client.JabRpaClient.wait_for">wait_for</a>
     </li>
     </ul>
                   </li>
@@ -155,63 +155,22 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.client.JabRpaClient.accessible_click" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">accessible_click</span>
+<h2 id="jab_rpa.client.JabRpaClient.do_action" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">do_action</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">accessible_click</span><span class="p">(</span><span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Perform an accessible action click via the JAB API.</p>
-
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Parameters:</th>
-      <td class="field-body">
-        <ul class="first simple">
-            <li>
-              <b><code>element</code></b>
-                  (<code><span title="jab_rpa.proto.jab.Element">Element</span></code>)
-              –
-              <div class="doc-md-description">
-                <p>The <code>jab.Element</code> to click.</p>
-              </div>
-            </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="jab_rpa.client.JabRpaClient.do_action_on_element" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">do_action_on_element</span>
-
-
-</h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_action_on_element</span><span class="p">(</span>
-    <span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_action</span><span class="p">(</span>
+    <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">,</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Performs an accessible action on an element.</p>
+        <p>Perform an accessible action on the first element matching a selector.</p>
 
 
 <table class="field-list">
@@ -224,20 +183,38 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <th class="field-name">Parameters:</th>
       <td class="field-body">
         <ul class="first simple">
-            <li>
-              <b><code>element</code></b>
-                  (<code><span title="jab_rpa.proto.jab.Element">Element</span></code>)
-              –
-              <div class="doc-md-description">
-                <p>The <code>jab.Element</code> to perform the action.</p>
-              </div>
-            </li>
             <li>
               <b><code>action</code></b>
                   (<code><span title="jab_rpa.proto.jab.Action">Action</span></code>)
               –
               <div class="doc-md-description">
-                <p>The <code>jab.Action</code> to perform.</p>
+                <p>The <code>Action</code> to perform.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>CSS-like selector string.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -253,17 +230,21 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.client.JabRpaClient.find_element" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">find_element</span>
+<h2 id="jab_rpa.client.JabRpaClient.get_actions" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_actions</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find_element</span><span class="p">(</span><span class="n">locator</span><span class="p">:</span> <span class="n">Locator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">Element</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_actions</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">Action</span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Find one element matching a structured locator.</p>
+        <p>Get available accessible actions from the first element matching a selector.</p>
 
 
 <table class="field-list">
@@ -277,11 +258,29 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>locator</code></b>
-                  (<code><span title="jab_rpa.proto.jab.Locator">Locator</span></code>)
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
-                <p>A <code>jab.Locator</code> protobuf message.</p>
+                <p>CSS-like selector string.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -301,10 +300,10 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="jab_rpa.proto.jab.Element">Element</span></code>
+                  <code><span title="list">list</span>[<span title="jab_rpa.proto.jab.Action">Action</span>]</code>
               –
               <div class="doc-md-description">
-                <p>A matching <code>jab.Element</code> protobuf message.</p>
+                <p>List of <code>Action</code> objects.</p>
               </div>
             </li>
         </ul>
@@ -320,17 +319,21 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.client.JabRpaClient.find_elements" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">find_elements</span>
+<h2 id="jab_rpa.client.JabRpaClient.get_info" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_info</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">find_elements</span><span class="p">(</span><span class="n">locator</span><span class="p">:</span> <span class="n">Locator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">Element</span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">AccessibleInfo</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Find elements matching a structured locator.</p>
+        <p>Get accessible info from the first element matching a selector.</p>
 
 
 <table class="field-list">
@@ -344,11 +347,29 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>locator</code></b>
-                  (<code><span title="jab_rpa.proto.jab.Locator">Locator</span></code>)
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
-                <p>A <code>jab.Locator</code> protobuf message.</p>
+                <p>CSS-like selector string.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -368,10 +389,10 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="list">list</span>[<span title="jab_rpa.proto.jab.Element">Element</span>]</code>
+                  <code><span title="jab_rpa.proto.jab.AccessibleInfo">AccessibleInfo</span></code>
               –
               <div class="doc-md-description">
-                <p>List of matching <code>jab.Element</code> protobuf messages.</p>
+                <p><code>AccessibleInfo</code> with name, role, states, coordinates, etc.</p>
               </div>
             </li>
         </ul>
@@ -387,17 +408,21 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.client.JabRpaClient.get_element_actions" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_element_actions</span>
+<h2 id="jab_rpa.client.JabRpaClient.get_info_from_all" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_info_from_all</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_element_actions</span><span class="p">(</span><span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">Action</span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info_from_all</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">AccessibleInfo</span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Get the available accessible actions from an element.</p>
+        <p>Get accessible info from all elements matching a selector.</p>
 
 
 <table class="field-list">
@@ -411,55 +436,29 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>element</code></b>
-                  (<code><span title="jab_rpa.proto.jab.Element">Element</span></code>)
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
-                <p>The <code>jab.Element</code> to get actions.</p>
+                <p>CSS-like selector string.</p>
               </div>
             </li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="jab_rpa.client.JabRpaClient.get_element_from_handle" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_element_from_handle</span>
-
-
-</h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_element_from_handle</span><span class="p">(</span><span class="n">handle</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">Element</span> <span class="o">|</span> <span class="kc">None</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Resolve a numeric handle to a full element description.</p>
-
-
-<table class="field-list">
-  <colgroup>
-    <col class="field-name" />
-    <col class="field-body" />
-  </colgroup>
-  <tbody valign="top">
-    <tr class="field">
-      <th class="field-name">Parameters:</th>
-      <td class="field-body">
-        <ul class="first simple">
             <li>
-              <b><code>handle</code></b>
-                  (<code><span title="int">int</span></code>)
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
               –
               <div class="doc-md-description">
-                <p>Numeric handle previously returned by the server.</p>
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
               </div>
             </li>
         </ul>
@@ -479,10 +478,10 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><span title="jab_rpa.proto.jab.Element">Element</span> | None</code>
+                  <code><span title="list">list</span>[<span title="jab_rpa.proto.jab.AccessibleInfo">AccessibleInfo</span>]</code>
               –
               <div class="doc-md-description">
-                <p>The <code>jab.Element</code> if found, or <code>None</code> if the handle is stale.</p>
+                <p>List of <code>AccessibleInfo</code> for every matching element.</p>
               </div>
             </li>
         </ul>
@@ -498,17 +497,64 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="jab_rpa.client.JabRpaClient.get_element_text" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_element_text</span>
+<h2 id="jab_rpa.client.JabRpaClient.get_selected_window_hwnd" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_selected_window_hwnd</span>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_element_text</span><span class="p">(</span><span class="n">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_selected_window_hwnd</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">Hwnd</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Get the accessible text from an element.</p>
+        <p>Return the HWND for the selected window.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="jab_rpa.proto.jab.Hwnd">Hwnd</span></code>
+              –
+              <div class="doc-md-description">
+                <p><code>Hwnd</code> message with the window handle.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.client.JabRpaClient.get_text" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_text</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_text</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get accessible text from the first element matching a selector.</p>
 
 
 <table class="field-list">
@@ -522,11 +568,52 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>element</code></b>
-                  (<code><span title="jab_rpa.proto.jab.Element">Element</span></code>)
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
               –
               <div class="doc-md-description">
-                <p>The <code>jab.Element</code> to get text.</p>
+                <p>CSS-like selector string.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="str">str</span></code>
+              –
+              <div class="doc-md-description">
+                <p>Accessible text content.</p>
               </div>
             </li>
         </ul>
@@ -613,6 +700,95 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
               –
               <div class="doc-md-description">
                 <p>List of <code>WindowInfo</code> objects with hwnd and title.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.client.JabRpaClient.race" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">race</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">race</span><span class="p">(</span>
+    <span class="n">selectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Wait for any of the given selectors to match.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>selectors</code></b>
+                  (<code><span title="list">list</span>[<span title="str">str</span>]</code>)
+              –
+              <div class="doc-md-description">
+                <p>List of CSS-like selector strings.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="int">int</span></code>
+              –
+              <div class="doc-md-description">
+                <p>Index of the first selector that matched.</p>
               </div>
             </li>
         </ul>
@@ -724,6 +900,72 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 
         <p>Close the gRPC channel.</p>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jab_rpa.client.JabRpaClient.wait_for" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">wait_for</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">wait_for</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Block until an element matching the selector appears.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>CSS-like selector string.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait (fail fast),
+or a positive integer for max milliseconds to wait.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
     </div>
 

@@ -53,6 +53,8 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#waiting-for-elements">Waiting for elements</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#interacting-with-elements">Interacting with elements</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#accessible-actions">Accessible actions</a>
@@ -61,13 +63,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#getting-element-info">Getting element info</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#finding-elements">Finding elements</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#waiting-for-elements">Waiting for elements</a>
-    </li>
     <li class="toctree-l2"><a class="reference internal" href="#driver-utilities">Driver utilities</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#traversing-the-tree">Traversing the tree</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#error-handling">Error handling</a>
     </li>
@@ -83,8 +79,6 @@
                   <li class="toctree-l1"><a class="reference internal" href="../api/driver/">JabDriver</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../api/locator/">Locator</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../api/element/">Element</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../api/server/">JabRpaServer</a>
                   </li>
@@ -129,8 +123,8 @@
 <pre><code class="language-python">from jab_rpa import JabDriver
 
 with JabDriver(&quot;My Java Application.*&quot;) as driver:
-    button = driver.locator(&quot;push_button[name='Clear']&quot;).wait_for()
-    button.click()
+    locator = driver.locator(&quot;push_button[name='Clear']&quot;)
+    locator.click()
 </code></pre>
 <h3 id="whats-happening">What's happening</h3>
 <ol>
@@ -139,65 +133,63 @@ with JabDriver(&quot;My Java Application.*&quot;) as driver:
    selects it and maximizes it.</li>
 <li><code>driver.locator("push_button[name='Clear']")</code> — builds a locator query using
    CSS-selector-like syntax (see <a href="../selectors/">Selector syntax</a>).</li>
-<li><code>.wait_for()</code> — polls until a matching element appears in the accessibility
-   tree.</li>
-<li><code>.click()</code> — moves the mouse to the element's center and clicks via
+<li><code>.click()</code> — polls until a matching element appears in the accessibility
+   tree, moves the mouse to the matching element's center and clicks via
    <code>pyautogui</code>.</li>
 </ol>
+<h2 id="waiting-for-elements">Waiting for elements</h2>
+<pre><code class="language-python"># Wait up to 30 seconds (default: 60s)
+locator.wait_for(timeout_ms=30_000)
+
+# Wait with no timeout (fail fast if element doesn't exist yet)
+locator.wait_for(timeout_ms=0)
+</code></pre>
 <h2 id="interacting-with-elements">Interacting with elements</h2>
 <pre><code class="language-python"># Accessible click (uses JAB API directly — no mouse movement)
-element.accessible_click()
+locator.accessible_click()
 
 # Coordinate click (uses pyautogui)
-element.click()
-element.click(clicks=2, interval=0.5)
+locator.click()
+locator.click(clicks=2, interval=0.5)
 
 # Click and type text
-element.click_and_type(&quot;hello world&quot;)
+locator.click_and_type(&quot;hello world&quot;)
 </code></pre>
 <h3 id="accessible-actions">Accessible actions</h3>
-<p>Elements may expose additional actions beyond clicking (e.g. "toggle", "expand", "select"):</p>
-<pre><code class="language-python">actions = element.get_accessible_actions()
+<p>Elements may expose additional actions beyond clicking (e.g. "toggle", "expand",
+"select"):</p>
+<pre><code class="language-python"># List available actions
+actions: list[Action] = locator.get_actions()
 for action in actions:
     print(action.name)
 
 # Perform a specific action by name
-element.do_accessible_action(action)
-</code></pre>
-<p>You can also use these directly on a <code>Locator</code>:</p>
-<pre><code class="language-python">locator.accessible_click()
 locator.do_accessible_action(action)
 </code></pre>
 <h2 id="getting-element-info">Getting element info</h2>
-<pre><code class="language-python">print(element.name)                # Accessible name
-print(element.role)                # e.g. &quot;push_button&quot;
-print(element.states)              # Localized states
-print(element.states_en_us)        # en-US states
-print(element.get_accessible_text())  # Accessible text content
-print(element.description)         # Accessible description
-print(element.x, element.y)        # Screen coordinates
-print(element.width, element.height)
-print(element.index_in_parent)
-print(element.children_count)
-print(element.to_dict())           # All properties as dict
+<pre><code class="language-python">info = locator.get_info()
+
+print(info.name)                # Accessible name
+print(info.role)                # e.g. &quot;push_button&quot;
+print(info.states)              # Localized states
+print(info.states_en_us)        # en-US states
+print(info.description)         # Accessible description
+print(info.x, info.y)           # Screen coordinates
+print(info.width, info.height)
+print(info.index_in_parent)
+print(info.children_count)
+print(info.to_dict())           # All properties as dict
 </code></pre>
-<h2 id="finding-elements">Finding elements</h2>
-<pre><code class="language-python"># Find the first matching element (raises LocatorNotFound if none match)
-element = locator.find()
+<p>The <code>Locator</code> also supports querying across all matching nodes or retrieving
+specific fields:</p>
+<pre><code class="language-python"># Get info from all matching elements
+all_info = locator.get_info_from_all()
 
-# Find all matching elements (returns empty list if none match)
-elements = locator.find_all()
+# Get accessible text directly
+text = locator.get_text()
 
-# Check if an element exists without fetching it
-if locator.exists():
-    element = locator.find()
-</code></pre>
-<h2 id="waiting-for-elements">Waiting for elements</h2>
-<pre><code class="language-python"># Wait up to 30 seconds (default: 60s)
-element = locator.wait_for(timeout=30)
-
-# Custom polling interval
-element = locator.wait_for(timeout=60, sleep_step=2)
+# Get available actions
+actions = locator.get_actions()
 </code></pre>
 <h2 id="driver-utilities">Driver utilities</h2>
 <pre><code class="language-python"># List all detected Java windows
@@ -213,12 +205,8 @@ driver.refresh_tree()
 # Get JAB bridge and server version info
 info = driver.get_version_info()
 </code></pre>
-<h2 id="traversing-the-tree">Traversing the tree</h2>
-<pre><code class="language-python">children = element.children()
-parent = element.parent()
-</code></pre>
 <h2 id="error-handling">Error handling</h2>
-<p>The library defines three custom exceptions:</p>
+<p>The library defines two custom exceptions:</p>
 <table>
 <thead>
 <tr>
@@ -232,10 +220,6 @@ parent = element.parent()
 <td>No Java window matches the given title pattern</td>
 </tr>
 <tr>
-<td><code>LocatorNotFound</code></td>
-<td>No element matches the locator query</td>
-</tr>
-<tr>
 <td><code>ServerStoppedError</code></td>
 <td>The <code>jab-rpa-server.exe</code> process exits prematurely</td>
 </tr>
@@ -243,15 +227,13 @@ parent = element.parent()
 </table>
 <pre><code class="language-python">from jab_rpa import JabDriver
 from jab_rpa.driver import WindowNotFound
-from jab_rpa.locator import LocatorNotFound
 
 try:
     with JabDriver(&quot;MyApp.*&quot;) as driver:
-        btn = driver.locator(&quot;push_button[name='Clear']&quot;).find()
+        loc = driver.locator(&quot;push_button[name='Clear']&quot;)
+        loc.wait_for()
 except WindowNotFound:
     print(&quot;Application not running&quot;)
-except LocatorNotFound:
-    print(&quot;Button not found&quot;)
 </code></pre>
               
             </div>

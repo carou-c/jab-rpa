@@ -76,8 +76,6 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../locator/">Locator</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../element/">Element</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../server/">JabRpaServer</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../client/">JabRpaClient</a>
@@ -130,8 +128,9 @@
 </ol>
 <p>Typical usage:</p>
 <pre><code>with JabDriver("MyApp.*") as driver:
-    btn = driver.locator("push_button[name='Clear']").wait_for()
-    btn.click()
+    loc = driver.locator("push_button[name='Clear']")
+    loc.wait_for()
+    loc.click()
 </code></pre>
 
 
@@ -359,6 +358,31 @@ selected. Can be a string or compiled pattern.</p>
 
         <p>Build a locator to find elements in the accessibility tree.</p>
 
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>selector</code></b>
+                  (<code><span title="str">str</span></code>)
+              –
+              <div class="doc-md-description">
+                <p>A CSS-selector-like query string (e.g.
+<code>"push_button[name='Clear']"</code>).</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 <table class="field-list">
   <colgroup>
