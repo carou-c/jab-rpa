@@ -63,16 +63,16 @@ class JabDriver:
             window_timeout: Maximum seconds to wait for a matching window.
             window_step: Seconds between window discovery polls.
         """
-        self.__window_title: str | re.Pattern[str] = window_title
-        self.__server_path: Path = server_path
-        self.__server_timeout: int = server_timeout
-        self.__window_timeout: int = window_timeout
-        self.__server_step: int = server_step
-        self.__window_step: int = window_step
-        self.__server: JabRpaServer = JabRpaServer(
-            server_path=self.__server_path,
-            server_timeout=self.__server_timeout,
-            step=self.__server_step,
+        self._window_title: str | re.Pattern[str] = window_title
+        self._server_path: Path = server_path
+        self._server_timeout: int = server_timeout
+        self._window_timeout: int = window_timeout
+        self._server_step: int = server_step
+        self._window_step: int = window_step
+        self._server: JabRpaServer = JabRpaServer(
+            server_path=self._server_path,
+            server_timeout=self._server_timeout,
+            step=self._server_step,
         )
         self._client: JabRpaClient = JabRpaClient()
 
@@ -87,23 +87,23 @@ class JabDriver:
             WindowNotFound: If no matching window appears within the timeout.
             ServerStoppedError: If the server process exits prematurely.
         """
-        self.__server.start()
+        self._server.start()
         self._client.start()
 
         wait_start = time.monotonic()
-        while time.monotonic() - wait_start <= self.__window_timeout:
+        while time.monotonic() - wait_start <= self._window_timeout:
             windows = [
                 window
                 for window in self._client.list_java_windows()
-                if re.search(self.__window_title, window.title)
+                if re.search(self._window_title, window.title)
             ]
             if windows:
                 window_info = windows[0]
                 break
-            time.sleep(self.__window_step)
+            time.sleep(self._window_step)
         else:
             raise WindowNotFound(
-                f"Java window with title matching {self.__window_title!r} not found within timeout {self.__window_timeout!r}."
+                f"Java window with title matching {self._window_title!r} not found within timeout {self._window_timeout!r}."
             )
 
         SetForegroundWindow(window_info.hwnd)
@@ -118,7 +118,7 @@ class JabDriver:
     def stop(self) -> None:
         """Stop the client and terminate the server."""
         self._client.stop()
-        self.__server.stop()
+        self._server.stop()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()

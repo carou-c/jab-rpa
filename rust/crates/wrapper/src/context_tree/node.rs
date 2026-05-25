@@ -72,7 +72,7 @@ impl ContextNode {
     }
 
     pub fn refresh_info(&mut self) {
-        if let Some(info) = self.obj.get_obj_info() {
+        if let Ok(info) = self.obj.get_obj_info() {
             self.name = utf16_to_string(&info.name);
             self.role = utf16_to_string(&info.role).to_lowercase().replace(' ', "_");
             self.states = utf16_to_string(&info.states)

@@ -45,6 +45,7 @@ class JabRpaClient:
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
         """
+        self.__stub.select_window(window_info)
 
     def get_selected_window_hwnd(self) -> jab.Hwnd:
         """Return the HWND for the selected window.

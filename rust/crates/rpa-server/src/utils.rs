@@ -5,6 +5,12 @@ use jab_wrapper::{
     selector::{Locator, Selector},
 };
 
+pub(crate) fn no_window_selected<T>() -> Result<T, Status> {
+    Err(Status::failed_precondition(
+        "No window selected. Call SelectWindow first.",
+    ))
+}
+
 pub(crate) fn parse_locator(locator: &Locator) -> Result<Selector, Status> {
     locator
         .parse()
@@ -17,7 +23,7 @@ pub(crate) fn find_node<'a>(
 ) -> Result<&'a ContextNode, Status> {
     let tree = match tree.as_ref() {
         Some(tree) => tree,
-        None => return no_window_selected!(),
+        None => return no_window_selected(),
     };
 
     match tree.get_node(selector) {
@@ -35,8 +41,26 @@ pub(crate) fn find_nodes<'a>(
 ) -> Result<Vec<&'a ContextNode>, Status> {
     let tree = match tree.as_ref() {
         Some(tree) => tree,
-        None => return no_window_selected!(),
+        None => return no_window_selected(),
     };
 
     Ok(tree.get_nodes(selector))
+}
+
+pub(crate) fn refresh_tree(tree: &mut Option<ContextTree>) -> Result<(), Status> {
+    let root_obj = match tree.take() {
+        Some(tree) => tree.into_root().map_err(Status::internal)?,
+        None => return no_window_selected(),
+    };
+
+    let new_tree = ContextTree::from_root(root_obj, None);
+    *tree = Some(new_tree);
+    Ok(())
+}
+
+pub(crate) fn get_root(tree: &Option<ContextTree>) -> Result<&ContextNode, Status> {
+    match tree.as_ref() {
+        Some(tree) => tree.root().map_err(Status::internal),
+        None => no_window_selected(),
+    }
 }

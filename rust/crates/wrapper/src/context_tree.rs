@@ -6,33 +6,3 @@ pub use self::{node::ContextNode, tree::ContextTree};
 
 pub(crate) type NodeHandle = u64;
 pub(crate) const ROOT_HANDLE: NodeHandle = 0;
-
-// ACTIVE
-// ARMED
-// BUSY
-// CHECKED
-// COLLAPSED
-// EDITABLE
-// ENABLED
-// EXPANDABLE
-// EXPANDED
-// FOCUSABLE
-// FOCUSED
-// HORIZONTAL
-// ICONIFIED
-// INDETERMINATE
-// MANAGES_DESCENDANTS
-// MODAL
-// MULTI_LINE
-// MULTISELECTABLE
-// OPAQUE
-// PRESSED
-// RESIZABLE
-// SELECTABLE
-// SELECTED
-// SHOWING
-// SINGLE_LINE
-// TRANSIENT
-// TRUNCATED
-// VERTICAL
-// VISIBLE

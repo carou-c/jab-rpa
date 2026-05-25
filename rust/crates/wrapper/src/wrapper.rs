@@ -79,10 +79,11 @@ impl Default for SharedCtxTree {
 
 impl JabWrapper {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {
-            runtime: Arc::new(JabRuntime::new()),
-        }
+    pub fn new() -> Result<Self, String> {
+        let runtime = JabRuntime::new()?;
+        Ok(Self {
+            runtime: Arc::new(runtime),
+        })
     }
 
     pub fn spawn_tree_updater(&self, tree: &Arc<SharedCtxTree>) -> thread::JoinHandle<()> {
@@ -187,13 +188,13 @@ impl JavaObject {
         }
     }
 
-    pub fn get_obj_info(&self) -> Option<AccessibleContextInfo> {
+    pub fn get_obj_info(&self) -> Result<AccessibleContextInfo, String> {
         unsafe {
             let mut info: jab_sys::AccessibleContextInfo = std::mem::zeroed();
             if jab_sys::GetAccessibleContextInfo(self.vm_id, self.jobject, &mut info) != 0 {
-                Some(info)
+                Ok(info)
             } else {
-                None
+                Err("Failed to get accessible context info".to_string())
             }
         }
     }
@@ -267,10 +268,17 @@ impl JavaObject {
 
     pub fn do_action(&self, action: String) -> Result<(), String> {
         let action = action.to_lowercase();
+        let outer_actions: Vec<_>;
         unsafe {
             let Ok(actions) = self.get_actions() else {
                 return Err("Failed to get accessible actions".to_string());
             };
+            outer_actions = actions
+                .actionInfo
+                .iter()
+                .take(actions.actionsCount as _)
+                .map(|act| utf16_to_string(&act.name))
+                .collect();
 
             for i in 0..actions.actionsCount {
                 let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
@@ -298,42 +306,9 @@ impl JavaObject {
             }
         }
 
-        Err(format!("No {:?} action found for element", action))
-    }
-
-    pub fn accessible_click(&self) -> Result<(), String> {
-        unsafe {
-            let mut actions: jab_sys::AccessibleActions = std::mem::zeroed();
-            if jab_sys::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
-                return Err("Failed to get accessible actions".to_string());
-            }
-
-            for i in 0..actions.actionsCount {
-                let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
-                if action_name.to_lowercase().contains("click") {
-                    let mut actions_to_do: jab_sys::AccessibleActionsToDo = std::mem::zeroed();
-                    actions_to_do.actionsCount = 1;
-                    actions_to_do.actions[0] = actions.actionInfo[i as usize];
-
-                    let mut failure: i32 = 0;
-                    if jab_sys::doAccessibleActions(
-                        self.vm_id,
-                        self.jobject,
-                        &mut actions_to_do,
-                        &mut failure,
-                    ) != 0
-                    {
-                        return Ok(());
-                    } else {
-                        return Err(format!(
-                            "Failed to perform click action, failure index: {}",
-                            failure
-                        ));
-                    }
-                }
-            }
-        }
-
-        Err("No click action found for element".to_string())
+        Err(format!(
+            "No {:?} action found. Available actions: {:?}",
+            action, outer_actions
+        ))
     }
 }

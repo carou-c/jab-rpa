@@ -14,15 +14,17 @@ pub struct ContextTree {
 }
 
 impl ContextTree {
-    pub fn root(&self) -> &ContextNode {
-        self.nodes.get(&ROOT_HANDLE).expect("Root node missing")
+    pub fn root(&self) -> Result<&ContextNode, String> {
+        self.nodes
+            .get(&ROOT_HANDLE)
+            .ok_or("Root node missing".to_string())
     }
 
-    pub fn into_root(mut self) -> JavaObject {
+    pub fn into_root(mut self) -> Result<JavaObject, String> {
         self.nodes
             .remove(&ROOT_HANDLE)
-            .expect("Root node missing")
-            .obj
+            .map(|root| root.obj)
+            .ok_or("Root node missing".to_string())
     }
 
     pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>) -> Self {

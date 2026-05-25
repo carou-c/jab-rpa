@@ -27,7 +27,7 @@ and probably has a few bugs here and there.
 from jab_rpa import JabDriver
 
 with JabDriver("My Java Application.*") as driver:
-    button = driver.locator("push_button[name='Clear']").wait_for()
+    button = driver.locator("push_button[name='Clear']")
     button.click()
 ```
 

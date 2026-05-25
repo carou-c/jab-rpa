@@ -4,9 +4,11 @@
 // 3. NOT panic (can't unwind through C)
 // 4. Be 'static (no captured references)
 
-use std::{slice, sync::Mutex};
+use std::slice;
 
 use crossbeam::channel;
+use parking_lot::Mutex;
+
 use jab_sys::{MAX_STRING_SIZE, wchar_t};
 
 use super::event::{ChangeEvent, EventData, EventMeta};
@@ -26,9 +28,8 @@ macro_rules! cb {
             old: *mut wchar_t,
             new: *mut wchar_t,
         ) {
-            let Ok(tx) = CALLBACK_TX.lock() else {
-                return;
-            };
+            let tx = CALLBACK_TX.lock();
+
             let Some(tx) = tx.as_ref() else {
                 return;
             };
@@ -55,9 +56,8 @@ macro_rules! cb {
             old: JObject,
             new: JObject,
         ) {
-            let Ok(tx) = CALLBACK_TX.lock() else {
-                return;
-            };
+            let tx = CALLBACK_TX.lock();
+
             let Some(tx) = tx.as_ref() else {
                 return;
             };
@@ -74,9 +74,8 @@ macro_rules! cb {
     };
     ($name:ident, $variant:path) => {
         extern "C" fn $name(vm_id: VmId, event: JObject, source: JObject) {
-            let Ok(tx) = CALLBACK_TX.lock() else {
-                return;
-            };
+            let tx = CALLBACK_TX.lock();
+
             let Some(tx) = tx.as_ref() else {
                 return;
             };
@@ -107,9 +106,7 @@ cb!(JObject, on_child_change, ChangeEvent::Child);
 pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
     let (tx, rx) = channel::unbounded();
 
-    let Ok(mut cb_tx) = CALLBACK_TX.lock() else {
-        return rx;
-    };
+    let mut cb_tx = CALLBACK_TX.lock();
     *cb_tx = Some(tx);
 
     unsafe {
@@ -131,7 +128,22 @@ pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
 }
 
 pub(crate) fn shutdown_event_channel() {
-    if let Ok(mut tx) = CALLBACK_TX.lock() {
-        (*tx).take();
-    };
+    let mut tx = CALLBACK_TX.lock();
+    tx.take();
+
+    unsafe {
+        jab_sys::SetPropertyNameChange(None);
+        jab_sys::SetPropertyDescriptionChange(None);
+        jab_sys::SetPropertyStateChange(None);
+        jab_sys::SetPropertyTextChange(None);
+        jab_sys::SetPropertyChildChange(None);
+        // jab_sys::SetPropertyValueChange(Some(on_value_change));
+        // jab_sys::SetPropertyVisibleDataChange(Some(on_visible_data_change));
+        // jab_sys::SetPropertyActiveDescendentChange(Some(on_active_descendent_change));
+        // jab_sys::SetPropertyChildChange(Some(on_property_child_change));
+        // jab_sys::SetPropertyVisibleDataChange(Some(on_property_visible_data_change));
+        // jab_sys::SetPropertyActiveDescendentChange(Some(on_property_active_descendent_change));
+        // jab_sys::SetFocusGained(Some(on_focus_gained));
+        // jab_sys::SetFocusLost(Some(on_focus_lost));
+    }
 }

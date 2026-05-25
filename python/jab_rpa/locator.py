@@ -1,8 +1,5 @@
-from __future__ import annotations
+from typing import Any, TYPE_CHECKING, Literal
 
-from typing import Any, TYPE_CHECKING
-
-from grpc import RpcError
 import pyautogui
 
 from .types import Action
@@ -18,8 +15,37 @@ _WAIT_FOR_TIMEOUT = 60  # seconds
 _WAIT_FOR_STEP = 5  # seconds
 
 
-class LocatorNotFound(Exception):
-    """Raised when a locator query returns no matching elements."""
+type AccessibleState = Literal[
+    "active",
+    "armed",
+    "busy",
+    "checked",
+    "collapsed",
+    "editable",
+    "enabled",
+    "expandable",
+    "expanded",
+    "focusable",
+    "focused",
+    "horizontal",
+    "iconified",
+    "indeterminate",
+    "manages_descendants",
+    "modal",
+    "multi_line",
+    "multiselectable",
+    "opaque",
+    "pressed",
+    "resizable",
+    "selectable",
+    "selected",
+    "showing",
+    "single_line",
+    "transient",
+    "truncated",
+    "vertical",
+    "visible",
+]
 
 
 class Locator:
@@ -45,6 +71,8 @@ class Locator:
         self,
         driver: JabDriver,
         selector: str,
+        require_states: set[AccessibleState] = set(),
+        exclude_states: set[AccessibleState] = set(),
     ):
         """Wrap a driver and a selector string.
 
@@ -52,13 +80,21 @@ class Locator:
             driver: The ``JabDriver`` instance.
             selector: A CSS-selector-like query string (e.g.
                 ``"push_button[name='Clear']"``).
+            require_states: A set of states an element matching this locator must have
+            exclude_states: A set of states an element matching this locator must not have
         """
         self._driver: JabDriver = driver
-        self._selector: str = selector
+        self._selector: str = (
+            selector.rstrip()
+            + "".join(":require-state(" + state + ")" for state in require_states)
+            + "".join(":exclude-state(" + state + ")" for state in exclude_states)
+        )
 
     def locator(
         self,
         selector: str,
+        require_states: set[AccessibleState] = set(),
+        exclude_states: set[AccessibleState] = set(),
     ) -> "Locator":
         """Extend the query with a descendant combinator.
 
@@ -67,11 +103,18 @@ class Locator:
 
         Args:
             selector: Additional CSS-like selector to append.
+            require_states: A set of states an element matching this locator must have
+            exclude_states: A set of states an element matching this locator must not have
 
         Returns:
             A new ``Locator`` with the combined selector.
         """
-        return Locator(self._driver, self._selector + " " + selector)
+        selector: str = (
+            selector.rstrip()
+            + "".join(":require-state(" + state + ")" for state in require_states)
+            + "".join(":exclude-state(" + state + ")" for state in exclude_states)
+        )
+        return Locator(self._driver, f"{self._selector} {selector}")
 
     def get_info(
         self,
@@ -172,17 +215,8 @@ class Locator:
                 or a positive integer for max milliseconds to wait.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
-
-        Raises:
-            LocatorNotFound: If no element matches within the timeout.
         """
-        try:
-            self._driver._client.wait_for(
-                self._selector, timeout_ms, refresh_before_fail
-            )
-
-        except RpcError as e:
-            raise LocatorNotFound() from e
+        self._driver._client.wait_for(self._selector, timeout_ms, refresh_before_fail)
 
     def do_accessible_action(
         self,

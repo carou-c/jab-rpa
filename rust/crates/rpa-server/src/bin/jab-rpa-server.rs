@@ -5,7 +5,7 @@ use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let wrapper = JabWrapper::new();
+    let wrapper = JabWrapper::new()?;
 
     // Wait for JAB init
     let service = JabService::new(wrapper);

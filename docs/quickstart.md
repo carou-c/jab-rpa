@@ -24,7 +24,6 @@ from jab_rpa import JabDriver
 
 with JabDriver("My Java Application.*") as driver:
     locator = driver.locator("push_button[name='Clear']")
-    locator.wait_for()
     locator.click()
 ```
 
@@ -35,10 +34,9 @@ with JabDriver("My Java Application.*") as driver:
    selects it and maximizes it.
 2. `driver.locator("push_button[name='Clear']")` — builds a locator query using
    CSS-selector-like syntax (see [Selector syntax](selectors.md)).
-3. `.wait_for()` — polls until a matching element appears in the accessibility
-   tree.
-4. `.click()` — moves the mouse to the matching element's center and clicks via
-    `pyautogui`.
+3. `.click()` — polls until a matching element appears in the accessibility
+   tree, moves the mouse to the matching element's center and clicks via
+   `pyautogui`.
 
 ## Waiting for elements
 
@@ -66,7 +64,8 @@ locator.click_and_type("hello world")
 
 ### Accessible actions
 
-Elements may expose additional actions beyond clicking (e.g. "toggle", "expand", "select"):
+Elements may expose additional actions beyond clicking (e.g. "toggle", "expand",
+"select"):
 
 ```python
 # List available actions
@@ -95,7 +94,8 @@ print(info.children_count)
 print(info.to_dict())           # All properties as dict
 ```
 
-The `Locator` also supports querying across all matching nodes or retrieving specific fields:
+The `Locator` also supports querying across all matching nodes or retrieving
+specific fields:
 
 ```python
 # Get info from all matching elements
@@ -125,22 +125,18 @@ driver.refresh_tree()
 info = driver.get_version_info()
 ```
 
-
-
 ## Error handling
 
-The library defines three custom exceptions:
+The library defines two custom exceptions:
 
-| Exception            | Raised when                                          |
-| -------------------- | ---------------------------------------------------- |
-| `WindowNotFound`     | No Java window matches the given title pattern       |
-| `LocatorNotFound`    | No element matches the locator query                 |
-| `ServerStoppedError` | The `jab-rpa-server.exe` process exits prematurely   |
+| Exception            | Raised when                                        |
+| -------------------- | -------------------------------------------------- |
+| `WindowNotFound`     | No Java window matches the given title pattern     |
+| `ServerStoppedError` | The `jab-rpa-server.exe` process exits prematurely |
 
 ```python
 from jab_rpa import JabDriver
 from jab_rpa.driver import WindowNotFound
-from jab_rpa.locator import LocatorNotFound
 
 try:
     with JabDriver("MyApp.*") as driver:
@@ -148,6 +144,4 @@ try:
         loc.wait_for()
 except WindowNotFound:
     print("Application not running")
-except LocatorNotFound:
-    print("Button not found")
 ```

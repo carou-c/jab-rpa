@@ -1,5 +1,3 @@
-#![macro_use]
-
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -15,20 +13,12 @@ use jab_wrapper::wrapper::{JabWrapper, SharedCtxTree};
 
 use crate::DEFAULT_TIMEOUT;
 use crate::proto;
-use crate::utils::{find_node, find_nodes, parse_locator};
+use crate::utils::{find_node, find_nodes, get_root, parse_locator, refresh_tree};
 
 pub struct JabService {
     wrapper: JabWrapper,
     ctx_tree: Arc<SharedCtxTree>,
     _updater: thread::JoinHandle<()>,
-}
-
-macro_rules! no_window_selected {
-    () => {
-        Err(Status::failed_precondition(
-            "No window selected. Call SelectWindow first.",
-        ))
-    };
 }
 
 impl JabService {
@@ -61,13 +51,7 @@ impl JabService {
         }
 
         if refresh_before_fail {
-            let root_obj = match tree_lock.take() {
-                Some(tree) => tree.into_root(),
-                None => return no_window_selected!(),
-            };
-
-            let tree = ContextTree::from_root(root_obj, None);
-            *tree_lock = Some(tree);
+            refresh_tree(&mut tree_lock)?;
         }
 
         match find_node(&tree_lock, selector) {
@@ -124,7 +108,7 @@ impl proto::jab_service_server::JabService for JabService {
 
                 Ok(Response::new(proto::Empty {}))
             }
-            Err(e) => Err(Status::unknown(e)),
+            Err(e) => Err(Status::internal(e)),
         }
     }
 
@@ -133,13 +117,8 @@ impl proto::jab_service_server::JabService for JabService {
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::Hwnd>, Status> {
         let tree_lock = self.ctx_tree.lock();
+        let root = get_root(&tree_lock)?;
 
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
-
-        let root = tree.root();
         Ok(Response::new(
             self.wrapper.get_hwnd_from_obj(&root.obj).into(),
         ))
@@ -150,13 +129,7 @@ impl proto::jab_service_server::JabService for JabService {
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::Empty>, Status> {
         let mut tree_lock = self.ctx_tree.lock();
-        let root_obj = match tree_lock.take() {
-            Some(tree) => tree.into_root(),
-            None => return no_window_selected!(),
-        };
-
-        let tree = ContextTree::from_root(root_obj, None);
-        *tree_lock = Some(tree);
+        refresh_tree(&mut tree_lock)?;
 
         Ok(Response::new(proto::Empty {}))
     }
@@ -166,17 +139,11 @@ impl proto::jab_service_server::JabService for JabService {
         _request: Request<proto::Empty>,
     ) -> Result<Response<proto::VersionInfo>, Status> {
         let tree_lock = self.ctx_tree.lock();
-
-        let tree = match tree_lock.as_ref() {
-            Some(tree) => tree,
-            None => return no_window_selected!(),
-        };
-
-        let root = tree.root();
+        let root = get_root(&tree_lock)?;
 
         match root.obj.get_version_info() {
             Ok(version_info) => Ok(Response::new(version_info.into())),
-            Err(e) => Err(Status::unknown(e)),
+            Err(e) => Err(Status::internal(e)),
         }
     }
 
@@ -241,13 +208,7 @@ impl proto::jab_service_server::JabService for JabService {
         }
 
         if req.refresh_before_fail {
-            let root_obj = match tree_lock.take() {
-                Some(tree) => tree.into_root(),
-                None => return no_window_selected!(),
-            };
-
-            let tree = ContextTree::from_root(root_obj, None);
-            *tree_lock = Some(tree);
+            refresh_tree(&mut tree_lock)?;
         }
 
         for (idx, selector) in selectors.iter().enumerate() {
@@ -375,7 +336,7 @@ impl proto::jab_service_server::JabService for JabService {
 
         match node.obj.do_action(action.name) {
             Ok(()) => Ok(Response::new(proto::Empty {})),
-            Err(e) => Err(Status::unknown(e)),
+            Err(e) => Err(Status::internal(e)),
         }
     }
 }

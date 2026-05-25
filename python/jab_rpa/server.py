@@ -10,7 +10,7 @@ _SERVER_PATH = Path(str(files("jab_rpa").joinpath("bin/jab-rpa-server.exe")))
 _SERVER_LISTENING = "JAB gRPC Server listening on 127.0.0.1:50051"
 
 _WAIT_FOR_SERVER_TIMEOUT: int = 30
-_INIT_SERVER_STEP: int = 5
+_INIT_SERVER_STEP: int = 1
 
 
 class ServerStoppedError(Exception):
@@ -43,9 +43,9 @@ class JabRpaServer:
             server_timeout: Maximum seconds to wait for the server to start.
             step: Seconds between readiness checks.
         """
-        self.__server_path: Path = server_path
-        self.__server_timeout: int = server_timeout
-        self.__step: int = step
+        self._server_path: Path = server_path
+        self._server_timeout: int = server_timeout
+        self._step: int = step
 
     def start(self) -> None:
         """Launch the server subprocess and wait for it to become ready.
@@ -58,12 +58,12 @@ class JabRpaServer:
             TimeoutError: If the server does not become ready within the timeout.
         """
         server_proc = subprocess.Popen(
-            [self.__server_path],
+            [self._server_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
-        self.__server_proc = server_proc
+        self._server_proc = server_proc
 
         q: queue.Queue[str] = queue.Queue()
 
@@ -77,7 +77,7 @@ class JabRpaServer:
 
         stdout = ""
         wait_start = time.monotonic()
-        while time.monotonic() - wait_start <= self.__server_timeout:
+        while time.monotonic() - wait_start <= self._server_timeout:
             while True:
                 try:
                     stdout += q.get_nowait()
@@ -94,10 +94,10 @@ class JabRpaServer:
                     f"stdout: {server_proc.stdout.read() if server_proc.stdout is not None else None}\n"
                 )
 
-            time.sleep(self.__step)
+            time.sleep(self._step)
         else:
             raise TimeoutError(
-                f"Timeout ({self.__server_timeout} seconds) passed while waiting"
+                f"Timeout ({self._server_timeout} seconds) passed while waiting"
                 " for JAB gRPC server to start"
             )
 
@@ -107,7 +107,8 @@ class JabRpaServer:
 
     def stop(self) -> None:
         """Terminate the server subprocess."""
-        self.__server_proc.terminate()
+        self._server_proc.terminate()
+        self._server_proc.wait()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
