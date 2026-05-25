@@ -18,11 +18,17 @@ impl ComplexSelector {
         if self.head.is_some() {
             return true;
         }
-        self.body.iter().any(|(compound, _)| {
-            compound
-                .pseudo_classes
-                .contains(&PseudoClassSelector::Scope)
-        })
+
+        self.body
+            .iter()
+            .map(|(compound, _)| compound)
+            .chain(std::iter::once(&self.last))
+            .any(|compound| {
+                compound
+                    .pseudo_classes
+                    .iter()
+                    .any(|pseudo| matches!(pseudo, PseudoClassSelector::Scope))
+            })
     }
 }
 

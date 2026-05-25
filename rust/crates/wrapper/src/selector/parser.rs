@@ -7,7 +7,7 @@ use regex::Regex;
 use super::ast::*;
 use super::lexer::Token;
 
-pub type ParserError<'src> = extra::Err<Simple<'src, Token>>;
+pub type ParserError<'src> = extra::Err<Rich<'src, Token>>;
 
 enum CompoundItem {
     Attr(AttrSelector),
@@ -18,12 +18,6 @@ enum CompoundItem {
 enum CompoundRole {
     Any,
     Role(String),
-}
-
-enum PseudoArg {
-    Int(i32),
-    Str(String),
-    Selector(Selector),
 }
 
 pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<'src>> {
@@ -90,7 +84,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                     match c {
                         'i' => ci = true,
                         'r' => re = true,
-                        _ => return Err(Simple::new(None, span)),
+                        _ => return Err(Rich::custom(span, "invalid flag, expected 'i' or 'r'")),
                     }
                 }
             }
@@ -109,7 +103,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             "states_en_us" => Ok(StrAttrName::StatesEnUs),
             "text" => Ok(StrAttrName::Text),
             "actions" => Ok(StrAttrName::Actions),
-            _ => Err(Simple::new(None, span)),
+            _ => Err(Rich::custom(span, "unknown string attribute, expected 'name', 'description', 'states', 'states_en_us', 'text', or 'actions'")),
         });
 
         let str_attr = str_attr_name
@@ -127,7 +121,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
                  span| {
                     let value = if re {
                         let Ok(regex) = Regex::new(&value) else {
-                            return Err(Simple::new(None, span));
+                            return Err(Rich::custom(span, "invalid regex pattern"));
                         };
                         StrMatcher::Regex(regex)
                     } else {
@@ -149,7 +143,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             "height" => Ok(IntAttrName::Height),
             "children_count" => Ok(IntAttrName::ChildrenCount),
             "depth" => Ok(IntAttrName::Depth),
-            _ => Err(Simple::new(None, span)),
+            _ => Err(Rich::custom(span, "unknown integer attribute, expected 'x', 'y', 'width', 'height', 'children_count', or 'depth'")),
         });
 
         let int_attr = int_attr_name
@@ -169,7 +163,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             "accessible_action" => Ok(BoolAttrName::AccessibleAction),
             "accessible_text" => Ok(BoolAttrName::AccessibleText),
             "accessible_selection" => Ok(BoolAttrName::AccessibleSelection),
-            _ => Err(Simple::new(None, span)),
+            _ => Err(Rich::custom(span, "unknown boolean attribute, expected 'accessible_action', 'accessible_text', or 'accessible_selection'")),
         });
 
         let bool_attr = bool_attr_name.map(|name| AttrSelector::Bool { name });
@@ -180,73 +174,61 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             .then_ignore(ws0)
             .then_ignore(just(Token::RBracket));
 
-        let pseudo_arg = choice((
-            int_val.map(PseudoArg::Int),
-            ident_val.map(PseudoArg::Str),
-            selector.map(PseudoArg::Selector),
-        ));
+        let ident_pseudo_arg = ident_val.delimited_by(
+            just(Token::LParen).then_ignore(ws0),
+            ws0.ignore_then(just(Token::RParen)),
+        );
+        let int_pseudo_arg = int_val.delimited_by(
+            just(Token::LParen).then_ignore(ws0),
+            ws0.ignore_then(just(Token::RParen)),
+        );
+        let selector_pseudo_arg = selector.delimited_by(
+            just(Token::LParen).then_ignore(ws0),
+            ws0.ignore_then(just(Token::RParen)),
+        );
 
-        let pseudo_class_selector = just(Token::Colon)
-            .ignore_then(ident_val)
-            .then(
-                just(Token::LParen)
-                    .ignore_then(ws0)
-                    .ignore_then(pseudo_arg)
-                    .then_ignore(ws0)
-                    .then_ignore(just(Token::RParen))
-                    .or_not(),
-            )
-            .try_map(
-                |(name, arg): (String, Option<PseudoArg>), span| match name.as_str() {
-                    "scope" => match arg {
-                        None => Ok(PseudoClassSelector::Scope),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "has" => match arg {
-                        Some(PseudoArg::Selector(mut s)) => {
-                            for complex in s.alternatives.iter_mut() {
-                                if !complex.is_relative()
-                                    && !complex
-                                        .last
-                                        .pseudo_classes
-                                        .contains(&PseudoClassSelector::Scope)
-                                {
-                                    complex.head = Some(Combinator::Descendant)
-                                }
-                            }
-                            Ok(PseudoClassSelector::Has(Box::new(s)))
+        let pseudo_class_selector = just(Token::Colon).ignore_then(choice((
+            just(Token::Ident("scope".to_string())).map(|_| PseudoClassSelector::Scope),
+            just(Token::Ident("has".to_string()))
+                .then(selector_pseudo_arg.clone())
+                .map(|(_, mut s): (_, Selector)| {
+                    for complex in s.alternatives.iter_mut() {
+                        if !complex.is_relative()
+                            && !complex
+                                .last
+                                .pseudo_classes
+                                .contains(&PseudoClassSelector::Scope)
+                        {
+                            complex.head = Some(Combinator::Descendant)
                         }
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "not" => match arg {
-                        Some(PseudoArg::Selector(s)) => {
-                            if s.alternatives.iter().any(ComplexSelector::is_relative) {
-                                Err(Simple::new(None, span))
-                            } else {
-                                Ok(PseudoClassSelector::Not(Box::new(s)))
-                            }
-                        }
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "require-state" => match arg {
-                        Some(PseudoArg::Str(s)) => Ok(PseudoClassSelector::RequireState(s)),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "exclude-state" => match arg {
-                        Some(PseudoArg::Str(s)) => Ok(PseudoClassSelector::ExcludeState(s)),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "nth-child" => match arg {
-                        Some(PseudoArg::Int(n)) => Ok(PseudoClassSelector::NthChild(n)),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    "nth-last-child" => match arg {
-                        Some(PseudoArg::Int(n)) => Ok(PseudoClassSelector::NthLastChild(n)),
-                        _ => Err(Simple::new(None, span)),
-                    },
-                    _ => Err(Simple::new(None, span)),
-                },
-            );
+                    }
+                    PseudoClassSelector::Has(Box::new(s))
+                }),
+            just(Token::Ident("not".to_string()))
+                .then(selector_pseudo_arg.clone())
+                .try_map(|(_, s): (_, Selector), span| {
+                    if s.alternatives.iter().any(ComplexSelector::is_relative) {
+                        Err(Rich::custom(
+                            span,
+                            "relative selectors are not allowed inside :not()",
+                        ))
+                    } else {
+                        Ok(PseudoClassSelector::Not(Box::new(s)))
+                    }
+                }),
+            just(Token::Ident("require-state".to_string()))
+                .then(ident_pseudo_arg.clone())
+                .map(|(_, state)| PseudoClassSelector::RequireState(state)),
+            just(Token::Ident("exclude-state".to_string()))
+                .then(ident_pseudo_arg.clone())
+                .map(|(_, state)| PseudoClassSelector::ExcludeState(state)),
+            just(Token::Ident("nth-child".to_string()))
+                .then(int_pseudo_arg.clone())
+                .map(|(_, n)| PseudoClassSelector::NthChild(n)),
+            just(Token::Ident("nth-last-child".to_string()))
+                .then(int_pseudo_arg.clone())
+                .map(|(_, n)| PseudoClassSelector::NthLastChild(n)),
+        )));
 
         let compound_item = choice((
             attr_selector.map(CompoundItem::Attr),
@@ -263,7 +245,10 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
             .then(compound_item.clone().repeated().collect::<Vec<_>>())
             .try_map(|(role, items), span| {
                 if role.is_none() && items.is_empty() {
-                    Err(Simple::new(None, span))
+                    Err(Rich::custom(
+                        span,
+                        "expected a role or at least one attribute or pseudo-class",
+                    ))
                 } else {
                     let mut attrs = Vec::new();
                     let mut pseudo_classes = Vec::new();
@@ -338,7 +323,10 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], Selector, ParserError<
     selector
         .try_map(|s, span| {
             if s.alternatives.iter().any(ComplexSelector::is_relative) {
-                Err(Simple::new(None, span))
+                Err(Rich::custom(
+                    span,
+                    "relative selectors are not allowed at the top level",
+                ))
             } else {
                 Ok(s)
             }

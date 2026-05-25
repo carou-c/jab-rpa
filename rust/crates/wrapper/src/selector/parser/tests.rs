@@ -1,7 +1,11 @@
 use crate::selector::Locator;
 use crate::selector::ast::*;
+
 fn parse(input: &str) -> Selector {
-    Locator::new(input).parse().unwrap()
+    match Locator::new(input).parse() {
+        Ok(sel) => sel,
+        Err(e) => panic!("Error {} while parsing input {}", e, input),
+    }
 }
 
 fn parse_err(input: &str) -> String {
@@ -421,12 +425,22 @@ fn test_bool_attr_accessible_selection() {
 
 #[test]
 fn test_pseudo_scope() {
-    let result = parse(":scope");
+    let result = parse(":has(:scope)");
     assert!(
         result.alternatives[0]
             .last
             .pseudo_classes
-            .contains(&PseudoClassSelector::Scope)
+            .contains(&PseudoClassSelector::Has(Box::new(Selector {
+                alternatives: vec![ComplexSelector {
+                    head: None,
+                    body: vec![],
+                    last: CompoundSelector {
+                        role: None,
+                        attrs: vec![],
+                        pseudo_classes: vec![PseudoClassSelector::Scope]
+                    }
+                }]
+            })))
     );
 }
 
@@ -645,7 +659,7 @@ fn test_selector_with_role_and_multiple_attributes() {
         last.pseudo_classes
             .contains(&PseudoClassSelector::Not(Box::new(Selector {
                 alternatives: vec![ComplexSelector {
-                    head: Some(Combinator::Descendant),
+                    head: None,
                     body: vec![],
                     last: CompoundSelector {
                         role: Some("dialog".into()),

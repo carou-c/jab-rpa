@@ -38,7 +38,7 @@ fn test_selector_parse_error_parse_variant() {
 
 #[test]
 fn test_selector_parse_error_from_chumsky_errors() {
-    let simple_errors: Vec<chumsky::error::Simple<'_, crate::selector::lexer::Token>> = vec![];
-    let err: SelectorParseError = simple_errors.into();
+    let rich_errors: Vec<chumsky::error::Rich<'_, crate::selector::lexer::Token>> = vec![];
+    let err: SelectorParseError = rich_errors.into();
     assert!(matches!(err, SelectorParseError::Parse(_)));
 }

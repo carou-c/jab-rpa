@@ -2,7 +2,12 @@ use crate::selector::Locator;
 use crate::selector::ast::*;
 
 fn parse(input: &str) -> Selector {
-    Locator::new(input).parse().unwrap()
+    match Locator::new(input).parse() {
+        Ok(sel) => sel,
+        Err(e) => {
+            panic!("Error {} for input {}", e, input);
+        }
+    }
 }
 
 #[test]
@@ -100,10 +105,10 @@ fn test_selector_display_subsequent_sibling() {
 
 #[test]
 fn test_selector_display_complex_compound() {
-    let sel = parse("dialog push_button:require-state(enabled)[name='OK']");
+    let sel = parse("dialog push_button[name='OK']:require-state(enabled)");
     assert_eq!(
         sel.to_string(),
-        "dialog push_button:require-state(enabled)[name='OK']"
+        "dialog push_button[name='OK']:require-state(enabled)"
     );
 }
 
@@ -143,7 +148,12 @@ fn test_round_trip_simple() {
     for input in inputs {
         let sel = parse(input);
         let display = sel.to_string();
-        let reparsed = Locator::new(&display).parse().unwrap();
+        let reparsed = match Locator::new(&display).parse() {
+            Ok(reparsed) => reparsed,
+            Err(e) => {
+                panic!("Error {} for input {}", e, input);
+            }
+        };
         assert_eq!(sel, reparsed, "round-trip failed for: {input}");
     }
 }

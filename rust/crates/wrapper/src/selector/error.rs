@@ -1,6 +1,6 @@
 use std::num::ParseIntError;
 
-use chumsky::error::Simple;
+use chumsky::error::Rich;
 use thiserror::Error;
 
 use super::lexer::Token;
@@ -22,12 +22,11 @@ pub enum SelectorParseError {
     Parse(String),
 }
 
-impl From<Vec<Simple<'_, Token>>> for SelectorParseError {
-    fn from(simple: Vec<Simple<'_, Token>>) -> Self {
+impl From<Vec<Rich<'_, Token>>> for SelectorParseError {
+    fn from(rich: Vec<Rich<'_, Token>>) -> Self {
         Self::Parse(
-            simple
-                .into_iter()
-                .map(|s| s.to_string())
+            rich.into_iter()
+                .map(|r| format!("{:?}", r))
                 .collect::<Vec<_>>()
                 .join("\n"),
         )
