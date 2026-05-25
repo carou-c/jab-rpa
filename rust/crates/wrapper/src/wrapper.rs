@@ -121,12 +121,27 @@ impl JabWrapper {
 
     pub fn list_java_windows(&self) -> Vec<WindowInfo> {
         unsafe {
-            let mut hwnds: Vec<HWND> = Vec::new();
+            let mut hwnds: Vec<_> = Vec::new();
 
             extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
-                let hwnds: &mut Vec<HWND> = unsafe { &mut *(lparam.0 as *mut Vec<HWND>) };
-                if unsafe { IsWindow(Some(hwnd)).0 } != 0 {
-                    hwnds.push(hwnd);
+                let hwnds: &mut Vec<_> = unsafe { &mut *(lparam.0 as *mut Vec<_>) };
+                unsafe {
+                    if IsWindow(Some(hwnd)).0 != 0 && jab_sys::IsJavaWindow(hwnd.0 as _) != 0 {
+                        hwnds.push(WindowInfo {
+                            hwnd,
+                            title: {
+                                let len = GetWindowTextLengthW(hwnd);
+                                if len > 0 {
+                                    let mut buf: Vec<jab_sys::wchar_t> =
+                                        vec![0; (len + 1) as usize];
+                                    GetWindowTextW(hwnd, &mut buf);
+                                    utf16_to_string(&buf)
+                                } else {
+                                    String::new()
+                                }
+                            },
+                        });
+                    }
                 }
                 BOOL(1)
             }
@@ -134,22 +149,6 @@ impl JabWrapper {
             let _ = EnumWindows(Some(enum_proc), LPARAM(&mut hwnds as *mut _ as isize));
 
             hwnds
-                .into_iter()
-                .filter(|&hwnd| jab_sys::IsJavaWindow(hwnd.0 as _) != 0)
-                .map(|hwnd| WindowInfo {
-                    hwnd,
-                    title: {
-                        let len = GetWindowTextLengthW(hwnd);
-                        if len > 0 {
-                            let mut buf: Vec<jab_sys::wchar_t> = vec![0; (len + 1) as usize];
-                            GetWindowTextW(hwnd, &mut buf);
-                            utf16_to_string(&buf)
-                        } else {
-                            String::new()
-                        }
-                    },
-                })
-                .collect()
         }
     }
 
@@ -267,7 +266,7 @@ impl JavaObject {
     }
 
     pub fn do_action(&self, action: String) -> Result<(), String> {
-        let action = action.to_lowercase();
+        let action = action.to_lowercase().replace(' ', "_");
         let outer_actions: Vec<_>;
         unsafe {
             let Ok(actions) = self.get_actions() else {

@@ -138,7 +138,7 @@ class JabDriver:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
         """
         self.window_info: WindowInfo = window_info
-        return self._client.select_window(window_info)
+        self._client.select_window(window_info)
 
     def refresh_tree(self) -> None:
         """Rebuild the cached accessibility tree on the server.

@@ -4,8 +4,6 @@
 // 3. NOT panic (can't unwind through C)
 // 4. Be 'static (no captured references)
 
-use std::slice;
-
 use crossbeam::channel;
 use parking_lot::Mutex;
 
@@ -14,7 +12,7 @@ use jab_sys::{MAX_STRING_SIZE, wchar_t};
 use super::event::{ChangeEvent, EventData, EventMeta};
 use crate::{
     types::{JObject, VmId},
-    utils::utf16_to_string,
+    utils::raw_utf16_to_string,
 };
 
 static CALLBACK_TX: Mutex<Option<channel::Sender<ChangeEvent>>> = Mutex::new(None);
@@ -34,10 +32,8 @@ macro_rules! cb {
                 return;
             };
 
-            let old =
-                utf16_to_string(unsafe { slice::from_raw_parts(old, MAX_STRING_SIZE as usize) });
-            let new =
-                utf16_to_string(unsafe { slice::from_raw_parts(new, MAX_STRING_SIZE as usize) });
+            let old = unsafe { raw_utf16_to_string(old, MAX_STRING_SIZE as usize) };
+            let new = unsafe { raw_utf16_to_string(new, MAX_STRING_SIZE as usize) };
             let meta = EventMeta {
                 vm_id,
                 event,
@@ -106,8 +102,10 @@ cb!(JObject, on_child_change, ChangeEvent::Child);
 pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
     let (tx, rx) = channel::unbounded();
 
-    let mut cb_tx = CALLBACK_TX.lock();
-    *cb_tx = Some(tx);
+    {
+        let mut cb_tx = CALLBACK_TX.lock();
+        *cb_tx = Some(tx);
+    }
 
     unsafe {
         jab_sys::SetPropertyNameChange(Some(on_name_change));
@@ -128,8 +126,10 @@ pub(crate) unsafe fn subscribe_events() -> channel::Receiver<ChangeEvent> {
 }
 
 pub(crate) fn shutdown_event_channel() {
-    let mut tx = CALLBACK_TX.lock();
-    tx.take();
+    {
+        let mut tx = CALLBACK_TX.lock();
+        tx.take();
+    }
 
     unsafe {
         jab_sys::SetPropertyNameChange(None);

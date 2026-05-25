@@ -82,16 +82,30 @@ impl JabRuntime {
         match init_rx.recv() {
             Ok(true) => (),
             Ok(false) => return Err("Failed to initialize JAB".to_string()),
-            Err(_) => return Err("Message pump thread crashed during initialization".to_string()),
+            Err(_) => {
+                return Err(
+                    "Message pump thread crashed during initialization: init_rx.recv() failed"
+                        .to_string(),
+                );
+            }
         }
 
-        let thread_id = match thread_id_rx.recv() {
-            Ok(thread_id) => thread_id,
-            Err(_) => return Err("Message pump thread crashed during initialization".to_string()),
-        };
+        let thread_id =
+            match thread_id_rx.recv() {
+                Ok(thread_id) => thread_id,
+                Err(_) => return Err(
+                    "Message pump thread crashed during initialization: thread_id_rx.recv() failed"
+                        .to_string(),
+                ),
+            };
         let cb_rx = match cb_channel_rx.recv() {
             Ok(cb_rx) => cb_rx,
-            Err(_) => return Err("Message pump thread crashed during initialization".to_string()),
+            Err(_) => {
+                return Err(
+                    "Message pump thread crashed during initialization: cb_rx.recv() failed"
+                        .to_string(),
+                );
+            }
         };
 
         Ok(Self {

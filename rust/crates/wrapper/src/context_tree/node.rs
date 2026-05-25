@@ -96,6 +96,12 @@ impl ContextNode {
             self.children_count = info.childrenCount;
             self.index_in_parent = info.indexInParent;
         }
+
+        self.text_cache = OnceLock::new();
+        self.actions_cache = OnceLock::new();
+        self.action_names_cache = OnceLock::new();
+        self.states_cache = OnceLock::new();
+        self.states_en_us_cache = OnceLock::new();
     }
 
     pub fn resolve_text(&self) -> &str {

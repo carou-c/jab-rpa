@@ -70,7 +70,7 @@ impl ContextTree {
         let Some(mut node) = self.nodes.remove(handle) else {
             return;
         };
-        for h in self.subtree(&node) {
+        for h in self.subtree(&node).collect::<Vec<_>>() {
             let Some(dropped) = self.nodes.remove(&h) else {
                 continue;
             };
@@ -99,14 +99,17 @@ impl ContextTree {
         self.nodes.insert(*handle, node);
     }
 
-    pub fn subtree(&self, node: &ContextNode) -> Vec<NodeHandle> {
-        let children = node.children.iter().filter_map(|h| self.nodes.get(h));
+    pub fn subtree<'a>(
+        &'a self,
+        node: &'a ContextNode,
+    ) -> Box<dyn Iterator<Item = NodeHandle> + 'a> {
+        let children_subtrees = node
+            .children
+            .iter()
+            .filter_map(|h| self.nodes.get(h))
+            .flat_map(|child| self.subtree(child));
 
-        node.children
-            .clone()
-            .into_iter()
-            .chain(children.flat_map(|child| self.subtree(child)))
-            .collect()
+        Box::new(node.children.iter().cloned().chain(children_subtrees))
     }
 
     pub fn node_matches(&self, node: &ContextNode, selector: &Selector) -> bool {
