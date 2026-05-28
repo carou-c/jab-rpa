@@ -123,22 +123,17 @@ class JabRpaClient:
         res: jab.AccessibleInfo = self.__stub.get_info(req)
         return res
 
-    def get_info_from_all(
-        self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
-    ) -> list[jab.AccessibleInfo]:
+    def get_info_from_all(self, selector: str) -> list[jab.AccessibleInfo]:
         """Get accessible info from all elements matching a selector.
+        Does not wait for a matching element, returns immediately.
 
         Args:
             selector: CSS-like selector string.
-            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
-                or a positive integer for max milliseconds.
-            refresh_before_fail: If true, refresh the tree after timeout
-                before the final check.
 
         Returns:
             List of ``AccessibleInfo`` for every matching element.
         """
-        req = jab.Locator(selector, timeout_ms, refresh_before_fail)
+        req = jab.Locator(selector, None, False)
         res: jab.RepeatedAccessibleInfo = self.__stub.get_info_from_all(req)
         return res.ac_infos
 

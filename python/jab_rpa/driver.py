@@ -13,7 +13,7 @@ from .server import (
     _INIT_SERVER_STEP,
 )
 from .client import JabRpaClient
-from .types import VersionInfo, WindowInfo, Locator
+from .types import VersionInfo, WindowInfo, Locator, AccessibleState
 
 _WAIT_FOR_WINDOW_TIMEOUT: int = 60
 _WAIT_FOR_WINDOW_STEP: int = 5
@@ -156,14 +156,43 @@ class JabDriver:
         """
         return self._client.get_version_info()
 
-    def locator(self, selector: str) -> Locator:
+    def locator(
+        self,
+        selector: str,
+        require_states: set[AccessibleState] | None = None,
+        exclude_states: set[AccessibleState] | None = None,
+    ) -> Locator:
         """Build a locator to find elements in the accessibility tree.
 
         Args:
             selector: A CSS-selector-like query string (e.g.
                 ``"push_button[name='Clear']"``).
+            require_states: A set of states an element matching this locator must have
+            exclude_states: A set of states an element matching this locator must not have
 
         Returns:
             A ``Locator`` bound to this driver.
         """
-        return Locator(self, selector)
+        return Locator(self, selector, require_states, exclude_states)
+
+    def race(
+        self,
+        locators: list[Locator],
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
+    ) -> int:
+        """Wait for any of the given locators to have a match.
+
+        Args:
+            locators: List of Locators.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            Index of the first locator that matched.
+        """
+        return self._client.race(
+            [loc._selector for loc in locators], timeout_ms, refresh_before_fail
+        )

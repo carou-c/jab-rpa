@@ -1,11 +1,12 @@
-from typing import Any, TYPE_CHECKING, Literal
+from typing import Any, TYPE_CHECKING
 
 import pyautogui
 
-from .types import Action
 from .proto.jab import (
     Locator as _Locator,
 )
+
+from .types import Action, AccessibleState, AccessibleInfo
 
 if TYPE_CHECKING:
     from .driver import JabDriver
@@ -13,39 +14,6 @@ if TYPE_CHECKING:
 
 _WAIT_FOR_TIMEOUT = 60  # seconds
 _WAIT_FOR_STEP = 5  # seconds
-
-
-type AccessibleState = Literal[
-    "active",
-    "armed",
-    "busy",
-    "checked",
-    "collapsed",
-    "editable",
-    "enabled",
-    "expandable",
-    "expanded",
-    "focusable",
-    "focused",
-    "horizontal",
-    "iconified",
-    "indeterminate",
-    "manages_descendants",
-    "modal",
-    "multi_line",
-    "multiselectable",
-    "opaque",
-    "pressed",
-    "resizable",
-    "selectable",
-    "selected",
-    "showing",
-    "single_line",
-    "transient",
-    "truncated",
-    "vertical",
-    "visible",
-]
 
 
 class Locator:
@@ -71,8 +39,8 @@ class Locator:
         self,
         driver: JabDriver,
         selector: str,
-        require_states: set[AccessibleState] = set(),
-        exclude_states: set[AccessibleState] = set(),
+        require_states: set[AccessibleState] | None = None,
+        exclude_states: set[AccessibleState] | None = None,
     ):
         """Wrap a driver and a selector string.
 
@@ -84,6 +52,8 @@ class Locator:
             exclude_states: A set of states an element matching this locator must not have
         """
         self._driver: JabDriver = driver
+        require_states = require_states or set()
+        exclude_states = exclude_states or set()
         self._selector: str = (
             selector.rstrip()
             + "".join(":require-state(" + state + ")" for state in require_states)
@@ -93,8 +63,8 @@ class Locator:
     def locator(
         self,
         selector: str,
-        require_states: set[AccessibleState] = set(),
-        exclude_states: set[AccessibleState] = set(),
+        require_states: set[AccessibleState] | None = None,
+        exclude_states: set[AccessibleState] | None = None,
     ) -> "Locator":
         """Extend the query with a descendant combinator.
 
@@ -109,6 +79,8 @@ class Locator:
         Returns:
             A new ``Locator`` with the combined selector.
         """
+        require_states = require_states or set()
+        exclude_states = exclude_states or set()
         selector: str = (
             selector.rstrip()
             + "".join(":require-state(" + state + ")" for state in require_states)
@@ -138,23 +110,24 @@ class Locator:
 
     def get_info_from_all(
         self,
-        timeout_ms: int | None = None,
-        refresh_before_fail: bool = True,
-    ) -> list[Any]:
+    ) -> list[AccessibleInfo]:
         """Get accessible info from all matching elements.
-
-        Args:
-            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
-                or a positive integer for max milliseconds.
-            refresh_before_fail: If true, refresh the tree after timeout
-                before the final check.
+        Does not wait for a matching element, returns immediately.
 
         Returns:
             List of ``AccessibleInfo`` for every matching element.
         """
-        return self._driver._client.get_info_from_all(
-            self._selector, timeout_ms, refresh_before_fail
-        )
+        return self._driver._client.get_info_from_all(self._selector)
+
+    def exists(
+        self,
+    ) -> bool:
+        """
+        Returns:
+            ``True`` if a matching element exists,
+            ``False`` otherwise
+        """
+        return not not self.get_info_from_all()
 
     def get_text(
         self,
@@ -313,3 +286,23 @@ class Locator:
         center_y = info.y + (info.height / 2)
         pyautogui.click(center_x, center_y, clicks, interval_clicks)
         pyautogui.write(text, interval_text)
+
+    def race(
+        self,
+        others: list["Locator"],
+        timeout_ms: int | None = None,
+        refresh_before_fail: bool = True,
+    ) -> int:
+        """Wait for any of the given locators to have a match.
+
+        Args:
+            others: List of Locators.
+            timeout_ms: ``None`` for default (60s), ``0`` for no wait,
+                or a positive integer for max milliseconds.
+            refresh_before_fail: If true, refresh the tree after timeout
+                before the final check.
+
+        Returns:
+            Index of the first locator that matched (self -> 0, others -> 1..)
+        """
+        return self._driver.race([self] + others, timeout_ms, refresh_before_fail)
