@@ -68,6 +68,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.exists">exists</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.filter">filter</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.get_actions">get_actions</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.locator.Locator.get_info">get_info</a>
@@ -174,6 +176,7 @@ loc.wait_for()
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span>
     <span class="n">driver</span><span class="p">:</span> <span class="n">JabDriver</span><span class="p">,</span>
     <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span>
@@ -209,6 +212,18 @@ loc.wait_for()
               <div class="doc-md-description">
                 <p>A CSS-selector-like query string (e.g.
 <code>"push_button[name='Clear']"</code>).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>has</code></b>
+                  (<code><span title="list">list</span>[&#39;Locator&#39;] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A list of locators; each matching element must contain a descendant
+that satisfies every locator in the list. Appends <code>:has()</code> pseudo-classes
+to the selector (AND semantics).</p>
               </div>
             </li>
             <li>
@@ -808,6 +823,101 @@ before the final check.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="jab_rpa.locator.Locator.filter" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">filter</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">filter</span><span class="p">(</span>
+    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Locator&quot;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Extend the query by requiring more states/sub-locators.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>has</code></b>
+                  (<code><span title="list">list</span>[&#39;Locator&#39;] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A list of locators; each matching element must contain a descendant
+that satisfies every locator in the list. Appends <code>:has()</code> pseudo-classes
+to the selector (AND semantics).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>require_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.types.AccessibleState">AccessibleState</span>] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must have</p>
+              </div>
+            </li>
+            <li>
+              <b><code>exclude_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.types.AccessibleState">AccessibleState</span>] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must not have</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code>&#39;Locator&#39;</code>
+              –
+              <div class="doc-md-description">
+                <p>A new <code>Locator</code> with the added filtering.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="jab_rpa.locator.Locator.get_actions" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">get_actions</span>
 
@@ -1259,6 +1369,7 @@ before the final check.</p>
 </h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span>
     <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Locator&quot;</span>
@@ -1287,6 +1398,18 @@ a descendant combinator in CSS.</p>
               –
               <div class="doc-md-description">
                 <p>Additional CSS-like selector to append.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>has</code></b>
+                  (<code><span title="list">list</span>[&#39;Locator&#39;] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A list of locators; each matching element must contain a descendant
+that satisfies every locator in the list. Appends <code>:has()</code> pseudo-classes
+to the selector (AND semantics).</p>
               </div>
             </li>
             <li>

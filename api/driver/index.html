@@ -385,6 +385,7 @@ selected. Can be a string or compiled pattern.</p>
 </h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span>
     <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Locator</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Locator</span>
@@ -412,6 +413,18 @@ selected. Can be a string or compiled pattern.</p>
               <div class="doc-md-description">
                 <p>A CSS-selector-like query string (e.g.
 <code>"push_button[name='Clear']"</code>).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>has</code></b>
+                  (<code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="jab_rpa.locator.Locator" href="../locator/#jab_rpa.locator.Locator">Locator</a>] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A list of locators; each matching element must contain a descendant
+that satisfies every locator in the list. Appends <code>:has()</code> pseudo-classes
+to the selector (AND semantics).</p>
               </div>
             </li>
             <li>
