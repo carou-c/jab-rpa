@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 use super::{ContextNode, ContextTree};
 use crate::selector::ast::*;
 
@@ -272,11 +274,16 @@ fn matches_pseudo_class(
             }) {
                 node.parent
                     .and_then(|h| tree.nodes.get(&h))
-                    .map_or_else(|| tree.subtree(node), |parent| tree.subtree(parent))
+                    .map_or_else(
+                        || tree.subtree(node).collect::<Vec<_>>().into_par_iter(),
+                        |parent| tree.subtree(parent).collect::<Vec<_>>().into_par_iter(),
+                    )
                     .filter_map(|handle| tree.nodes.get(&handle))
                     .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
             } else {
                 tree.subtree(node)
+                    .collect::<Vec<_>>()
+                    .into_par_iter()
                     .filter_map(|handle| tree.nodes.get(&handle))
                     .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
             }

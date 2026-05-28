@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use rayon::prelude::*;
+
 use super::{NodeHandle, ROOT_HANDLE, node::ContextNode};
 use crate::selector::Selector;
 use crate::types::{JObject, VmId};
@@ -50,16 +52,26 @@ impl ContextTree {
             return;
         }
 
-        for i in 0..node.children_count {
-            let child_obj = unsafe { node.obj.get_child_from_obj(i) };
+        let count = node.children_count.max(0);
+        let start = self.next_handle;
+        self.next_handle += count as NodeHandle;
 
-            let handle = self.next_handle;
-            self.next_handle += 1;
-            let mut child_node =
-                ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle));
+        let mut child_nodes: Vec<ContextNode> = (0..count)
+            .into_par_iter()
+            .map(|i| {
+                let child_obj = unsafe { node.obj.get_child_from_obj(i) };
+                ContextNode::from_obj(
+                    child_obj,
+                    node.depth + 1,
+                    start + i as NodeHandle,
+                    Some(node.handle),
+                )
+            })
+            .collect();
 
+        for mut child_node in child_nodes.drain(..) {
+            let handle = child_node.handle;
             self.build_subtree(&mut child_node, max_depth);
-
             self.obj_to_handle.insert(child_node.obj.jobject, handle);
             self.nodes.insert(handle, child_node);
             node.children.push(handle);
@@ -70,31 +82,20 @@ impl ContextTree {
         let Some(mut node) = self.nodes.remove(handle) else {
             return;
         };
-        for h in self.subtree(&node).collect::<Vec<_>>() {
-            let Some(dropped) = self.nodes.remove(&h) else {
-                continue;
+
+        let subtree = self.subtree(&node).collect::<Vec<_>>();
+        for h in &subtree {
+            if let Some(dropped) = self.nodes.remove(h) {
+                self.obj_to_handle.remove(&dropped.obj.jobject);
             };
-            self.obj_to_handle.remove(&dropped.obj.jobject);
         }
+        subtree.into_par_iter().for_each(drop);
 
         node.children.clear();
         node.refresh_info();
         node.children.reserve(node.children_count.max(0) as usize);
 
-        for i in 0..node.children_count {
-            let child_obj = unsafe { node.obj.get_child_from_obj(i) };
-
-            let handle = self.next_handle;
-            self.next_handle += 1;
-            let mut child_node =
-                ContextNode::from_obj(child_obj, node.depth + 1, handle, Some(node.handle));
-
-            self.build_subtree(&mut child_node, None);
-
-            self.obj_to_handle.insert(child_node.obj.jobject, handle);
-            self.nodes.insert(handle, child_node);
-            node.children.push(handle);
-        }
+        self.build_subtree(&mut node, None);
 
         self.nodes.insert(*handle, node);
     }
@@ -119,14 +120,14 @@ impl ContextTree {
 
     pub fn get_nodes(&self, selector: &Selector) -> Vec<&ContextNode> {
         self.nodes
-            .iter()
+            .par_iter()
             .filter_map(|(_, node)| self.node_matches(node, selector).then_some(node))
             .collect()
     }
 
     pub fn get_node(&self, selector: &Selector) -> Option<&ContextNode> {
         self.nodes
-            .iter()
-            .find_map(|(_, node)| self.node_matches(node, selector).then_some(node))
+            .par_iter()
+            .find_map_any(|(_, node)| self.node_matches(node, selector).then_some(node))
     }
 }
