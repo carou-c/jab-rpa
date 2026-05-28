@@ -1261,7 +1261,7 @@ before the final check.</p>
     <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Locator</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Locator&quot;</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1326,7 +1326,7 @@ a descendant combinator in CSS.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-                  <code><a class="autorefs autorefs-internal" title="jab_rpa.locator.Locator" href="#jab_rpa.locator.Locator">Locator</a></code>
+                  <code>&#39;Locator&#39;</code>
               –
               <div class="doc-md-description">
                 <p>A new <code>Locator</code> with the combined selector.</p>
@@ -1351,7 +1351,7 @@ a descendant combinator in CSS.</p>
 
 </h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">race</span><span class="p">(</span>
-    <span class="n">others</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Locator</span><span class="p">],</span>
+    <span class="n">others</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">],</span>
     <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
@@ -1374,7 +1374,7 @@ a descendant combinator in CSS.</p>
         <ul class="first simple">
             <li>
               <b><code>others</code></b>
-                  (<code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="jab_rpa.locator.Locator" href="#jab_rpa.locator.Locator">Locator</a>]</code>)
+                  (<code><span title="list">list</span>[&#39;Locator&#39;]</code>)
               –
               <div class="doc-md-description">
                 <p>List of Locators.</p>
