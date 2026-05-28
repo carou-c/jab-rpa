@@ -98,11 +98,10 @@ impl JabWrapper {
                 while let Ok(next) = rx.try_recv() {
                     events.push(next);
                 }
+
                 let mut tree_lock = tree.lock();
                 if let Some(t) = tree_lock.as_mut() {
-                    for e in events {
-                        t.apply_event(e);
-                    }
+                    t.apply_events(events);
                 }
 
                 tree.changed.notify_all();
