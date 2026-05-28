@@ -62,6 +62,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.driver.JabDriver.locator">locator</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.driver.JabDriver.race">race</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.driver.JabDriver.refresh_tree">refresh_tree</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#jab_rpa.driver.JabDriver.start">start</a>
@@ -296,6 +298,36 @@ selected. Can be a string or compiled pattern.</p>
   </tbody>
 </table>
 
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="jab_rpa.errors.JabNoWindowError">JabNoWindowError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>No window has been selected yet.</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="jab_rpa.errors.JabInternalError">JabInternalError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>The version info call failed.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
     </div>
 
 </div>
@@ -351,7 +383,11 @@ selected. Can be a string or compiled pattern.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span><span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Locator</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span>
+    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Locator</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -376,6 +412,26 @@ selected. Can be a string or compiled pattern.</p>
               <div class="doc-md-description">
                 <p>A CSS-selector-like query string (e.g.
 <code>"push_button[name='Clear']"</code>).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>require_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.types.AccessibleState">AccessibleState</span>] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must have</p>
+              </div>
+            </li>
+            <li>
+              <b><code>exclude_states</code></b>
+                  (<code><span title="set">set</span>[<span title="jab_rpa.types.AccessibleState">AccessibleState</span>] | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>A set of states an element matching this locator must not have</p>
               </div>
             </li>
         </ul>
@@ -414,6 +470,136 @@ selected. Can be a string or compiled pattern.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="jab_rpa.driver.JabDriver.race" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">race</span>
+
+
+</h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">race</span><span class="p">(</span>
+    <span class="n">locators</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Locator</span><span class="p">],</span>
+    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Wait for any of the given locators to have a match.</p>
+
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Parameters:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+              <b><code>locators</code></b>
+                  (<code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="jab_rpa.types.Locator" href="../locator/#jab_rpa.locator.Locator">Locator</a>]</code>)
+              –
+              <div class="doc-md-description">
+                <p>List of Locators.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>timeout_ms</code></b>
+                  (<code><span title="int">int</span> | None</code>, default:
+                      <code>None</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>None</code> for default (60s), <code>0</code> for no wait,
+or a positive integer for max milliseconds.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>refresh_before_fail</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If true, refresh the tree after timeout
+before the final check.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Returns:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="int">int</span></code>
+              –
+              <div class="doc-md-description">
+                <p>Index of the first locator that matched.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="jab_rpa.errors.JabInvalidArgumentError">JabInvalidArgumentError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>One or more locator selectors are malformed.</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="jab_rpa.errors.JabNoWindowError">JabNoWindowError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>No window has been selected yet.</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="jab_rpa.errors.JabTimeoutError">JabTimeoutError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>No locator matched within the timeout.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="jab_rpa.driver.JabDriver.refresh_tree" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">refresh_tree</span>
 
@@ -428,6 +614,36 @@ selected. Can be a string or compiled pattern.</p>
 <p>Call this after UI changes (e.g. a dialog opens) so subsequent
 locator queries see the updated tree.</p>
 
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="jab_rpa.errors.JabNoWindowError">JabNoWindowError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>No window has been selected yet.</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="jab_rpa.errors.JabInternalError">JabInternalError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>The tree has no root node.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
     </div>
 
@@ -538,6 +754,36 @@ maximizes it, and selects it on the server.</p>
               –
               <div class="doc-md-description">
                 <p>A <code>WindowInfo</code> from <code>list_java_windows()</code>.</p>
+              </div>
+            </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="field-list">
+  <colgroup>
+    <col class="field-name" />
+    <col class="field-body" />
+  </colgroup>
+  <tbody valign="top">
+    <tr class="field">
+      <th class="field-name">Raises:</th>
+      <td class="field-body">
+        <ul class="first simple">
+            <li>
+                  <code><span title="jab_rpa.errors.JabInvalidArgumentError">JabInvalidArgumentError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>The HWND does not belong to a Java window.</p>
+              </div>
+            </li>
+            <li>
+                  <code><span title="jab_rpa.errors.JabInternalError">JabInternalError</span></code>
+              –
+              <div class="doc-md-description">
+                <p>The JAB bridge call failed.</p>
               </div>
             </li>
         </ul>
