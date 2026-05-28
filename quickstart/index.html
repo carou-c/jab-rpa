@@ -206,7 +206,7 @@ driver.refresh_tree()
 info = driver.get_version_info()
 </code></pre>
 <h2 id="error-handling">Error handling</h2>
-<p>The library defines two custom exceptions:</p>
+<p>The library defines 8 custom exceptions:</p>
 <table>
 <thead>
 <tr>
@@ -222,6 +222,30 @@ info = driver.get_version_info()
 <tr>
 <td><code>ServerStoppedError</code></td>
 <td>The <code>jab-rpa-server.exe</code> process exits prematurely</td>
+</tr>
+<tr>
+<td><code>JabError</code></td>
+<td>Base exception for all jab-rpa server-side errors</td>
+</tr>
+<tr>
+<td><code>JabInvalidArgumentError</code></td>
+<td>Invalid argument</td>
+</tr>
+<tr>
+<td><code>JabNoWindowError</code></td>
+<td>No window selected</td>
+</tr>
+<tr>
+<td><code>JabElementNotFoundError</code></td>
+<td>Element not found</td>
+</tr>
+<tr>
+<td><code>JabTimeoutError</code></td>
+<td>Operation timed out</td>
+</tr>
+<tr>
+<td><code>JabInternalError</code></td>
+<td>Internal server error</td>
 </tr>
 </tbody>
 </table>
