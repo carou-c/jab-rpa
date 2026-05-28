@@ -44,6 +44,7 @@ class Locator:
         self,
         driver: JabDriver,
         selector: str,
+        has: list["Locator"] | None = None,
         require_states: set[AccessibleState] | None = None,
         exclude_states: set[AccessibleState] | None = None,
     ):
@@ -53,14 +54,19 @@ class Locator:
             driver: The ``JabDriver`` instance.
             selector: A CSS-selector-like query string (e.g.
                 ``"push_button[name='Clear']"``).
+            has: A list of locators; each matching element must contain a descendant
+                that satisfies every locator in the list. Appends ``:has()`` pseudo-classes
+                to the selector (AND semantics).
             require_states: A set of states an element matching this locator must have
             exclude_states: A set of states an element matching this locator must not have
         """
         self._driver: JabDriver = driver
+        has = has or []
         require_states = require_states or set()
         exclude_states = exclude_states or set()
         self._selector: str = (
             selector.rstrip()
+            + "".join(":has(" + loc._selector + ")" for loc in has)
             + "".join(":require-state(" + state + ")" for state in require_states)
             + "".join(":exclude-state(" + state + ")" for state in exclude_states)
         )
@@ -68,6 +74,7 @@ class Locator:
     def locator(
         self,
         selector: str,
+        has: list["Locator"] | None = None,
         require_states: set[AccessibleState] | None = None,
         exclude_states: set[AccessibleState] | None = None,
     ) -> "Locator":
@@ -78,20 +85,44 @@ class Locator:
 
         Args:
             selector: Additional CSS-like selector to append.
+            has: A list of locators; each matching element must contain a descendant
+                that satisfies every locator in the list. Appends ``:has()`` pseudo-classes
+                to the selector (AND semantics).
             require_states: A set of states an element matching this locator must have
             exclude_states: A set of states an element matching this locator must not have
 
         Returns:
             A new ``Locator`` with the combined selector.
         """
-        require_states = require_states or set()
-        exclude_states = exclude_states or set()
-        selector: str = (
-            selector.rstrip()
-            + "".join(":require-state(" + state + ")" for state in require_states)
-            + "".join(":exclude-state(" + state + ")" for state in exclude_states)
+        return Locator(
+            self._driver,
+            f"{self._selector} {selector}",
+            has,
+            require_states,
+            exclude_states,
         )
-        return Locator(self._driver, f"{self._selector} {selector}")
+
+    def filter(
+        self,
+        has: list["Locator"] | None = None,
+        require_states: set[AccessibleState] | None = None,
+        exclude_states: set[AccessibleState] | None = None,
+    ) -> "Locator":
+        """Extend the query by requiring more states/sub-locators.
+
+        Args:
+            has: A list of locators; each matching element must contain a descendant
+                that satisfies every locator in the list. Appends ``:has()`` pseudo-classes
+                to the selector (AND semantics).
+            require_states: A set of states an element matching this locator must have
+            exclude_states: A set of states an element matching this locator must not have
+
+        Returns:
+            A new ``Locator`` with the added filtering.
+        """
+        return Locator(
+            self._driver, self._selector, has, require_states, exclude_states
+        )
 
     def get_info(
         self,

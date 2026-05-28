@@ -172,6 +172,7 @@ class JabDriver:
     def locator(
         self,
         selector: str,
+        has: list["Locator"] | None = None,
         require_states: set[AccessibleState] | None = None,
         exclude_states: set[AccessibleState] | None = None,
     ) -> Locator:
@@ -180,13 +181,16 @@ class JabDriver:
         Args:
             selector: A CSS-selector-like query string (e.g.
                 ``"push_button[name='Clear']"``).
+            has: A list of locators; each matching element must contain a descendant
+                that satisfies every locator in the list. Appends ``:has()`` pseudo-classes
+                to the selector (AND semantics).
             require_states: A set of states an element matching this locator must have
             exclude_states: A set of states an element matching this locator must not have
 
         Returns:
             A ``Locator`` bound to this driver.
         """
-        return Locator(self, selector, require_states, exclude_states)
+        return Locator(self, selector, has, require_states, exclude_states)
 
     def race(
         self,
