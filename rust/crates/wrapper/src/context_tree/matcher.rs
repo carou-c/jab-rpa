@@ -59,13 +59,17 @@ fn matches_complex(
         }
     };
 
+    let Some(complex_body) = complex_body.get(1..) else {
+        return false;
+    };
+
     match combinator {
         Combinator::Child => {
             let Some(p_h) = node.parent else { return false };
             let Some(p) = tree.nodes.get(&p_h) else {
                 return false;
             };
-            matches_complex(p, head, &complex_body[1..], compound, relative_to, tree)
+            matches_complex(p, head, complex_body, compound, relative_to, tree)
         }
         Combinator::Descendant => {
             let mut current = node;
@@ -80,7 +84,7 @@ fn matches_complex(
                 if matches_complex(
                     current,
                     head,
-                    &complex_body[1..],
+                    complex_body,
                     compound,
                     relative_to,
                     tree,
@@ -109,7 +113,7 @@ fn matches_complex(
             matches_complex(
                 sibling,
                 head,
-                &complex_body[1..],
+                complex_body,
                 compound,
                 relative_to,
                 tree,
@@ -130,7 +134,7 @@ fn matches_complex(
                 if matches_complex(
                     sibling,
                     head,
-                    &complex_body[1..],
+                    complex_body,
                     compound,
                     relative_to,
                     tree,
