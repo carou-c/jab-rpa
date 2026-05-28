@@ -3,7 +3,6 @@
 The public API is composed of two classes:
 
 - **JabDriver** — manages server lifecycle and window selection
-- **Locator** — builds queries to find and interact with elements
 
 Typical usage:
 
@@ -14,6 +13,7 @@ Typical usage:
 """
 
 from .driver import JabDriver
-from .locator import Locator
 
-__all__ = ["JabDriver", "Locator"]
+__all__ = [
+    "JabDriver",
+]

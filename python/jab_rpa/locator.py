@@ -8,6 +8,9 @@ from .proto.jab import (
 
 from .types import Action, AccessibleState, AccessibleInfo
 
+# For linking errors on mkdocstrings
+from .errors import *  # noqa: F403
+
 if TYPE_CHECKING:
     from .driver import JabDriver
 
@@ -103,6 +106,11 @@ class Locator:
 
         Returns:
             ``AccessibleInfo`` with name, role, states, coordinates, etc.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         return self._driver._client.get_info(
             self._selector, timeout_ms, refresh_before_fail
@@ -116,6 +124,11 @@ class Locator:
 
         Returns:
             List of ``AccessibleInfo`` for every matching element.
+            Empty list if no element matches.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
         """
         return self._driver._client.get_info_from_all(self._selector)
 
@@ -126,6 +139,10 @@ class Locator:
         Returns:
             ``True`` if a matching element exists,
             ``False`` otherwise
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
         """
         return not not self.get_info_from_all()
 
@@ -144,6 +161,11 @@ class Locator:
 
         Returns:
             Accessible text content.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         return self._driver._client.get_text(
             self._selector, timeout_ms, refresh_before_fail
@@ -164,6 +186,11 @@ class Locator:
 
         Returns:
             List of ``Action`` objects (each has a ``name`` field).
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         return self._driver._client.get_actions(
             self._selector, timeout_ms, refresh_before_fail
@@ -188,6 +215,11 @@ class Locator:
                 or a positive integer for max milliseconds to wait.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         self._driver._client.wait_for(self._selector, timeout_ms, refresh_before_fail)
 
@@ -205,6 +237,12 @@ class Locator:
                 or a positive integer for max milliseconds.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
+            JabInternalError: The action could not be performed.
         """
         self._driver._client.do_action(
             action, self._selector, timeout_ms, refresh_before_fail
@@ -225,6 +263,12 @@ class Locator:
                 or a positive integer for max milliseconds.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
+            JabInternalError: The action could not be performed.
         """
         self.do_accessible_action(Action("click"), timeout_ms, refresh_before_fail)
 
@@ -247,6 +291,11 @@ class Locator:
                 or a positive integer for max milliseconds.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         info = self._driver._client.get_info(
             self._selector, timeout_ms, refresh_before_fail
@@ -278,6 +327,11 @@ class Locator:
                 or a positive integer for max milliseconds.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         info = self._driver._client.get_info(
             self._selector, timeout_ms, refresh_before_fail
@@ -304,5 +358,10 @@ class Locator:
 
         Returns:
             Index of the first locator that matched (self -> 0, others -> 1..)
+
+        Raises:
+            JabInvalidArgumentError: One or more locator selectors are malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: No locator matched within the timeout.
         """
         return self._driver.race([self] + others, timeout_ms, refresh_before_fail)

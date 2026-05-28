@@ -15,6 +15,9 @@ from .server import (
 from .client import JabRpaClient
 from .types import VersionInfo, WindowInfo, Locator, AccessibleState
 
+# For linking errors on mkdocstrings
+from .errors import *  # noqa: F403
+
 _WAIT_FOR_WINDOW_TIMEOUT: int = 60
 _WAIT_FOR_WINDOW_STEP: int = 5
 
@@ -136,6 +139,10 @@ class JabDriver:
 
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
+
+        Raises:
+            JabInvalidArgumentError: The HWND does not belong to a Java window.
+            JabInternalError: The JAB bridge call failed.
         """
         self.window_info: WindowInfo = window_info
         self._client.select_window(window_info)
@@ -145,14 +152,22 @@ class JabDriver:
 
         Call this after UI changes (e.g. a dialog opens) so subsequent
         locator queries see the updated tree.
+
+        Raises:
+            JabNoWindowError: No window has been selected yet.
+            JabInternalError: The tree has no root node.
         """
-        return self._client.refresh_tree()
+        self._client.refresh_tree()
 
     def get_version_info(self) -> VersionInfo | None:
         """Get version info for the JAB bridge and server.
 
         Returns:
             ``VersionInfo`` if available, or ``None``.
+
+        Raises:
+            JabNoWindowError: No window has been selected yet.
+            JabInternalError: The version info call failed.
         """
         return self._client.get_version_info()
 
@@ -192,6 +207,11 @@ class JabDriver:
 
         Returns:
             Index of the first locator that matched.
+
+        Raises:
+            JabInvalidArgumentError: One or more locator selectors are malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: No locator matched within the timeout.
         """
         return self._client.race(
             [loc._selector for loc in locators], timeout_ms, refresh_before_fail

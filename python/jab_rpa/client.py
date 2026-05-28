@@ -3,7 +3,11 @@ from typing import Self
 import grpc
 from grpc._channel import Channel
 
+from .errors import raise_rpc_error
 from .proto import jab
+
+# For linking errors on mkdocstrings
+from .errors import *  # noqa: F403
 
 
 class JabRpaClient:
@@ -29,6 +33,12 @@ class JabRpaClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
+    def _call(self, rpc, req):
+        try:
+            return rpc(req)
+        except grpc.RpcError as e:
+            raise_rpc_error(e)
+
     def list_java_windows(self) -> list[jab.WindowInfo]:
         """List all Java windows detected by the JAB server.
 
@@ -44,31 +54,44 @@ class JabRpaClient:
 
         Args:
             window_info: A ``WindowInfo`` from ``list_java_windows()``.
+
+        Raises:
+            JabInvalidArgumentError: The HWND does not belong to a Java window.
+            JabInternalError: The JAB bridge call failed.
         """
-        self.__stub.select_window(window_info)
+        self._call(self.__stub.select_window, window_info)
 
     def get_selected_window_hwnd(self) -> jab.Hwnd:
         """Return the HWND for the selected window.
 
         Returns:
             ``Hwnd`` message with the window handle.
+
+        Raises:
+            JabNoWindowError: No window has been selected yet.
         """
-        return self.__stub.get_selected_window_hwnd(jab.Empty())
+        return self._call(self.__stub.get_selected_window_hwnd, jab.Empty())
 
     def refresh_tree(self) -> None:
-        """Rebuild the cached accessibility tree on the server."""
-        req = jab.Empty()
-        self.__stub.refresh_tree(req)
+        """Rebuild the cached accessibility tree on the server.
+
+        Raises:
+            JabNoWindowError: No window has been selected yet.
+            JabInternalError: The tree has no root node.
+        """
+        self._call(self.__stub.refresh_tree, jab.Empty())
 
     def get_version_info(self) -> jab.VersionInfo | None:
         """Retrieve JAB bridge and server version info.
 
         Returns:
             ``VersionInfo`` if available, or ``None``.
+
+        Raises:
+            JabNoWindowError: No window has been selected yet.
+            JabInternalError: The version info call failed.
         """
-        req = jab.Empty()
-        res: jab.VersionInfo = self.__stub.get_version_info(req)
-        return res
+        return self._call(self.__stub.get_version_info, jab.Empty())
 
     def wait_for(
         self, selector: str, timeout_ms: int | None, refresh_before_fail: bool
@@ -81,9 +104,14 @@ class JabRpaClient:
                 or a positive integer for max milliseconds to wait.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
-        self.__stub.wait_for(req)
+        self._call(self.__stub.wait_for, req)
 
     def race(
         self, selectors: list[str], timeout_ms: int | None, refresh_before_fail: bool
@@ -99,9 +127,14 @@ class JabRpaClient:
 
         Returns:
             Index of the first selector that matched.
+
+        Raises:
+            JabInvalidArgumentError: One or more selector strings are malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: No selector matched within the timeout.
         """
         req = jab.RaceRequest(selectors, timeout_ms, refresh_before_fail)
-        res: jab.RaceResponse = self.__stub.race(req)
+        res: jab.RaceResponse = self._call(self.__stub.race, req)
         return res.winner
 
     def get_info(
@@ -118,10 +151,14 @@ class JabRpaClient:
 
         Returns:
             ``AccessibleInfo`` with name, role, states, coordinates, etc.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
-        res: jab.AccessibleInfo = self.__stub.get_info(req)
-        return res
+        return self._call(self.__stub.get_info, req)
 
     def get_info_from_all(self, selector: str) -> list[jab.AccessibleInfo]:
         """Get accessible info from all elements matching a selector.
@@ -132,9 +169,14 @@ class JabRpaClient:
 
         Returns:
             List of ``AccessibleInfo`` for every matching element.
+            Empty list if no element matches.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
         """
         req = jab.Locator(selector, None, False)
-        res: jab.RepeatedAccessibleInfo = self.__stub.get_info_from_all(req)
+        res: jab.RepeatedAccessibleInfo = self._call(self.__stub.get_info_from_all, req)
         return res.ac_infos
 
     def get_text(
@@ -151,9 +193,14 @@ class JabRpaClient:
 
         Returns:
             Accessible text content.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
-        res: jab.Text = self.__stub.get_text(req)
+        res: jab.Text = self._call(self.__stub.get_text, req)
         return res.text
 
     def get_actions(
@@ -170,9 +217,14 @@ class JabRpaClient:
 
         Returns:
             List of ``Action`` objects.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
         """
         req = jab.Locator(selector, timeout_ms, refresh_before_fail)
-        res: jab.Actions = self.__stub.get_actions(req)
+        res: jab.Actions = self._call(self.__stub.get_actions, req)
         return res.actions
 
     def do_action(
@@ -191,8 +243,14 @@ class JabRpaClient:
                 or a positive integer for max milliseconds.
             refresh_before_fail: If true, refresh the tree after timeout
                 before the final check.
+
+        Raises:
+            JabInvalidArgumentError: The selector string is malformed.
+            JabNoWindowError: No window has been selected yet.
+            JabTimeoutError: The element did not appear within the timeout.
+            JabInternalError: The action could not be performed.
         """
         req = jab.DoActionRequest(
             jab.Locator(selector, timeout_ms, refresh_before_fail), action
         )
-        self.__stub.do_action(req)
+        self._call(self.__stub.do_action, req)
