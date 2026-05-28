@@ -116,8 +116,10 @@ impl ContextNode {
                 Err(_) => return Vec::new(),
             };
 
-            actions.actionInfo[..actions.actionsCount as usize]
+            actions
+                .actionInfo
                 .iter()
+                .take(actions.actionsCount.max(0) as _)
                 .map(|action| {
                     utf16_to_string(&action.name)
                         .to_lowercase()

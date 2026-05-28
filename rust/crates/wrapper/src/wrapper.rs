@@ -275,31 +275,33 @@ impl JavaObject {
             outer_actions = actions
                 .actionInfo
                 .iter()
-                .take(actions.actionsCount as _)
+                .take(actions.actionsCount.max(0) as _)
                 .map(|act| utf16_to_string(&act.name))
                 .collect();
 
             for i in 0..actions.actionsCount {
-                let action_name = utf16_to_string(&actions.actionInfo[i as usize].name);
-                if action_name.to_lowercase() == action {
-                    let mut actions_to_do: jab_sys::AccessibleActionsToDo = std::mem::zeroed();
-                    actions_to_do.actionsCount = 1;
-                    actions_to_do.actions[0] = actions.actionInfo[i as usize];
+                if let Some(action_info) = actions.actionInfo.get(i as usize) {
+                    let action_name = utf16_to_string(&action_info.name);
+                    if action_name.to_lowercase() == action {
+                        let mut actions_to_do: jab_sys::AccessibleActionsToDo = std::mem::zeroed();
+                        actions_to_do.actionsCount = 1;
+                        actions_to_do.actions[0] = *action_info;
 
-                    let mut failure: i32 = 0;
-                    if jab_sys::doAccessibleActions(
-                        self.vm_id,
-                        self.jobject,
-                        &mut actions_to_do,
-                        &mut failure,
-                    ) != 0
-                    {
-                        return Ok(());
-                    } else {
-                        return Err(format!(
-                            "Failed to perform {} action, failure index: {}",
-                            action, failure
-                        ));
+                        let mut failure: i32 = 0;
+                        if jab_sys::doAccessibleActions(
+                            self.vm_id,
+                            self.jobject,
+                            &mut actions_to_do,
+                            &mut failure,
+                        ) != 0
+                        {
+                            return Ok(());
+                        } else {
+                            return Err(format!(
+                                "Failed to perform {} action, failure index: {}",
+                                action, failure
+                            ));
+                        }
                     }
                 }
             }

@@ -59,9 +59,7 @@ fn matches_complex(
         }
     };
 
-    let Some(complex_body) = complex_body.get(1..) else {
-        return false;
-    };
+    let complex_body = complex_body.get(1..).unwrap_or(&[]);
 
     match combinator {
         Combinator::Child => {
@@ -81,14 +79,7 @@ fn matches_complex(
                     return false;
                 };
                 current = p;
-                if matches_complex(
-                    current,
-                    head,
-                    complex_body,
-                    compound,
-                    relative_to,
-                    tree,
-                ) {
+                if matches_complex(current, head, complex_body, compound, relative_to, tree) {
                     return true;
                 }
             }
@@ -110,14 +101,7 @@ fn matches_complex(
             let Some(sibling) = tree.nodes.get(sibling_handle) else {
                 return false;
             };
-            matches_complex(
-                sibling,
-                head,
-                complex_body,
-                compound,
-                relative_to,
-                tree,
-            )
+            matches_complex(sibling, head, complex_body, compound, relative_to, tree)
         }
         Combinator::SubsequentSibling => {
             let Some(p_h) = node.parent else { return false };
@@ -131,14 +115,7 @@ fn matches_complex(
                 let Some(sibling) = tree.nodes.get(sibling_handle) else {
                     continue;
                 };
-                if matches_complex(
-                    sibling,
-                    head,
-                    complex_body,
-                    compound,
-                    relative_to,
-                    tree,
-                ) {
+                if matches_complex(sibling, head, complex_body, compound, relative_to, tree) {
                     return true;
                 }
             }
