@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, TYPE_CHECKING
 
 import pyautogui
@@ -95,7 +97,7 @@ class Locator:
         self,
         timeout_ms: int | None = None,
         refresh_before_fail: bool = True,
-    ) -> Any:
+    ) -> AccessibleInfo:
         """Get accessible info from the first matching element.
 
         Args:

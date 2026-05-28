@@ -13,17 +13,15 @@ from .server import (
     _INIT_SERVER_STEP,
 )
 from .client import JabRpaClient
-from .types import VersionInfo, WindowInfo, Locator, AccessibleState
+from .types import VersionInfo, WindowInfo, AccessibleState
+from .locator import Locator
+from .errors import WindowNotFound
 
 # For linking errors on mkdocstrings
 from .errors import *  # noqa: F403
 
 _WAIT_FOR_WINDOW_TIMEOUT: int = 60
 _WAIT_FOR_WINDOW_STEP: int = 5
-
-
-class WindowNotFound(Exception):
-    """Raised when no Java window matching the given title is found within the timeout."""
 
 
 class JabDriver:

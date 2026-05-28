@@ -5,7 +5,6 @@ Provides a single import target for types used across the package:
 - **WindowInfo** — info about a detected Java window (hwnd and title)
 - **VersionInfo** — JAB and server version information
 - **Action** — an accessible action that can be performed on an element
-- **Locator** — selector-based element query builder
 - **AccessibleState** — Literal with JAB Accessible States
 - **AccessibleInfo** — Accessible information from a JAB element
 """
@@ -13,8 +12,6 @@ Provides a single import target for types used across the package:
 from typing import Literal
 
 from .proto.jab import Action, WindowInfo, VersionInfo, AccessibleInfo
-
-from .locator import Locator
 
 type AccessibleState = Literal[
     "active",
@@ -53,7 +50,6 @@ __all__ = [
     "Action",
     "WindowInfo",
     "VersionInfo",
-    "Locator",
     "AccessibleState",
     "AccessibleInfo",
 ]

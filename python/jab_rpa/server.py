@@ -6,15 +6,14 @@ import subprocess
 from pathlib import Path
 from importlib.resources import files
 
+from .errors import ServerStoppedError
+
+
 _SERVER_PATH = Path(str(files("jab_rpa").joinpath("bin/jab-rpa-server.exe")))
 _SERVER_LISTENING = "JAB gRPC Server listening on 127.0.0.1:50051"
 
 _WAIT_FOR_SERVER_TIMEOUT: int = 30
 _INIT_SERVER_STEP: int = 1
-
-
-class ServerStoppedError(Exception):
-    """Raised when the JAB gRPC server process exits before it starts listening."""
 
 
 class JabRpaServer:

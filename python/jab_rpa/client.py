@@ -46,7 +46,7 @@ class JabRpaClient:
             List of ``WindowInfo`` objects with hwnd and title.
         """
         req = jab.Empty()
-        res: jab.RepeatedWindowInfo = self.__stub.list_java_windows(req)
+        res: jab.RepeatedWindowInfo = self._call(self.__stub.list_java_windows, req)
         return res.windows
 
     def select_window(self, window_info: jab.WindowInfo) -> None:
@@ -81,7 +81,7 @@ class JabRpaClient:
         """
         self._call(self.__stub.refresh_tree, jab.Empty())
 
-    def get_version_info(self) -> jab.VersionInfo | None:
+    def get_version_info(self) -> jab.VersionInfo:
         """Retrieve JAB bridge and server version info.
 
         Returns:

@@ -3,7 +3,9 @@
 Maps gRPC status codes from the JAB server to descriptive Python
 exceptions, so callers never have to handle bare ``grpc.RpcError``.
 
-- **JabError** — base exception for all jab-rpa errors
+- **WindowNotFound** — No Java window matches the given title pattern
+- **ServerStoppedError** — The `jab-rpa-server.exe` process exits prematurely
+- **JabError** — base exception for all jab-rpa server-side errors
 - **JabInvalidArgumentError** — invalid argument
 - **JabNoWindowError** — no window selected
 - **JabElementNotFoundError** — element not found
@@ -13,6 +15,14 @@ exceptions, so callers never have to handle bare ``grpc.RpcError``.
 
 import grpc
 from typing import cast
+
+
+class ServerStoppedError(Exception):
+    """Raised when the JAB gRPC server process exits before it starts listening."""
+
+
+class WindowNotFound(Exception):
+    """Raised when no Java window matching the given title is found within the timeout."""
 
 
 class JabError(Exception):
@@ -91,6 +101,8 @@ def raise_rpc_error(err: grpc.RpcError) -> None:
 
 
 __all__ = [
+    "ServerStoppedError",
+    "WindowNotFound",
     "JabError",
     "JabInvalidArgumentError",
     "JabNoWindowError",

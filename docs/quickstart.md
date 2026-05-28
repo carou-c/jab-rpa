@@ -127,12 +127,18 @@ info = driver.get_version_info()
 
 ## Error handling
 
-The library defines two custom exceptions:
+The library defines 8 custom exceptions:
 
-| Exception            | Raised when                                        |
-| -------------------- | -------------------------------------------------- |
-| `WindowNotFound`     | No Java window matches the given title pattern     |
-| `ServerStoppedError` | The `jab-rpa-server.exe` process exits prematurely |
+| Exception                 | Raised when                                        |
+| ------------------------- | -------------------------------------------------- |
+| `WindowNotFound`          | No Java window matches the given title pattern     |
+| `ServerStoppedError`      | The `jab-rpa-server.exe` process exits prematurely |
+| `JabError`                | Base exception for all jab-rpa server-side errors  |
+| `JabInvalidArgumentError` | Invalid argument                                   |
+| `JabNoWindowError`        | No window selected                                 |
+| `JabElementNotFoundError` | Element not found                                  |
+| `JabTimeoutError`         | Operation timed out                                |
+| `JabInternalError`        | Internal server error                              |
 
 ```python
 from jab_rpa import JabDriver

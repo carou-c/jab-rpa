@@ -1,6 +1,6 @@
 """Python client for jab-rpa — automate 32-bit Java applications.
 
-The public API is composed of two classes:
+The public API is composed of one class:
 
 - **JabDriver** — manages server lifecycle and window selection
 
