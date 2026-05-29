@@ -1,5 +1,3 @@
-use rayon::prelude::*;
-
 use super::{ContextNode, ContextTree};
 use crate::selector::ast::*;
 
@@ -145,12 +143,10 @@ fn matches_compound(
         return false;
     }
 
-    for pseudo in pseudo_classes.iter().filter(|p| {
-        matches!(
-            p,
-            PseudoClassSelector::RequireState(_) | PseudoClassSelector::ExcludeState(_)
-        )
-    }) {
+    for pseudo in pseudo_classes
+        .iter()
+        .filter(|p| !matches!(p, PseudoClassSelector::Has(_) | PseudoClassSelector::Not(_)))
+    {
         if !matches_pseudo_class(node, pseudo, relative_to, tree) {
             return false;
         }
@@ -162,12 +158,10 @@ fn matches_compound(
         }
     }
 
-    for pseudo in pseudo_classes.iter().filter(|p| {
-        !matches!(
-            p,
-            PseudoClassSelector::RequireState(_) | PseudoClassSelector::ExcludeState(_)
-        )
-    }) {
+    for pseudo in pseudo_classes
+        .iter()
+        .filter(|p| matches!(p, PseudoClassSelector::Has(_) | PseudoClassSelector::Not(_)))
+    {
         if !matches_pseudo_class(node, pseudo, relative_to, tree) {
             return false;
         }
@@ -268,25 +262,20 @@ fn matches_pseudo_class(
             node.handle == relative_to.handle
         }
         PseudoClassSelector::Has(inner) => {
-            if inner.alternatives.iter().any(|complex| {
+            let subtree = if inner.alternatives.iter().any(|complex| {
                 (complex.head == Some(Combinator::NextSibling))
                     || (complex.head == Some(Combinator::SubsequentSibling))
             }) {
                 node.parent
                     .and_then(|h| tree.nodes.get(&h))
-                    .map_or_else(
-                        || tree.subtree(node).collect::<Vec<_>>().into_par_iter(),
-                        |parent| tree.subtree(parent).collect::<Vec<_>>().into_par_iter(),
-                    )
-                    .filter_map(|handle| tree.nodes.get(&handle))
-                    .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
+                    .map_or_else(|| tree.subtree(node), |parent| tree.subtree(parent))
             } else {
                 tree.subtree(node)
-                    .collect::<Vec<_>>()
-                    .into_par_iter()
-                    .filter_map(|handle| tree.nodes.get(&handle))
-                    .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
-            }
+            };
+
+            subtree
+                .filter_map(|h| tree.nodes.get(&h))
+                .any(|candidate| matches_selector(candidate, inner, Some(node), tree))
         }
         PseudoClassSelector::Not(inner) => !matches_selector(node, inner, relative_to, tree),
         PseudoClassSelector::RequireState(s) => node.states_en_us.contains(s),

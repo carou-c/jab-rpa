@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use rayon::prelude::*;
 
@@ -13,6 +13,7 @@ pub struct ContextTree {
     pub(crate) obj_to_handle: HashMap<JObject, NodeHandle>,
     pub(crate) vm_id: VmId,
     next_handle: NodeHandle,
+    role_to_handle: HashMap<String, HashSet<NodeHandle>>,
 }
 
 impl ContextTree {
@@ -35,10 +36,15 @@ impl ContextTree {
             obj_to_handle: HashMap::new(),
             vm_id: root_obj.vm_id,
             next_handle: ROOT_HANDLE + 1,
+            role_to_handle: HashMap::new(),
         };
 
         let mut root = ContextNode::from_obj(root_obj, 0, ROOT_HANDLE, None);
         tree.build_subtree(&mut root, max_depth);
+        tree.role_to_handle
+            .entry(root.role.clone())
+            .or_default()
+            .insert(ROOT_HANDLE);
         tree.obj_to_handle.insert(root.obj.jobject, ROOT_HANDLE);
         tree.nodes.insert(ROOT_HANDLE, root);
 
@@ -72,6 +78,10 @@ impl ContextTree {
         for mut child_node in child_nodes.drain(..) {
             let handle = child_node.handle;
             self.build_subtree(&mut child_node, max_depth);
+            self.role_to_handle
+                .entry(child_node.role.clone())
+                .or_default()
+                .insert(child_node.handle);
             self.obj_to_handle.insert(child_node.obj.jobject, handle);
             self.nodes.insert(handle, child_node);
             node.children.push(handle);
@@ -87,6 +97,11 @@ impl ContextTree {
         for h in &subtree {
             if let Some(dropped) = self.nodes.remove(h) {
                 self.obj_to_handle.remove(&dropped.obj.jobject);
+                self.role_to_handle
+                    .entry(dropped.role)
+                    .and_modify(|handles| {
+                        handles.remove(&dropped.handle);
+                    });
             };
         }
 
@@ -117,16 +132,49 @@ impl ContextTree {
         matches_selector(node, selector, None, self)
     }
 
+    fn candidates(&self, selector: &Selector) -> Option<Vec<&ContextNode>> {
+        let roles = selector
+            .alternatives
+            .iter()
+            .map(|complex| &complex.last.role)
+            .collect::<HashSet<_>>();
+
+        if roles.contains(&None) {
+            None
+        } else {
+            let roles = roles.into_iter().filter_map(|role| role.as_ref());
+
+            let candidates = roles
+                .filter_map(|role| self.role_to_handle.get(role))
+                .flat_map(|hs| hs.iter().filter_map(|h| self.nodes.get(h)));
+
+            Some(candidates.collect())
+        }
+    }
+
     pub fn get_nodes(&self, selector: &Selector) -> Vec<&ContextNode> {
-        self.nodes
-            .par_iter()
-            .filter_map(|(_, node)| self.node_matches(node, selector).then_some(node))
-            .collect()
+        match self.candidates(selector) {
+            Some(candidates) => candidates
+                .into_par_iter()
+                .filter_map(|node| self.node_matches(node, selector).then_some(node))
+                .collect(),
+            None => self
+                .nodes
+                .par_iter()
+                .filter_map(|(_, node)| self.node_matches(node, selector).then_some(node))
+                .collect(),
+        }
     }
 
     pub fn get_node(&self, selector: &Selector) -> Option<&ContextNode> {
-        self.nodes
-            .par_iter()
-            .find_map_any(|(_, node)| self.node_matches(node, selector).then_some(node))
+        match self.candidates(selector) {
+            Some(candidates) => candidates
+                .into_par_iter()
+                .find_any(|node| self.node_matches(node, selector)),
+            None => self
+                .nodes
+                .par_iter()
+                .find_map_any(|(_, node)| self.node_matches(node, selector).then_some(node)),
+        }
     }
 }
