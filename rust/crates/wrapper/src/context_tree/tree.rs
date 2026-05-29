@@ -89,7 +89,6 @@ impl ContextTree {
                 self.obj_to_handle.remove(&dropped.obj.jobject);
             };
         }
-        subtree.into_par_iter().for_each(drop);
 
         node.children.clear();
         node.refresh_info();
