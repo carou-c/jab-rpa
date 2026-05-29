@@ -34,6 +34,8 @@ class JabRpaServer:
         server_path: Path = _SERVER_PATH,
         server_timeout: int = _WAIT_FOR_SERVER_TIMEOUT,
         step: int = _INIT_SERVER_STEP,
+        print_stdout: bool = False,
+        print_stderr: bool = True,
     ) -> None:
         """Configure the server process settings.
 
@@ -45,6 +47,8 @@ class JabRpaServer:
         self._server_path: Path = server_path
         self._server_timeout: int = server_timeout
         self._step: int = step
+        self._print_stdout: bool = print_stdout
+        self._print_stderr: bool = print_stderr
 
     def start(self) -> None:
         """Launch the server subprocess and wait for it to become ready.
@@ -70,9 +74,21 @@ class JabRpaServer:
             if server_proc.stdout is not None:
                 for line in iter(server_proc.stdout.readline, ""):
                     q.put(line)
+                    if self._print_stdout:
+                        print(line)
 
         t = threading.Thread(target=_reader, daemon=True)
         t.start()
+
+        if self._print_stderr:
+
+            def _reader_err():
+                if server_proc.stderr is not None:
+                    for line in iter(server_proc.stderr.readline, ""):
+                        print(line)
+
+            t_err = threading.Thread(target=_reader_err, daemon=True)
+            t_err.start()
 
         stdout = ""
         wait_start = time.monotonic()

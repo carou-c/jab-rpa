@@ -77,6 +77,8 @@ impl Default for SharedCtxTree {
     }
 }
 
+const EVENT_THRESHOLD: usize = 150;
+
 impl JabWrapper {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Result<Self, String> {
@@ -100,7 +102,23 @@ impl JabWrapper {
                 }
 
                 let mut tree_lock = tree.lock();
-                if let Some(t) = tree_lock.as_mut() {
+                if events.len() > EVENT_THRESHOLD
+                    && let Some(_) = tree_lock.as_mut().and_then(|t| t.root().ok())
+                {
+                    if let Some(t) = tree_lock.take() {
+                        *tree_lock = match t.into_root() {
+                            Ok(root) => Some(ContextTree::from_root(root, None)),
+                            Err(e) => {
+                                eprintln!(
+                                    "On trying to rebuild tree on tree updater thread, into_root failed: {}",
+                                    e
+                                );
+                                eprintln!("Dropping tree");
+                                None
+                            }
+                        }
+                    }
+                } else if let Some(t) = tree_lock.as_mut() {
                     t.apply_events(events);
                 }
 
