@@ -12,9 +12,10 @@ does not work properly.
 (2) means, whatever the solution, it will involve some kind of IPC. My tool of
 choice for this was gRPC.
 
-This project contains what I consider the "bare minimum" to develop RPA. It
-exposes a fairly ergonomic Python API, but lacks many performance optimizations
-and probably has a few bugs here and there.
+This project exposes a fairly ergonomic Python API for developing RPA
+workflows against Java desktop applications. The server includes multi-JVM
+support (32-bit and 64-bit, Java 8 through 25) and a selector engine with
+CSS-like syntax.
 
 ## Quickstart
 
@@ -35,10 +36,12 @@ See the [full documentation](docs/index.md) for details.
 
 ## Disclaimer
 
-This package is meant **ONLY** for windows, and **ONLY** targeting 32-bit JVMs.
-
-If you are targeting a 64-bit JVM, use
+This package runs **only** on Windows, and supports both 32-bit and 64-bit JVMs.
+If you exclusively target 64-bit JVMs,
 [rpaframework.RPA.JavaAccessBridge](https://rpaframework.org/libraries/javaaccessbridge/python.html)
-instead - it's a much more robust tool.
+is a more mature option.
+
+**Note:** Only Java 8 has been proven to work reliably in production. Java 11,
+17, 21 and 25 are supported experimentally.
 
 Bug reports, issues, discussions and contributions are always welcome.

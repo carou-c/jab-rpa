@@ -29,9 +29,10 @@ with JabDriver("My Java Application.*") as driver:
 
 ### What's happening
 
-1. `JabDriver("My Java Application.*")` — spawns `jab-rpa-server.exe`, waits for
-   a Java window whose title matches the regex `"My Java Application.*"`, then
-   selects it and maximizes it.
+1. `JabDriver("My Java Application.*")` — selects the appropriate pre-built
+   server binary (based on `java_bitness` and `java_version`), spawns it,
+   waits for a Java window whose title matches the regex
+   `"My Java Application.*"`, then brings it to the foreground and maximizes it.
 2. `driver.locator("push_button[name='Clear']")` — builds a locator query using
    CSS-selector-like syntax (see [Selector syntax](selectors.md)).
 3. `.click()` — polls until a matching element appears in the accessibility

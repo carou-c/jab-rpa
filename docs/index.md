@@ -18,7 +18,7 @@ only work with 64-bit JVMs. If your target application runs on a 32-bit JVM
 │  64-bit Python RPA Client           │
 │  (jab_rpa package — this library)   │
 └──────────────┬──────────────────────┘
-               │ gRPC (localhost:50051)
+               │ gRPC (localhost:port)
                ▼
 ┌─────────────────────────────────────┐
 │  jab-rpa-server.exe (32-bit)        │
@@ -44,17 +44,20 @@ only work with 64-bit JVMs. If your target application runs on a 32-bit JVM
 ## Requirements
 
 - **Windows only** (32-bit and 64-bit both work for the Python side)
-- **32-bit Java application** (JRE 1.8+ with Java Access Bridge enabled)
+- **32-bit or 64-bit Java application** (JRE 1.8+ with Java Access Bridge enabled)
 - **Python 3.12+**
 
-If you're targeting a 64-bit JVM, use
+If you exclusively target 64-bit JVMs,
 [robocorp's RPA.JavaAccessBridge](https://rpaframework.org/libraries/javaaccessbridge/python.html)
-instead — it's a much more robust tool.
+is a more mature option.
+
+**Note:** Only Java 8 has been proven to work reliably in production. Java 11,
+17, 21, and 25 are supported experimentally.
 
 ## Status
 
-This project contains the "bare minimum" to develop RPA. The Python API is
-fairly ergonomic, but the server lacks many performance optimizations and likely
-has bugs.
+The Python API is fairly ergonomic and supports both 32-bit and 64-bit JVMs
+across Java 8 through 25. The server includes a CSS-like selector engine with
+attribute matching, combinators, and pseudo-classes.
 
 Bug reports, issues, discussions, and contributions are always welcome.

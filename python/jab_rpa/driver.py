@@ -59,7 +59,13 @@ class JabDriver:
             window_title: Regex pattern to match against Java window titles.
                 The first window whose title matches via ``re.search()`` is
                 selected. Can be a string or compiled pattern.
-            server_path: Path to the ``jab-rpa-server.exe`` binary.
+            java_bitness: ``"32 bit"`` (default) or ``"64 bit"``. Controls which
+                pre-built server binary is used.
+            java_version: ``"8"`` (default), ``"11"``, ``"17"``, ``"21"``, or
+                ``"25"``. Java version the target application runs on. Only Java 8
+                has been proven to work reliably in production.
+            server_address: Server bind address (default ``"127.0.0.1"``).
+            server_port: Server bind port (default ``"50051"``).
             server_timeout: Maximum seconds to wait for the server to start.
             server_step: Seconds between server readiness checks.
             window_timeout: Maximum seconds to wait for a matching window.

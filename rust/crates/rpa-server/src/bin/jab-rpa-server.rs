@@ -23,7 +23,6 @@ async fn main() -> anyhow::Result<()> {
     let service = JabService::new(wrapper);
 
     let addr = format!("{}:{}", args.address, args.port).parse()?;
-    // let addr = "127.0.0.1:50051".parse()?;
     println!("JAB gRPC Server listening on {}", addr);
 
     Server::builder()

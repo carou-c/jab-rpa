@@ -43,9 +43,17 @@ class JabRpaServer:
         """Configure the server process settings.
 
         Args:
-            server_path: Path to the ``jab-rpa-server.exe`` binary.
+            java_bitness: ``"32 bit"`` (default) or ``"64 bit"``. Controls which
+                pre-built server binary is used.
+            java_version: ``"8"`` (default), ``"11"``, ``"17"``, ``"21"``, or
+                ``"25"``. Java version the target application runs on. Only Java 8
+                has been proven to work reliably in production.
+            server_address: Server bind address (default ``"127.0.0.1"``).
+            server_port: Server bind port (default ``"50051"``).
             server_timeout: Maximum seconds to wait for the server to start.
             step: Seconds between readiness checks.
+            print_stdout: If ``True``, forward server stdout to the console.
+            print_stderr: If ``True`` (default), forward server stderr to the console.
         """
         target_name = (
             "i686-pc-windows-gnu"
