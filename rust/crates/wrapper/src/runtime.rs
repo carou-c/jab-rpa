@@ -12,6 +12,7 @@ use windows::Win32::{
 };
 
 use crate::callbacks::{ChangeEvent, shutdown_event_channel, subscribe_events};
+use crate::error::JabRuntimeInitError;
 
 fn run_message_pump() {
     unsafe {
@@ -39,7 +40,7 @@ pub(crate) struct JabRuntime {
 }
 
 impl JabRuntime {
-    pub(crate) fn new() -> Result<Self, String> {
+    pub(crate) fn new() -> Result<Self, JabRuntimeInitError> {
         // Channel to synchronize initialization
         let (init_tx, init_rx) = mpsc::channel();
         let (thread_id_tx, thread_id_rx) = mpsc::channel();
@@ -81,30 +82,28 @@ impl JabRuntime {
         // Wait for initialization to complete
         match init_rx.recv() {
             Ok(true) => (),
-            Ok(false) => return Err("Failed to initialize JAB".to_string()),
+            Ok(false) => return Err(JabRuntimeInitError::InitializeAccessBridgeFailed),
             Err(_) => {
-                return Err(
-                    "Message pump thread crashed during initialization: init_rx.recv() failed"
-                        .to_string(),
-                );
+                return Err(JabRuntimeInitError::MessagePumpThreadCrashed {
+                    failed_call: "init_rx.recv()",
+                });
             }
         }
 
-        let thread_id =
-            match thread_id_rx.recv() {
-                Ok(thread_id) => thread_id,
-                Err(_) => return Err(
-                    "Message pump thread crashed during initialization: thread_id_rx.recv() failed"
-                        .to_string(),
-                ),
-            };
+        let thread_id = match thread_id_rx.recv() {
+            Ok(thread_id) => thread_id,
+            Err(_) => {
+                return Err(JabRuntimeInitError::MessagePumpThreadCrashed {
+                    failed_call: "thread_id_rx.recv()",
+                });
+            }
+        };
         let cb_rx = match cb_channel_rx.recv() {
             Ok(cb_rx) => cb_rx,
             Err(_) => {
-                return Err(
-                    "Message pump thread crashed during initialization: cb_rx.recv() failed"
-                        .to_string(),
-                );
+                return Err(JabRuntimeInitError::MessagePumpThreadCrashed {
+                    failed_call: "cb_rx.recv()",
+                });
             }
         };
 

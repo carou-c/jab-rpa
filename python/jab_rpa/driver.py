@@ -1,14 +1,12 @@
 import re
-from typing import Self
+from typing import Self, Literal
 import time
-from pathlib import Path
 
 from win32gui import ShowWindow, SetForegroundWindow
 from win32con import SW_SHOWMAXIMIZED
 
 from .server import (
     JabRpaServer,
-    _SERVER_PATH,
     _WAIT_FOR_SERVER_TIMEOUT,
     _INIT_SERVER_STEP,
 )
@@ -46,7 +44,10 @@ class JabDriver:
         self,
         window_title: str | re.Pattern[str],
         *,
-        server_path: Path = _SERVER_PATH,
+        java_bitness: Literal["32 bit", "64 bit"] = "32 bit",
+        java_version: Literal["8", "11", "17", "21", "25"] = "8",
+        server_address: str = "127.0.0.1",
+        server_port: str = "50051",
         server_timeout: int = _WAIT_FOR_SERVER_TIMEOUT,
         server_step: int = _INIT_SERVER_STEP,
         window_timeout: int = _WAIT_FOR_WINDOW_TIMEOUT,
@@ -65,17 +66,21 @@ class JabDriver:
             window_step: Seconds between window discovery polls.
         """
         self._window_title: str | re.Pattern[str] = window_title
-        self._server_path: Path = server_path
         self._server_timeout: int = server_timeout
         self._window_timeout: int = window_timeout
         self._server_step: int = server_step
         self._window_step: int = window_step
         self._server: JabRpaServer = JabRpaServer(
-            server_path=self._server_path,
+            java_bitness=java_bitness,
+            java_version=java_version,
+            server_address=server_address,
+            server_port=server_port,
             server_timeout=self._server_timeout,
             step=self._server_step,
         )
-        self._client: JabRpaClient = JabRpaClient()
+        self._client: JabRpaClient = JabRpaClient(
+            server_address=server_address, server_port=server_port
+        )
 
     def start(self) -> None:
         """Start the server and connect to the target window.

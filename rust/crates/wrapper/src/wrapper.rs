@@ -13,6 +13,7 @@ use windows::{
 
 use crate::{
     context_tree::ContextTree,
+    error::{ContextSuffix, JabWrapperError},
     runtime::JabRuntime,
     types::{
         AccessBridgeVersionInfo, AccessibleActions, AccessibleContextInfo, JObject, VmId,
@@ -81,7 +82,7 @@ const EVENT_THRESHOLD: usize = 150;
 
 impl JabWrapper {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Result<Self, String> {
+    pub fn new() -> Result<Self, JabWrapperError> {
         let runtime = JabRuntime::new()?;
         Ok(Self {
             runtime: Arc::new(runtime),
@@ -173,7 +174,7 @@ impl JabWrapper {
     /// The one calling this must make sure the hwnd exists
     /// and the window it points to is a Java window with
     /// the right bitness
-    pub unsafe fn get_root_obj_from_hwnd(&self, hwnd: HWND) -> Result<JavaObject, String> {
+    pub unsafe fn get_root_obj_from_hwnd(&self, hwnd: HWND) -> Result<JavaObject, JabWrapperError> {
         unsafe {
             let mut vm_id: VmId = 0;
             let mut jobject: jab_sys::AccessibleContext = 0;
@@ -186,31 +187,42 @@ impl JabWrapper {
                     runtime: self.runtime.clone(),
                 })
             } else {
-                Err(format!("GetAccessibleContextFromHWND returned {}", result))
+                Err(JabWrapperError::JabCallFailed {
+                    jab_call: "GetAccessibleContextFromHWND",
+                    context: ContextSuffix(None),
+                })
             }
         }
     }
 }
 
 impl JavaObject {
-    pub fn get_version_info(&self) -> Result<AccessBridgeVersionInfo, String> {
+    pub fn get_version_info(&self) -> Result<AccessBridgeVersionInfo, JabWrapperError> {
         unsafe {
             let mut info: jab_sys::AccessBridgeVersionInfo = std::mem::zeroed();
-            if jab_sys::GetVersionInfo(self.vm_id, &mut info) != 0 {
+            let result = jab_sys::GetVersionInfo(self.vm_id, &mut info);
+            if result != 0 {
                 Ok(info)
             } else {
-                Err("Failed to get version info".to_string())
+                Err(JabWrapperError::JabCallFailed {
+                    jab_call: "GetVersionInfo",
+                    context: ContextSuffix(None),
+                })
             }
         }
     }
 
-    pub fn get_obj_info(&self) -> Result<AccessibleContextInfo, String> {
+    pub fn get_obj_info(&self) -> Result<AccessibleContextInfo, JabWrapperError> {
         unsafe {
             let mut info: jab_sys::AccessibleContextInfo = std::mem::zeroed();
-            if jab_sys::GetAccessibleContextInfo(self.vm_id, self.jobject, &mut info) != 0 {
+            let result = jab_sys::GetAccessibleContextInfo(self.vm_id, self.jobject, &mut info);
+            if result != 0 {
                 Ok(info)
             } else {
-                Err("Failed to get accessible context info".to_string())
+                Err(JabWrapperError::JabCallFailed {
+                    jab_call: "GetAccessibleContextInfo",
+                    context: ContextSuffix(None),
+                })
             }
         }
     }
@@ -228,11 +240,16 @@ impl JavaObject {
         }
     }
 
-    pub fn get_text(&self) -> Result<String, String> {
+    pub fn get_text(&self) -> Result<String, JabWrapperError> {
         unsafe {
             let mut text_info: jab_sys::AccessibleTextInfo = std::mem::zeroed();
-            if jab_sys::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0) == 0 {
-                return Err("GetAccessibleTextInfo failed".to_string());
+            let result =
+                jab_sys::GetAccessibleTextInfo(self.vm_id, self.jobject, &mut text_info, 0, 0);
+            if result == 0 {
+                return Err(JabWrapperError::JabCallFailed {
+                    jab_call: "GetAccessibleTextInfo",
+                    context: ContextSuffix(None),
+                });
             }
 
             let total_len = text_info.charCount.max(0) as usize;
@@ -248,20 +265,23 @@ impl JavaObject {
                 let chunk_len = (total_len - start).min(CHUNK);
                 let end = start + chunk_len - 1;
                 let mut buf: Vec<jab_sys::wchar_t> = vec![0; chunk_len + 1];
-
-                if jab_sys::GetAccessibleTextRange(
+                let result = jab_sys::GetAccessibleTextRange(
                     self.vm_id,
                     self.jobject,
                     start as i32,
                     end as i32,
                     buf.as_mut_ptr(),
                     (chunk_len + 1) as i16,
-                ) == 0
-                {
-                    return Err(format!(
-                        "GetAccessibleTextRange failed at start={}, end={}, chunk_len={}",
-                        start, end, chunk_len
-                    ));
+                );
+
+                if result == 0 {
+                    return Err(JabWrapperError::JabCallFailed {
+                        jab_call: "GetAccessibleTextRange",
+                        context: ContextSuffix(Some(format!(
+                            "start={}, end={}, chunk_len={}",
+                            start, end, chunk_len
+                        ))),
+                    });
                 }
                 let actual_len = buf.iter().position(|&c| c == 0).unwrap_or(chunk_len);
 
@@ -272,34 +292,35 @@ impl JavaObject {
         }
     }
 
-    pub fn get_actions(&self) -> Result<AccessibleActions, String> {
+    pub fn get_actions(&self) -> Result<AccessibleActions, JabWrapperError> {
         unsafe {
             let mut actions: jab_sys::AccessibleActions = std::mem::zeroed();
-            if jab_sys::getAccessibleActions(self.vm_id, self.jobject, &mut actions) == 0 {
-                return Err("getAccessibleActions failed".to_string());
+            let result = jab_sys::getAccessibleActions(self.vm_id, self.jobject, &mut actions);
+            if result == 0 {
+                return Err(JabWrapperError::JabCallFailed {
+                    jab_call: "getAccessibleActions",
+                    context: ContextSuffix(None),
+                });
             }
             Ok(actions)
         }
     }
 
-    pub fn do_action(&self, action: String) -> Result<(), String> {
+    pub fn do_action(&self, action: String) -> Result<(), JabWrapperError> {
         let action = action.to_lowercase().replace(' ', "_");
-        let outer_actions: Vec<_>;
-        unsafe {
-            let Ok(actions) = self.get_actions() else {
-                return Err("Failed to get accessible actions".to_string());
-            };
-            outer_actions = actions
-                .actionInfo
-                .iter()
-                .take(actions.actionsCount.max(0) as _)
-                .map(|act| utf16_to_string(&act.name))
-                .collect();
+        let actions = self.get_actions()?;
+        let outer_actions: Vec<_> = actions
+            .actionInfo
+            .iter()
+            .take(actions.actionsCount.max(0) as _)
+            .map(|act| utf16_to_string(&act.name))
+            .collect();
 
-            for i in 0..actions.actionsCount {
-                if let Some(action_info) = actions.actionInfo.get(i as usize) {
-                    let action_name = utf16_to_string(&action_info.name);
-                    if action_name.to_lowercase() == action {
+        for i in 0..actions.actionsCount {
+            if let Some(action_info) = actions.actionInfo.get(i as usize) {
+                let action_name = utf16_to_string(&action_info.name);
+                if action_name.to_lowercase() == action {
+                    unsafe {
                         let mut actions_to_do: jab_sys::AccessibleActionsToDo = std::mem::zeroed();
                         actions_to_do.actionsCount = 1;
                         actions_to_do.actions[0] = *action_info;
@@ -314,19 +335,22 @@ impl JavaObject {
                         {
                             return Ok(());
                         } else {
-                            return Err(format!(
-                                "Failed to perform {} action, failure index: {}",
-                                action, failure
-                            ));
+                            return Err(JabWrapperError::JabCallFailed {
+                                jab_call: "doAccessibleActions",
+                                context: ContextSuffix(Some(format!(
+                                    "action={:?} action, failure index={}",
+                                    action, failure
+                                ))),
+                            });
                         }
                     }
                 }
             }
         }
 
-        Err(format!(
-            "No {:?} action found. Available actions: {:?}",
-            action, outer_actions
-        ))
+        Err(JabWrapperError::ActionNotFound {
+            action,
+            available_actions: outer_actions,
+        })
     }
 }

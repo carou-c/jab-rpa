@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Literal
 import time
 import threading
 import queue
@@ -9,8 +9,8 @@ from importlib.resources import files
 from .errors import ServerStoppedError
 
 
-_SERVER_PATH = Path(str(files("jab_rpa").joinpath("bin/jab-rpa-server.exe")))
-_SERVER_LISTENING = "JAB gRPC Server listening on 127.0.0.1:50051"
+_BIN_PATH = files("jab_rpa").joinpath("bin")
+_SERVER_LISTENING = "JAB gRPC Server listening on "  # 127.0.0.1:50051"
 
 _WAIT_FOR_SERVER_TIMEOUT: int = 30
 _INIT_SERVER_STEP: int = 1
@@ -31,7 +31,10 @@ class JabRpaServer:
     def __init__(
         self,
         *,
-        server_path: Path = _SERVER_PATH,
+        java_bitness: Literal["32 bit", "64 bit"] = "32 bit",
+        java_version: Literal["8", "11", "17", "21", "25"] = "8",
+        server_address: str = "127.0.0.1",
+        server_port: str = "50051",
         server_timeout: int = _WAIT_FOR_SERVER_TIMEOUT,
         step: int = _INIT_SERVER_STEP,
         print_stdout: bool = False,
@@ -44,7 +47,17 @@ class JabRpaServer:
             server_timeout: Maximum seconds to wait for the server to start.
             step: Seconds between readiness checks.
         """
-        self._server_path: Path = server_path
+        target_name = (
+            "i686-pc-windows-gnu"
+            if java_bitness == "32 bit"
+            else "x86_64-pc-windows-gnu"
+        )
+
+        self._server_path: Path = Path(
+            str(_BIN_PATH.joinpath(f"java-{java_version}").joinpath(target_name))
+        )
+        self._server_address: str = server_address
+        self._server_port: str = server_port
         self._server_timeout: int = server_timeout
         self._step: int = step
         self._print_stdout: bool = print_stdout
@@ -61,7 +74,13 @@ class JabRpaServer:
             TimeoutError: If the server does not become ready within the timeout.
         """
         server_proc = subprocess.Popen(
-            [self._server_path],
+            [
+                self._server_path,
+                "--address",
+                self._server_address,
+                "--port",
+                self._server_port,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

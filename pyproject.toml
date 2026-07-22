@@ -11,7 +11,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 4 - Beta",
     "Operating System :: Microsoft :: Windows",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
@@ -44,9 +44,8 @@ source = "Cargo.toml"
 pattern = '^version = "(.+)"$'
 
 [tool.hatch.build]
-artifacts = ["python/jab_rpa/bin/jab-rpa-server.exe"]
+artifacts = ["python/jab_rpa/bin/**/*.exe"]
 
 [tool.hatch.build.targets.wheel]
-# include = ["python/src/jab_rpa/bin/jab-rpa-server.exe"]
 packages = ["python/jab_rpa"]
 pure-python = false

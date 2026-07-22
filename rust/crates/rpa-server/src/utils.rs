@@ -49,7 +49,9 @@ pub(crate) fn find_nodes<'a>(
 
 pub(crate) fn refresh_tree(tree: &mut Option<ContextTree>) -> Result<(), Status> {
     let root_obj = match tree.take() {
-        Some(tree) => tree.into_root().map_err(Status::internal)?,
+        Some(tree) => tree
+            .into_root()
+            .map_err(|e| Status::internal(e.to_string()))?,
         None => return no_window_selected(),
     };
 
@@ -60,7 +62,7 @@ pub(crate) fn refresh_tree(tree: &mut Option<ContextTree>) -> Result<(), Status>
 
 pub(crate) fn get_root(tree: &Option<ContextTree>) -> Result<&ContextNode, Status> {
     match tree.as_ref() {
-        Some(tree) => tree.root().map_err(Status::internal),
+        Some(tree) => tree.root().map_err(|e| Status::internal(e.to_string())),
         None => no_window_selected(),
     }
 }

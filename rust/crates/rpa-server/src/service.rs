@@ -108,7 +108,7 @@ impl proto::jab_service_server::JabService for JabService {
 
                 Ok(Response::new(proto::Empty {}))
             }
-            Err(e) => Err(Status::internal(e)),
+            Err(e) => Err(Status::internal(e.to_string())),
         }
     }
 
@@ -143,7 +143,7 @@ impl proto::jab_service_server::JabService for JabService {
 
         match root.obj.get_version_info() {
             Ok(version_info) => Ok(Response::new(version_info.into())),
-            Err(e) => Err(Status::internal(e)),
+            Err(e) => Err(Status::internal(e.to_string())),
         }
     }
 
@@ -336,7 +336,7 @@ impl proto::jab_service_server::JabService for JabService {
 
         match node.obj.do_action(action.name) {
             Ok(()) => Ok(Response::new(proto::Empty {})),
-            Err(e) => Err(Status::internal(e)),
+            Err(e) => Err(Status::internal(e.to_string())),
         }
     }
 }

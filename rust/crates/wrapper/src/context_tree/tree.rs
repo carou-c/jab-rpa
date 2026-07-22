@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use rayon::prelude::*;
 
 use super::{NodeHandle, ROOT_HANDLE, node::ContextNode};
+use crate::error::ContextTreeError;
 use crate::selector::Selector;
 use crate::types::{JObject, VmId};
 use crate::wrapper::JavaObject;
@@ -17,17 +18,17 @@ pub struct ContextTree {
 }
 
 impl ContextTree {
-    pub fn root(&self) -> Result<&ContextNode, String> {
+    pub fn root(&self) -> Result<&ContextNode, ContextTreeError> {
         self.nodes
             .get(&ROOT_HANDLE)
-            .ok_or("Root node missing".to_string())
+            .ok_or(ContextTreeError::RootNodeMissing)
     }
 
-    pub fn into_root(mut self) -> Result<JavaObject, String> {
+    pub fn into_root(mut self) -> Result<JavaObject, ContextTreeError> {
         self.nodes
             .remove(&ROOT_HANDLE)
             .map(|root| root.obj)
-            .ok_or("Root node missing".to_string())
+            .ok_or(ContextTreeError::RootNodeMissing)
     }
 
     pub fn from_root(root_obj: JavaObject, max_depth: Option<i32>) -> Self {

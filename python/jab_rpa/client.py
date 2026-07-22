@@ -17,9 +17,19 @@ class JabRpaClient:
     Not intended for direct use — accessed through ``JabDriver``.
     """
 
+    def __init__(
+        self,
+        server_address: str = "127.0.0.1",
+        server_port: str = "50051",
+    ) -> None:
+        self._server_address: str = server_address
+        self._server_port: str = server_port
+
     def start(self) -> None:
-        """Open an insecure gRPC channel to ``127.0.0.1:50051`` and create the service stub."""
-        self.__channel: Channel = grpc.insecure_channel("127.0.0.1:50051")
+        """Open an insecure gRPC channel to ``address:port`` and create the service stub."""
+        self.__channel: Channel = grpc.insecure_channel(
+            f"{self._server_address}:{self._server_port}"
+        )
         self.__stub: jab.JabServiceStub = jab.JabServiceStub(self.__channel)
 
     def __enter__(self) -> Self:

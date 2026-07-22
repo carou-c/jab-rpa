@@ -12,6 +12,8 @@ tonic-prost = "0.14"
 jab-wrapper = { path = "../wrapper" }
 windows = "0.62.2"
 parking_lot = "0.12.5"
+clap = { version = "4.6.4", features = ["derive"] }
+anyhow = "1.0.104"
 
 [build-dependencies]
 tonic-prost-build = { version = "0.14" }
