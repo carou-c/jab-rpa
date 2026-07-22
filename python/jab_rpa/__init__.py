@@ -1,4 +1,6 @@
-"""Python client for jab-rpa — automate 32-bit Java applications.
+"""Python client for jab-rpa — automate Java desktop applications.
+
+Requires a binary package to be installed (e.g. ``pip install jab-rpa[java8]``).
 
 The public API is composed of one class:
 

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jab-rpa-bin-java25"
+dynamic = ["version"]
+description = "jab-rpa server binary for Java 25 (32-bit and 64-bit)"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["../../LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: Microsoft :: Windows",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+]
+authors = [{ name = "carou-c", email = "carolcorrea555@gmail.com" }]
+
+[tool.hatch.build]
+artifacts = ["jab_rpa_bin/**/*.exe"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["jab_rpa_bin"]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning.from-file]
+source = "../../Cargo.toml"
+pattern = '^version = "(.+)"$'

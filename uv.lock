@@ -2,6 +2,16 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "jab-rpa",
+    "jab-rpa-bin-java11",
+    "jab-rpa-bin-java17",
+    "jab-rpa-bin-java21",
+    "jab-rpa-bin-java25",
+    "jab-rpa-bin-java8",
+]
+
 [[package]]
 name = "betterproto2"
 version = "0.9.1"
@@ -168,6 +178,23 @@ dependencies = [
     { name = "types-pywin32" },
 ]
 
+[package.optional-dependencies]
+java11 = [
+    { name = "jab-rpa-bin-java11" },
+]
+java17 = [
+    { name = "jab-rpa-bin-java17" },
+]
+java21 = [
+    { name = "jab-rpa-bin-java21" },
+]
+java25 = [
+    { name = "jab-rpa-bin-java25" },
+]
+java8 = [
+    { name = "jab-rpa-bin-java8" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "betterproto2-compiler" },
@@ -182,11 +209,17 @@ dev = [
 requires-dist = [
     { name = "betterproto2", specifier = ">=0.9.1,<0.10" },
     { name = "grpcio", specifier = ">=1.80.0,<2.0" },
+    { name = "jab-rpa-bin-java11", marker = "extra == 'java11'", editable = "packages/jab-rpa-bin-java11" },
+    { name = "jab-rpa-bin-java17", marker = "extra == 'java17'", editable = "packages/jab-rpa-bin-java17" },
+    { name = "jab-rpa-bin-java21", marker = "extra == 'java21'", editable = "packages/jab-rpa-bin-java21" },
+    { name = "jab-rpa-bin-java25", marker = "extra == 'java25'", editable = "packages/jab-rpa-bin-java25" },
+    { name = "jab-rpa-bin-java8", marker = "extra == 'java8'", editable = "packages/jab-rpa-bin-java8" },
     { name = "pyautogui", specifier = ">=0.9.54,<0.10" },
     { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=311" },
     { name = "types-pyautogui" },
     { name = "types-pywin32" },
 ]
+provides-extras = ["java11", "java17", "java21", "java25", "java8"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -197,6 +230,26 @@ dev = [
     { name = "mkdocstrings-python", specifier = ">=2.0.3" },
     { name = "wheel", specifier = ">=0.47" },
 ]
+
+[[package]]
+name = "jab-rpa-bin-java11"
+source = { editable = "packages/jab-rpa-bin-java11" }
+
+[[package]]
+name = "jab-rpa-bin-java17"
+source = { editable = "packages/jab-rpa-bin-java17" }
+
+[[package]]
+name = "jab-rpa-bin-java21"
+source = { editable = "packages/jab-rpa-bin-java21" }
+
+[[package]]
+name = "jab-rpa-bin-java25"
+source = { editable = "packages/jab-rpa-bin-java25" }
+
+[[package]]
+name = "jab-rpa-bin-java8"
+source = { editable = "packages/jab-rpa-bin-java8" }
 
 [[package]]
 name = "jinja2"

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "jab-rpa"
 dynamic = ["version"]
-description = "Python client for jab-rpa — automate 32-bit Java applications from 64-bit Python"
+description = "Python client for jab-rpa — automate Java desktop applications from Python"
 requires-python = ">=3.12"
 readme = "README.md"
 license = "MIT"
@@ -36,6 +36,20 @@ dev = [
     "wheel>=0.47",
 ]
 
+[project.optional-dependencies]
+java8 = ["jab-rpa-bin-java8"]
+java11 = ["jab-rpa-bin-java11"]
+java17 = ["jab-rpa-bin-java17"]
+java21 = ["jab-rpa-bin-java21"]
+java25 = ["jab-rpa-bin-java25"]
+
+[tool.uv.sources]
+jab-rpa-bin-java8 = { workspace = true }
+jab-rpa-bin-java11 = { workspace = true }
+jab-rpa-bin-java17 = { workspace = true }
+jab-rpa-bin-java21 = { workspace = true }
+jab-rpa-bin-java25 = { workspace = true }
+
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
@@ -43,9 +57,8 @@ source = "uv-dynamic-versioning"
 source = "Cargo.toml"
 pattern = '^version = "(.+)"$'
 
-[tool.hatch.build]
-artifacts = ["python/jab_rpa/bin/**/*.exe"]
-
 [tool.hatch.build.targets.wheel]
 packages = ["python/jab_rpa"]
-pure-python = false
+
+[tool.uv.workspace]
+members = ["packages/*"]

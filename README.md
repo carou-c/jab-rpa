@@ -19,10 +19,15 @@ CSS-like syntax.
 
 ## Quickstart
 
-1. Download the latest `.whl` from the
-   [releases page](https://github.com/carou-c/jab-rpa/releases).
-2. Install it: `python -m pip install jab_rpa-x.y.z-py3-none-any.whl`
-3. Use it:
+1. Install from PyPI with the Java version extra:
+
+   ```bash
+   pip install jab-rpa[java8]      # Java 8 (proven in production)
+   pip install jab-rpa[java17]     # Java 17
+   # etc.
+   ```
+
+2. Use it:
 
 ```python
 from jab_rpa import JabDriver

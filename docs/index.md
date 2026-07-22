@@ -1,6 +1,6 @@
 # jab-rpa
 
-Automate 32-bit Java desktop applications from Python.
+Automate Java desktop applications from Python.
 
 ## Problem
 
@@ -15,31 +15,38 @@ only work with 64-bit JVMs. If your target application runs on a 32-bit JVM
 
 ```text
 ┌─────────────────────────────────────┐
-│  64-bit Python RPA Client           │
-│  (jab_rpa package — this library)   │
+│  Python RPA Client                  │
+│  (jab_rpa — core package)           │
 └──────────────┬──────────────────────┘
                │ gRPC (localhost:port)
                ▼
 ┌─────────────────────────────────────┐
-│  jab-rpa-server.exe (32-bit)        │
+│  jab-rpa-server.exe (32/64-bit)     │
 │  ┌──────────┐  ┌──────────────────┐ │
 │  │ gRPC     │  │ Java Access      │ │
 │  │ Service  │◄─┤ Bridge Wrapper   │ │
 │  └──────────┘  └──────────────────┘ │
 └──────────────────┬──────────────────┘
                    ▼
-     WindowsAccessBridge-32.dll
+     WindowsAccessBridge-{32,64}.dll
                    │
      ┌─────────────────────────────┐
-     │  32-bit Java App (JRE 1.8)  │
+     │  Java App (JRE 1.8+)        │
      └─────────────────────────────┘
 ```
 
-1. **`jab-rpa-server.exe`** — a 32-bit Rust gRPC server that loads
-   `WindowsAccessBridge-32.dll` and exposes the Java Accessibility Bridge over
-   gRPC.
-2. **`jab_rpa`** — the Python client library (this package) that spawns the
-   server and provides an ergonomic API.
+The project is split into multiple packages:
+
+- **`jab-rpa`** — the core Python client library (no binaries).
+- **`jab-rpa-bin-java{8,11,17,21,25}`** — binary packages, each containing
+  32-bit and 64-bit builds of `jab-rpa-server.exe` for a specific Java version.
+
+Install the core package with a binary extra:
+
+```bash
+pip install jab-rpa[java8]     # Java 8 (proven in production)
+pip install jab-rpa[java17]    # Java 17
+```
 
 ## Requirements
 
@@ -56,8 +63,8 @@ is a more mature option.
 
 ## Status
 
-The Python API is fairly ergonomic and supports both 32-bit and 64-bit JVMs
-across Java 8 through 25. The server includes a CSS-like selector engine with
-attribute matching, combinators, and pseudo-classes.
+The Python API supports both 32-bit and 64-bit JVMs across Java 8 through 25.
+The server includes a CSS-like selector engine with attribute matching,
+combinators, and pseudo-classes.
 
 Bug reports, issues, discussions, and contributions are always welcome.

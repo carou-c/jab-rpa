@@ -2,12 +2,18 @@
 
 ## Installation
 
-Download the latest `.whl` from the
-[releases page](https://github.com/carou-c/jab-rpa/releases) and install it:
+Install from PyPI with the appropriate Java version extra:
 
 ```bash
-python -m pip install jab_rpa-x.y.z-py3-none-any.whl
+pip install jab-rpa[java8]      # Java 8 (proven in production)
+pip install jab-rpa[java11]     # Java 11
+pip install jab-rpa[java17]     # Java 17
+pip install jab-rpa[java21]     # Java 21
+pip install jab-rpa[java25]     # Java 25
 ```
+
+The extra selects which pre-built server binary is included. Each binary
+package contains both 32-bit and 64-bit builds for the given Java version.
 
 ## Prerequisites
 
@@ -29,8 +35,8 @@ with JabDriver("My Java Application.*") as driver:
 
 ### What's happening
 
-1. `JabDriver("My Java Application.*")` — selects the appropriate pre-built
-   server binary (based on `java_bitness` and `java_version`), spawns it,
+1. `JabDriver("My Java Application.*")` — locates the server binary (provided
+   by the installed binary package, e.g. `jab-rpa-bin-java8`), spawns it,
    waits for a Java window whose title matches the regex
    `"My Java Application.*"`, then brings it to the foreground and maximizes it.
 2. `driver.locator("push_button[name='Clear']")` — builds a locator query using

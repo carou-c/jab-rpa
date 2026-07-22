@@ -5,22 +5,59 @@ import queue
 import subprocess
 from pathlib import Path
 from importlib.resources import files
+from importlib.metadata import PackageNotFoundError
 
 from .errors import ServerStoppedError
 
 
-_BIN_PATH = files("jab_rpa").joinpath("bin")
 _SERVER_LISTENING = "JAB gRPC Server listening on "  # 127.0.0.1:50051"
 
 _WAIT_FOR_SERVER_TIMEOUT: int = 30
 _INIT_SERVER_STEP: int = 1
 
 
+def _find_server_path(java_version: str, java_bitness: str) -> Path:
+    """Locate the ``jab-rpa-server.exe`` binary for the given Java version and bitness.
+
+    Looks in the ``jab_rpa_bin`` namespace package, which is provided by
+    the ``jab-rpa-bin-java*`` extras.
+
+    Raises:
+        RuntimeError: If the binary package is not installed.
+        FileNotFoundError: If the binary does not exist at the expected path.
+    """
+    target_name = (
+        "i686-pc-windows-gnu"
+        if java_bitness == "32 bit"
+        else "x86_64-pc-windows-gnu"
+    )
+    try:
+        bin_base = files("jab_rpa_bin")
+    except PackageNotFoundError:
+        raise RuntimeError(
+            f"Binary package for Java {java_version} is not installed.\n"
+            f"Install it with: pip install jab-rpa[java{java_version}]"
+        )
+    exe = (
+        bin_base
+        .joinpath(f"java{java_version}")
+        .joinpath(target_name)
+        .joinpath("jab-rpa-server.exe")
+    )
+    exe_path = Path(str(exe))
+    if not exe_path.exists():
+        raise FileNotFoundError(f"Server binary not found: {exe_path}")
+    return exe_path
+
+
 class JabRpaServer:
     """Manages the lifecycle of the ``jab-rpa-server.exe`` subprocess.
 
-    Spawns the 32-bit Rust gRPC server, waits for it to report readiness,
+    Spawns the Rust gRPC server, waits for it to report readiness,
     and provides clean shutdown.
+
+    Requires a binary package to be installed (e.g.
+    ``pip install jab-rpa[java8]``).
 
     Can be used as a context manager:
 
@@ -55,15 +92,7 @@ class JabRpaServer:
             print_stdout: If ``True``, forward server stdout to the console.
             print_stderr: If ``True`` (default), forward server stderr to the console.
         """
-        target_name = (
-            "i686-pc-windows-gnu"
-            if java_bitness == "32 bit"
-            else "x86_64-pc-windows-gnu"
-        )
-
-        self._server_path: Path = Path(
-            str(_BIN_PATH.joinpath(f"java-{java_version}").joinpath(target_name))
-        )
+        self._server_path: Path = _find_server_path(java_version, java_bitness)
         self._server_address: str = server_address
         self._server_port: str = server_port
         self._server_timeout: int = server_timeout

@@ -25,12 +25,15 @@ _WAIT_FOR_WINDOW_STEP: int = 5
 class JabDriver:
     """High-level driver that manages the JAB server and provides the main entry point.
 
+    Requires a binary package to be installed (e.g. ``pip install jab-rpa[java8]``).
+
     ``JabDriver`` handles the full lifecycle:
 
-    1. Spawns the ``jab-rpa-server.exe`` subprocess
-    2. Waits for a Java window matching the given title regex
-    3. Brings the window to the foreground and maximizes it
-    4. Selects the window on the server to build the accessibility tree
+    1. Locates the server binary (from the installed binary package)
+    2. Spawns the ``jab-rpa-server.exe`` subprocess
+    3. Waits for a Java window matching the given title regex
+    4. Brings the window to the foreground and maximizes it
+    5. Selects the window on the server to build the accessibility tree
 
     Typical usage:
 
