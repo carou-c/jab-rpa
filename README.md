@@ -37,7 +37,7 @@ with JabDriver("My Java Application.*") as driver:
     button.click()
 ```
 
-See the [full documentation](docs/index.md) for details.
+See the [full documentation](https://carou-c.github.io/jab-rpa/) for details.
 
 ## Disclaimer
 
