@@ -111,10 +111,15 @@
               
                 <h1 id="quickstart">Quickstart</h1>
 <h2 id="installation">Installation</h2>
-<p>Download the latest <code>.whl</code> from the
-<a href="https://github.com/carou-c/jab-rpa/releases">releases page</a> and install it:</p>
-<pre><code class="language-bash">python -m pip install jab_rpa-x.y.z-py3-none-any.whl
+<p>Install from PyPI with the appropriate Java version extra:</p>
+<pre><code class="language-bash">pip install jab-rpa[java8]      # Java 8 (proven in production)
+pip install jab-rpa[java11]     # Java 11
+pip install jab-rpa[java17]     # Java 17
+pip install jab-rpa[java21]     # Java 21
+pip install jab-rpa[java25]     # Java 25
 </code></pre>
+<p>The extra selects which pre-built server binary is included. Each binary
+package contains both 32-bit and 64-bit builds for the given Java version.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <p>On your Windows machine, enable Java Access Bridge:</p>
 <pre><code class="language-bash">jabswitch -enable
@@ -128,9 +133,10 @@ with JabDriver(&quot;My Java Application.*&quot;) as driver:
 </code></pre>
 <h3 id="whats-happening">What's happening</h3>
 <ol>
-<li><code>JabDriver("My Java Application.*")</code> — spawns <code>jab-rpa-server.exe</code>, waits for
-   a Java window whose title matches the regex <code>"My Java Application.*"</code>, then
-   selects it and maximizes it.</li>
+<li><code>JabDriver("My Java Application.*")</code> — locates the server binary (provided
+   by the installed binary package, e.g. <code>jab-rpa-bin-java8</code>), spawns it,
+   waits for a Java window whose title matches the regex
+   <code>"My Java Application.*"</code>, then brings it to the foreground and maximizes it.</li>
 <li><code>driver.locator("push_button[name='Clear']")</code> — builds a locator query using
    CSS-selector-like syntax (see <a href="../selectors/">Selector syntax</a>).</li>
 <li><code>.click()</code> — polls until a matching element appears in the accessibility

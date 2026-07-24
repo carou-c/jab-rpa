@@ -160,13 +160,12 @@ Not intended for direct use — accessed through <code>JabDriver</code>.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_action</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">,</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">do_action(
+    action: Action,
+    selector: str,
+    timeout_ms: int | None,
+    refresh_before_fail: bool,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -279,12 +278,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_actions</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">Action</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_actions(
+    selector: str,
+    timeout_ms: int | None,
+    refresh_before_fail: bool,
+) -&gt; list[jab.Action]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -405,12 +403,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">AccessibleInfo</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_info(
+    selector: str,
+    timeout_ms: int | None,
+    refresh_before_fail: bool,
+) -&gt; jab.AccessibleInfo</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -531,10 +528,9 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info_from_all</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">AccessibleInfo</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_info_from_all(
+    selector: str,
+) -&gt; list[jab.AccessibleInfo]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -638,8 +634,7 @@ Does not wait for a matching element, returns immediately.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_selected_window_hwnd</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">Hwnd</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_selected_window_hwnd() -&gt; jab.Hwnd</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -704,12 +699,11 @@ Does not wait for a matching element, returns immediately.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_text</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_text(
+    selector: str,
+    timeout_ms: int | None,
+    refresh_before_fail: bool,
+) -&gt; str</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -830,8 +824,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_version_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">jab</span><span class="o">.</span><span class="n">VersionInfo</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_version_info() -&gt; jab.VersionInfo</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -903,8 +896,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">list_java_windows</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">jab</span><span class="o">.</span><span class="n">WindowInfo</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">list_java_windows() -&gt; list[jab.WindowInfo]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -946,12 +938,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">race</span><span class="p">(</span>
-    <span class="n">selectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">race(
+    selectors: list[str],
+    timeout_ms: int | None,
+    refresh_before_fail: bool,
+) -&gt; int</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1072,8 +1063,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">refresh_tree</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">refresh_tree() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1122,8 +1112,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">select_window</span><span class="p">(</span><span class="n">window_info</span><span class="p">:</span> <span class="n">WindowInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">select_window(window_info: WindowInfo) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1196,12 +1185,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">start</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">start() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
-        <p>Open an insecure gRPC channel to <code>127.0.0.1:50051</code> and create the service stub.</p>
+        <p>Open an insecure gRPC channel to <code>address:port</code> and create the service stub.</p>
 
 
     </div>
@@ -1216,8 +1204,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">stop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">stop() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1236,12 +1223,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">wait_for</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">wait_for(
+    selector: str,
+    timeout_ms: int | None,
+    refresh_before_fail: bool,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 

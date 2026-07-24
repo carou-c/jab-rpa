@@ -94,7 +94,7 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="jab-rpa">jab-rpa</h1>
-<p>Automate 32-bit Java desktop applications from Python.</p>
+<p>Automate Java desktop applications from Python.</p>
 <h2 id="problem">Problem</h2>
 <p>Standard RPA tools like
 <a href="https://rpaframework.org/libraries/javaaccessbridge/python.html">robocorp's RPA.JavaAccessBridge</a>
@@ -103,45 +103,50 @@ only work with 64-bit JVMs. If your target application runs on a 32-bit JVM
 <h2 id="solution">Solution</h2>
 <p><code>jab-rpa</code> bridges this gap with a two-component architecture:</p>
 <pre><code class="language-text">┌─────────────────────────────────────┐
-│  64-bit Python RPA Client           │
-│  (jab_rpa package — this library)   │
+│  Python RPA Client                  │
+│  (jab_rpa — core package)           │
 └──────────────┬──────────────────────┘
-               │ gRPC (localhost:50051)
+               │ gRPC (localhost:port)
                ▼
 ┌─────────────────────────────────────┐
-│  jab-rpa-server.exe (32-bit)        │
+│  jab-rpa-server.exe (32/64-bit)     │
 │  ┌──────────┐  ┌──────────────────┐ │
 │  │ gRPC     │  │ Java Access      │ │
 │  │ Service  │◄─┤ Bridge Wrapper   │ │
 │  └──────────┘  └──────────────────┘ │
 └──────────────────┬──────────────────┘
                    ▼
-     WindowsAccessBridge-32.dll
+     WindowsAccessBridge-{32,64}.dll
                    │
      ┌─────────────────────────────┐
-     │  32-bit Java App (JRE 1.8)  │
+     │  Java App (JRE 1.8+)        │
      └─────────────────────────────┘
 </code></pre>
-<ol>
-<li><strong><code>jab-rpa-server.exe</code></strong> — a 32-bit Rust gRPC server that loads
-   <code>WindowsAccessBridge-32.dll</code> and exposes the Java Accessibility Bridge over
-   gRPC.</li>
-<li><strong><code>jab_rpa</code></strong> — the Python client library (this package) that spawns the
-   server and provides an ergonomic API.</li>
-</ol>
+<p>The project is split into multiple packages:</p>
+<ul>
+<li><strong><code>jab-rpa</code></strong> — the core Python client library (no binaries).</li>
+<li><strong><code>jab-rpa-bin-java{8,11,17,21,25}</code></strong> — binary packages, each containing
+  32-bit and 64-bit builds of <code>jab-rpa-server.exe</code> for a specific Java version.</li>
+</ul>
+<p>Install the core package with a binary extra:</p>
+<pre><code class="language-bash">pip install jab-rpa[java8]     # Java 8 (proven in production)
+pip install jab-rpa[java17]    # Java 17
+</code></pre>
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li><strong>Windows only</strong> (32-bit and 64-bit both work for the Python side)</li>
-<li><strong>32-bit Java application</strong> (JRE 1.8+ with Java Access Bridge enabled)</li>
+<li><strong>32-bit or 64-bit Java application</strong> (JRE 1.8+ with Java Access Bridge enabled)</li>
 <li><strong>Python 3.12+</strong></li>
 </ul>
-<p>If you're targeting a 64-bit JVM, use
+<p>If you exclusively target 64-bit JVMs,
 <a href="https://rpaframework.org/libraries/javaaccessbridge/python.html">robocorp's RPA.JavaAccessBridge</a>
-instead — it's a much more robust tool.</p>
+is a more mature option.</p>
+<p><strong>Note:</strong> Only Java 8 has been proven to work reliably in production. Java 11,
+17, 21, and 25 are supported experimentally.</p>
 <h2 id="status">Status</h2>
-<p>This project contains the "bare minimum" to develop RPA. The Python API is
-fairly ergonomic, but the server lacks many performance optimizations and likely
-has bugs.</p>
+<p>The Python API supports both 32-bit and 64-bit JVMs across Java 8 through 25.
+The server includes a CSS-like selector engine with attribute matching,
+combinators, and pseudo-classes.</p>
 <p>Bug reports, issues, discussions, and contributions are always welcome.</p>
               
             </div>
@@ -194,5 +199,5 @@ has bugs.</p>
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-05-28 16:47:51.661454+00:00
+Build Date UTC : 2026-07-24 04:58:36.144770+00:00
 -->

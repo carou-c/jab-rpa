@@ -109,8 +109,10 @@
 
 
         <p>Manages the lifecycle of the <code>jab-rpa-server.exe</code> subprocess.</p>
-<p>Spawns the 32-bit Rust gRPC server, waits for it to report readiness,
+<p>Spawns the Rust gRPC server, waits for it to report readiness,
 and provides clean shutdown.</p>
+<p>Requires a binary package to be installed (e.g.
+<code>pip install jab-rpa[java8]</code>).</p>
 <p>Can be used as a context manager:</p>
 <pre><code>with JabRpaServer() as server:
     ...
@@ -144,13 +146,19 @@ and provides clean shutdown.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">server_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">_SERVER_PATH</span><span class="p">,</span>
-    <span class="n">server_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_WAIT_FOR_SERVER_TIMEOUT</span><span class="p">,</span>
-    <span class="n">step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_INIT_SERVER_STEP</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">__init__(
+    *,
+    java_bitness: Literal["32 bit", "64 bit"] = "32 bit",
+    java_version: Literal[
+        "8", "11", "17", "21", "25"
+    ] = "8",
+    server_address: str = "127.0.0.1",
+    server_port: str = "50051",
+    server_timeout: int = _WAIT_FOR_SERVER_TIMEOUT,
+    step: int = _INIT_SERVER_STEP,
+    print_stdout: bool = False,
+    print_stderr: bool = True,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -168,13 +176,46 @@ and provides clean shutdown.</p>
       <td class="field-body">
         <ul class="first simple">
             <li>
-              <b><code>server_path</code></b>
-                  (<code><span title="pathlib.Path">Path</span></code>, default:
-                      <code><span title="jab_rpa.server._SERVER_PATH">_SERVER_PATH</span></code>
+              <b><code>java_bitness</code></b>
+                  (<code><span title="typing.Literal">Literal</span>[&#39;32 bit&#39;, &#39;64 bit&#39;]</code>, default:
+                      <code>&#39;32 bit&#39;</code>
 )
               –
               <div class="doc-md-description">
-                <p>Path to the <code>jab-rpa-server.exe</code> binary.</p>
+                <p><code>"32 bit"</code> (default) or <code>"64 bit"</code>. Controls which
+pre-built server binary is used.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>java_version</code></b>
+                  (<code><span title="typing.Literal">Literal</span>[&#39;8&#39;, &#39;11&#39;, &#39;17&#39;, &#39;21&#39;, &#39;25&#39;]</code>, default:
+                      <code>&#39;8&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>"8"</code> (default), <code>"11"</code>, <code>"17"</code>, <code>"21"</code>, or
+<code>"25"</code>. Java version the target application runs on. Only Java 8
+has been proven to work reliably in production.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>server_address</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;127.0.0.1&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Server bind address (default <code>"127.0.0.1"</code>).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>server_port</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;50051&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Server bind port (default <code>"50051"</code>).</p>
               </div>
             </li>
             <li>
@@ -197,6 +238,26 @@ and provides clean shutdown.</p>
                 <p>Seconds between readiness checks.</p>
               </div>
             </li>
+            <li>
+              <b><code>print_stdout</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>False</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If <code>True</code>, forward server stdout to the console.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>print_stderr</code></b>
+                  (<code><span title="bool">bool</span></code>, default:
+                      <code>True</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>If <code>True</code> (default), forward server stderr to the console.</p>
+              </div>
+            </li>
         </ul>
       </td>
     </tr>
@@ -215,8 +276,7 @@ and provides clean shutdown.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">start</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">start() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -267,8 +327,7 @@ server's "listening" message.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">stop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">stop() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 

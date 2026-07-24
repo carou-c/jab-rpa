@@ -173,14 +173,13 @@ loc.wait_for()
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span>
-    <span class="n">driver</span><span class="p">:</span> <span class="n">JabDriver</span><span class="p">,</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">__init__(
+    driver: JabDriver,
+    selector: str,
+    has: list["Locator"] | None = None,
+    require_states: set[AccessibleState] | None = None,
+    exclude_states: set[AccessibleState] | None = None,
+)</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -264,11 +263,10 @@ to the selector (AND semantics).</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">accessible_click</span><span class="p">(</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">accessible_click(
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -371,13 +369,12 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click</span><span class="p">(</span>
-    <span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">click(
+    clicks: int = 1,
+    interval: int | float = 0.0,
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -493,15 +490,14 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">click_and_type</span><span class="p">(</span>
-    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">interval_text</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">interval_clicks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">click_and_type(
+    text: str,
+    clicks: int = 1,
+    interval_text: int | float = 0.0,
+    interval_clicks: int | float = 0.0,
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -635,12 +631,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">do_accessible_action</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">,</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">do_accessible_action(
+    action: Action,
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -749,8 +744,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">exists</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">exists() -&gt; bool</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -828,12 +822,11 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">filter</span><span class="p">(</span>
-    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Locator&quot;</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">filter(
+    has: list["Locator"] | None = None,
+    require_states: set[AccessibleState] | None = None,
+    exclude_states: set[AccessibleState] | None = None,
+) -&gt; "Locator"</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -923,11 +916,10 @@ to the selector (AND semantics).</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_actions</span><span class="p">(</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Action</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_actions(
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; list[Action]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1044,11 +1036,10 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info</span><span class="p">(</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AccessibleInfo</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_info(
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; AccessibleInfo</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1165,8 +1156,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_info_from_all</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AccessibleInfo</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_info_from_all() -&gt; list[AccessibleInfo]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1246,11 +1236,10 @@ Does not wait for a matching element, returns immediately.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_text</span><span class="p">(</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_text(
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; str</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1367,13 +1356,12 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Locator&quot;</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">locator(
+    selector: str,
+    has: list["Locator"] | None = None,
+    require_states: set[AccessibleState] | None = None,
+    exclude_states: set[AccessibleState] | None = None,
+) -&gt; "Locator"</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1473,12 +1461,11 @@ to the selector (AND semantics).</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">race</span><span class="p">(</span>
-    <span class="n">others</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Locator&quot;</span><span class="p">],</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">race(
+    others: list["Locator"],
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; int</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1603,8 +1590,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">to_dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">to_dict() -&gt; dict[str, Any]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -1623,11 +1609,10 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">wait_for</span><span class="p">(</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">wait_for(
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 

@@ -121,8 +121,10 @@
 
 
         <p>High-level driver that manages the JAB server and provides the main entry point.</p>
+<p>Requires a binary package to be installed (e.g. <code>pip install jab-rpa[java8]</code>).</p>
 <p><code>JabDriver</code> handles the full lifecycle:</p>
 <ol>
+<li>Locates the server binary (from the installed binary package)</li>
 <li>Spawns the <code>jab-rpa-server.exe</code> subprocess</li>
 <li>Waits for a Java window matching the given title regex</li>
 <li>Brings the window to the foreground and maximizes it</li>
@@ -163,16 +165,20 @@
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">__init__</span><span class="p">(</span>
-    <span class="n">window_title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Pattern</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">server_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">_SERVER_PATH</span><span class="p">,</span>
-    <span class="n">server_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_WAIT_FOR_SERVER_TIMEOUT</span><span class="p">,</span>
-    <span class="n">server_step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_INIT_SERVER_STEP</span><span class="p">,</span>
-    <span class="n">window_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_WAIT_FOR_WINDOW_TIMEOUT</span><span class="p">,</span>
-    <span class="n">window_step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_WAIT_FOR_WINDOW_STEP</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">__init__(
+    window_title: str | Pattern[str],
+    *,
+    java_bitness: Literal["32 bit", "64 bit"] = "32 bit",
+    java_version: Literal[
+        "8", "11", "17", "21", "25"
+    ] = "8",
+    server_address: str = "127.0.0.1",
+    server_port: str = "50051",
+    server_timeout: int = _WAIT_FOR_SERVER_TIMEOUT,
+    server_step: int = _INIT_SERVER_STEP,
+    window_timeout: int = _WAIT_FOR_WINDOW_TIMEOUT,
+    window_step: int = _WAIT_FOR_WINDOW_STEP,
+) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -200,13 +206,46 @@ selected. Can be a string or compiled pattern.</p>
               </div>
             </li>
             <li>
-              <b><code>server_path</code></b>
-                  (<code><span title="pathlib.Path">Path</span></code>, default:
-                      <code><span title="jab_rpa.server._SERVER_PATH">_SERVER_PATH</span></code>
+              <b><code>java_bitness</code></b>
+                  (<code><span title="typing.Literal">Literal</span>[&#39;32 bit&#39;, &#39;64 bit&#39;]</code>, default:
+                      <code>&#39;32 bit&#39;</code>
 )
               –
               <div class="doc-md-description">
-                <p>Path to the <code>jab-rpa-server.exe</code> binary.</p>
+                <p><code>"32 bit"</code> (default) or <code>"64 bit"</code>. Controls which
+pre-built server binary is used.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>java_version</code></b>
+                  (<code><span title="typing.Literal">Literal</span>[&#39;8&#39;, &#39;11&#39;, &#39;17&#39;, &#39;21&#39;, &#39;25&#39;]</code>, default:
+                      <code>&#39;8&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p><code>"8"</code> (default), <code>"11"</code>, <code>"17"</code>, <code>"21"</code>, or
+<code>"25"</code>. Java version the target application runs on. Only Java 8
+has been proven to work reliably in production.</p>
+              </div>
+            </li>
+            <li>
+              <b><code>server_address</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;127.0.0.1&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Server bind address (default <code>"127.0.0.1"</code>).</p>
+              </div>
+            </li>
+            <li>
+              <b><code>server_port</code></b>
+                  (<code><span title="str">str</span></code>, default:
+                      <code>&#39;50051&#39;</code>
+)
+              –
+              <div class="doc-md-description">
+                <p>Server bind port (default <code>"50051"</code>).</p>
               </div>
             </li>
             <li>
@@ -267,8 +306,7 @@ selected. Can be a string or compiled pattern.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_version_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">VersionInfo</span> <span class="o">|</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">get_version_info() -&gt; VersionInfo | None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -340,8 +378,7 @@ selected. Can be a string or compiled pattern.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">list_java_windows</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">WindowInfo</span><span class="p">]</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">list_java_windows() -&gt; list[WindowInfo]</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -383,13 +420,12 @@ selected. Can be a string or compiled pattern.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">locator</span><span class="p">(</span>
-    <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">has</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Locator</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">require_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">exclude_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">AccessibleState</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Locator</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">locator(
+    selector: str,
+    has: list[Locator] | None = None,
+    require_states: set[AccessibleState] | None = None,
+    exclude_states: set[AccessibleState] | None = None,
+) -&gt; Locator</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -488,12 +524,11 @@ to the selector (AND semantics).</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">race</span><span class="p">(</span>
-    <span class="n">locators</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Locator</span><span class="p">],</span>
-    <span class="n">timeout_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refresh_before_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">race(
+    locators: list[Locator],
+    timeout_ms: int | None = None,
+    refresh_before_fail: bool = True,
+) -&gt; int</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -618,8 +653,7 @@ before the final check.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">refresh_tree</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">refresh_tree() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -670,8 +704,7 @@ locator queries see the updated tree.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">start</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">start() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -723,8 +756,7 @@ maximizes it, and selects it on the server.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">stop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">stop() -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
@@ -743,8 +775,7 @@ maximizes it, and selects it on the server.</p>
 
 
 </h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">switch_window</span><span class="p">(</span><span class="n">window_info</span><span class="p">:</span> <span class="n">WindowInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<pre class="highlight"><code class="language-python doc-signature">switch_window(window_info: WindowInfo) -&gt; None</code></pre>
 
     <div class="doc doc-contents ">
 
