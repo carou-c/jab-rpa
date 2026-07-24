@@ -1,6 +1,6 @@
 # jab-rpa
 
-This project is a "quick and dirty" solution to a problem I had:
+This project is a solution to a problem I had:
 
 1. Automate processes that use a 32-bit Java desktop app
 2. Do that, necessarily, from a 64-bit Python runtime
