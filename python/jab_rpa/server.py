@@ -113,9 +113,7 @@ class JabRpaServer:
         server_proc = subprocess.Popen(
             [
                 self._server_path,
-                "--address",
                 self._server_address,
-                "--port",
                 self._server_port,
             ],
             stdout=subprocess.PIPE,
