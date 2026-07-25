@@ -37,11 +37,11 @@ dev = [
 ]
 
 [project.optional-dependencies]
-java8 = ["jab-rpa-bin-java8"]
-java11 = ["jab-rpa-bin-java11"]
-java17 = ["jab-rpa-bin-java17"]
-java21 = ["jab-rpa-bin-java21"]
-java25 = ["jab-rpa-bin-java25"]
+java8 = ["jab-rpa-bin-java8==0.1.2"]
+java11 = ["jab-rpa-bin-java11==0.1.2"]
+java17 = ["jab-rpa-bin-java17==0.1.2"]
+java21 = ["jab-rpa-bin-java21==0.1.2"]
+java25 = ["jab-rpa-bin-java25==0.1.2"]
 
 [tool.uv.sources]
 jab-rpa-bin-java8 = { workspace = true }
